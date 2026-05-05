@@ -1,27 +1,37 @@
 import 'package:flutter/material.dart';
 
+import '../constants/app_colors.dart';
+
 class AppTheme {
-  static const teal = Color(0xFF00BFCB);
-  static const cyan = Color(0xFF00E5FF);
+  const AppTheme._();
 
   static ThemeData dark() {
     final base = ThemeData.dark(useMaterial3: true);
     final scheme = ColorScheme.fromSeed(
-      seedColor: teal,
+      seedColor: AppColors.primary,
       brightness: Brightness.dark,
     );
 
     return base.copyWith(
       colorScheme: scheme,
-      scaffoldBackgroundColor: const Color(0xFF05080D),
+      scaffoldBackgroundColor: AppColors.backgroundDark,
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),
       textTheme: base.textTheme.apply(
-        bodyColor: const Color(0xFFEAF2FF),
-        displayColor: const Color(0xFFEAF2FF),
+        bodyColor: AppColors.surfaceLight,
+        displayColor: AppColors.surfaceLight,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF0D1117),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF30363D)),
+        ),
+        enabledBorderColor: const Color(0xFF30363D),
       ),
     );
   }
@@ -29,19 +39,24 @@ class AppTheme {
   static ThemeData light() {
     final base = ThemeData.light(useMaterial3: true);
     final scheme = ColorScheme.fromSeed(
-      seedColor: teal,
+      seedColor: AppColors.primary,
       brightness: Brightness.light,
     );
 
     return base.copyWith(
       colorScheme: scheme,
-      scaffoldBackgroundColor: const Color(0xFFF7FAFF),
+      scaffoldBackgroundColor: AppColors.backgroundLight,
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
     );
   }
 }
-

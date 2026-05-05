@@ -3,6 +3,9 @@
 RunApp은 러닝 기록을 측정하고, 주변 스팟(Spot)에 체크인하여 보상을 획득하는 **게이미피케이션 러닝 앱**입니다.
 Flutter와 Riverpod을 사용하여 개발되었으며, 네이버 지도(Naver Map)를 기반으로 작동합니다.
 
+# 터미널 실행
+flutter run --dart-define=ENV=dev
+
 ## ✨ 주요 기능
 
 - **러닝 트래킹**: 실시간 위치 추적, 이동 경로(Polyline) 그리기, 러닝 시간 및 점수 계산.

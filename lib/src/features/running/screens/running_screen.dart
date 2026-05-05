@@ -12,8 +12,6 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../models/run_record_model.dart';
 import '../providers/running_provider.dart';
-import 'widgets/running_action_bar.dart';
-import 'widgets/running_dashboard.dart';
 import 'widgets/running_mock_panel.dart';
 
 const bool _isDev = bool.fromEnvironment('IS_DEV', defaultValue: true);
@@ -41,6 +39,9 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   Position? _mockPos;
   int _mockStep = 0;
 
+  // Bottom panel expand
+  bool _bottomExpanded = false;
+
   // Overlay cache
   final Map<String, NMarker> _spotMarkers = {};
   NPolylineOverlay? _pathPolyline;
@@ -64,8 +65,6 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
 
   Future<void> _init() async {
     await ref.read(runningProvider.notifier).initialize(useMock: _isDev);
-
-    // mounted check after every async gap before using ref or setState
     if (!mounted) return;
 
     if (_isDev) {
@@ -138,7 +137,6 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
 
   void _nudgeMock({required double eastMeters, required double northMeters}) {
     if (!mounted) return;
-
     final cur = _mockPos;
     if (cur == null) return;
 
@@ -159,9 +157,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     _mockPos = next;
 
     unawaited(
-      ref
-          .read(runningProvider.notifier)
-          .onPositionUpdate(next, isDev: true),
+      ref.read(runningProvider.notifier).onPositionUpdate(next, isDev: true),
     );
     unawaited(_updateCamera(next));
   }
@@ -172,8 +168,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
 
   Future<void> _updateCamera(Position pos) async {
     final ctrl = _mapCtrl;
-    if (ctrl == null) return;
-    if (!mounted) return;
+    if (ctrl == null || !mounted) return;
 
     final record = ref.read(runningProvider);
     final zoom = record.isRunning ? 18.0 : 15.0;
@@ -201,7 +196,6 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     final ctrl = _mapCtrl;
     if (ctrl == null) return;
 
-    // Path polyline (minimum 2 points required)
     if (record.path.length >= 2) {
       final coords = record.path.map((p) => NLatLng(p.lat, p.lng)).toList();
       final polyline = NPolylineOverlay(
@@ -214,7 +208,6 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       ctrl.addOverlay(polyline);
     }
 
-    // Spot markers — redraw only when set or check-in state changes
     final newIds = record.nearbySpots.map((s) => 'spot_${s.id}').toSet();
     final oldIds = _spotMarkers.keys.toSet();
 
@@ -243,11 +236,8 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       }
       ctrl.addOverlayAll(_spotMarkers.values.toSet());
 
-      // Re-add polyline after clearing markers
       final poly = _pathPolyline;
-      if (poly != null) {
-        ctrl.addOverlay(poly);
-      }
+      if (poly != null) ctrl.addOverlay(poly);
     }
   }
 
@@ -282,7 +272,6 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   @override
   Widget build(BuildContext context) {
     final record = ref.watch(runningProvider);
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
     final topPadding = MediaQuery.of(context).padding.top;
 
     WidgetsBinding.instance
@@ -304,7 +293,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
                 locale: const Locale('ko'),
                 contentPadding: EdgeInsets.only(
                   top: topPadding,
-                  bottom: 200 + bottomPadding,
+                  bottom: 200,
                 ),
               ),
               onMapReady: (ctrl) async {
@@ -323,35 +312,25 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
             ),
           ),
 
-          // ── Top status chip ──────────────────────────────────────────────
-          Positioned(
-            top: topPadding + AppSpacing.sm,
-            left: AppSpacing.screenHorizontal,
-            right: AppSpacing.screenHorizontal,
-            child: SafeArea(
-              bottom: false,
-              child: _StatusChip(record: record, isDev: _isDev),
-            ),
-          ),
-
-          // ── Bottom sheet area ────────────────────────────────────────────
+          // ── Bottom panel ─────────────────────────────────────────────────
+          // bottom: AppSpacing.sm 으로 네브바와 살짝 띄움
           Positioned(
             left: 0,
             right: 0,
-            bottom: 0,
-            child: _BottomArea(
+            bottom: AppSpacing.sm,
+            child: _BottomPanel(
               record: record,
               isDev: _isDev,
               mockStepMeters: _mockStepMeters,
               mockAutoWalk: _mockAutoWalk,
-              bottomPadding: bottomPadding,
+              bottomExpanded: _bottomExpanded,
+              onToggleExpand: () =>
+                  setState(() => _bottomExpanded = !_bottomExpanded),
               onStart: () => ref.read(runningProvider.notifier).startRun(),
               onFinish: () => ref.read(runningProvider.notifier).finishRun(),
               onLocateMe: () async {
                 final pos = _mockPos;
-                if (pos != null) {
-                  await _updateCamera(pos);
-                }
+                if (pos != null) await _updateCamera(pos);
               },
               onChangeStep: (v) => setState(() => _mockStepMeters = v),
               onToggleAutoWalk: _toggleMockAutoWalk,
@@ -368,71 +347,18 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
 }
 
 // ---------------------------------------------------------------------------
-// Sub-widgets
+// _BottomPanel
+// layout: [Mock Panel (dev)] → [white card: metrics + action btn]
 // ---------------------------------------------------------------------------
 
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.record, required this.isDev});
-
-  final RunRecordModel record;
-  final bool isDev;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8.r,
-            height: 8.r,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: record.isRunning
-                  ? AppColors.runningActive
-                  : AppColors.textSecondary,
-            ),
-          ),
-          SizedBox(width: AppSpacing.sm),
-          Text(
-            record.isRunning
-                ? '러닝 중 · 스팟 ${record.checkedInSpotIds.length}개'
-                : isDev
-                    ? '개발 모드 (Mock GPS)'
-                    : '주변 스팟을 확인하세요',
-            style: AppTextStyles.labelSmall.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BottomArea extends StatelessWidget {
-  const _BottomArea({
+class _BottomPanel extends StatelessWidget {
+  const _BottomPanel({
     required this.record,
     required this.isDev,
     required this.mockStepMeters,
     required this.mockAutoWalk,
-    required this.bottomPadding,
+    required this.bottomExpanded,
+    required this.onToggleExpand,
     required this.onStart,
     required this.onFinish,
     required this.onLocateMe,
@@ -446,7 +372,8 @@ class _BottomArea extends StatelessWidget {
   final bool isDev;
   final double mockStepMeters;
   final bool mockAutoWalk;
-  final double bottomPadding;
+  final bool bottomExpanded;
+  final VoidCallback onToggleExpand;
   final VoidCallback onStart;
   final VoidCallback onFinish;
   final VoidCallback onLocateMe;
@@ -457,80 +384,284 @@ class _BottomArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.backgroundLight,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppSpacing.radiusXl),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(height: AppSpacing.sm),
-
-          if (record.isRunning)
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenHorizontal,
-              ),
-              child: RunningDashboard(record: record),
-            ),
-
-          if (record.errorMessage != null)
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenHorizontal,
-              ),
-              child: _ErrorBanner(
-                message: record.errorMessage!,
-                onDismiss: onDismissError,
-              ),
-            ),
-
-          if (isDev)
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenHorizontal,
-              ),
-              child: RunningMockPanel(
-                stepMeters: mockStepMeters,
-                isAutoWalk: mockAutoWalk,
-                isBusy: false,
-                onChangeStep: onChangeStep,
-                onToggleAutoWalk: onToggleAutoWalk,
-                onNudgeNorth: onNudgeNorth,
-              ),
-            ),
-
-          SizedBox(height: AppSpacing.verticalMd),
-
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // ── Dev: Mock panel ────────────────────────────────────────────────
+        if (isDev)
           Padding(
             padding: EdgeInsets.symmetric(
               horizontal: AppSpacing.screenHorizontal,
             ),
-            child: RunningActionBar(
-              isRunning: record.isRunning,
+            child: RunningMockPanel(
+              stepMeters: mockStepMeters,
+              isAutoWalk: mockAutoWalk,
               isBusy: false,
-              onStart: onStart,
-              onFinish: onFinish,
-              onLocateMe: onLocateMe,
+              onChangeStep: onChangeStep,
+              onToggleAutoWalk: onToggleAutoWalk,
+              onNudgeNorth: onNudgeNorth,
             ),
           ),
 
-          SizedBox(height: AppSpacing.verticalMd + bottomPadding),
-        ],
+        SizedBox(height: 6.h),
+
+        // ── White card (좌우 여백, 전체 모서리 둥글게) ─────────────────────
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenHorizontal,
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.surfaceLight,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.07),
+                  blurRadius: 20,
+                  offset: const Offset(0, -4),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(height: AppSpacing.verticalMd),
+
+                // Error banner
+                if (record.errorMessage != null)
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                    ).copyWith(bottom: AppSpacing.sm),
+                    child: _ErrorBanner(
+                      message: record.errorMessage!,
+                      onDismiss: onDismissError,
+                    ),
+                  ),
+
+                // ── Main metrics row ──────────────────────────────────────
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // 거리
+                      _MetricBlock(
+                        label: '거리 (KM)',
+                        value: (record.distanceMeters / 1000)
+                            .toStringAsFixed(1),
+                        labelColor: AppColors.primary,
+                      ),
+
+                      SizedBox(width: AppSpacing.lg),
+
+                      // 페이스
+                      _MetricBlock(
+                        label: '페이스',
+                        value: record.formattedCurrentPace,
+                      ),
+
+                      const Spacer(),
+
+                      // 플레이/정지 버튼 + 화살표
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _RunButton(
+                            isRunning: record.isRunning,
+                            onTap: record.isRunning ? onFinish : onStart,
+                          ),
+                          SizedBox(height: 4.h),
+                          GestureDetector(
+                            onTap: onToggleExpand,
+                            child: Icon(
+                              bottomExpanded
+                                  ? Icons.keyboard_arrow_up_rounded
+                                  : Icons.keyboard_arrow_down_rounded,
+                              color: AppColors.textSecondary,
+                              size: 24.r,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ── 확장: 추가 지표 ───────────────────────────────────────
+                if (bottomExpanded) ...[
+                  SizedBox(height: AppSpacing.verticalMd),
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                    ),
+                    child: Row(
+                      children: [
+                        _MetricBlock(
+                          label: '시간',
+                          value: _formatDuration(record.duration),
+                          valueFontSize: 28,
+                        ),
+                        SizedBox(width: AppSpacing.lg),
+                        _MetricBlock(
+                          label: '평균 페이스',
+                          value: record.formattedAveragePace,
+                          valueFontSize: 28,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                // ── 스팟 포인트 배지 ──────────────────────────────────────
+                if (record.spotPoints > 0) ...[
+                  SizedBox(height: AppSpacing.sm),
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: 4.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.08),
+                          borderRadius:
+                              BorderRadius.circular(AppSpacing.radiusFull),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.stars_rounded,
+                                size: 14.r, color: AppColors.primary),
+                            SizedBox(width: 4.w),
+                            Text(
+                              '스팟 ${record.checkedInSpotIds.length}개 · +${record.spotPoints}P',
+                              style: AppTextStyles.labelSmall.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+
+                // 카드 내부 하단 여백
+                SizedBox(height: AppSpacing.verticalMd),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatDuration(Duration d) {
+    final h = d.inHours;
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return h > 0 ? '$h:$m:$s' : '$m:$s';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _RunButton
+// ---------------------------------------------------------------------------
+
+class _RunButton extends StatelessWidget {
+  const _RunButton({required this.isRunning, required this.onTap});
+
+  final bool isRunning;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isRunning ? AppColors.error : AppColors.primary;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 62.r,
+        height: 62.r,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.35),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Icon(
+          isRunning ? Icons.stop_rounded : Icons.play_arrow_rounded,
+          color: Colors.white,
+          size: 32.r,
+        ),
       ),
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// _MetricBlock
+// ---------------------------------------------------------------------------
+
+class _MetricBlock extends StatelessWidget {
+  const _MetricBlock({
+    required this.label,
+    required this.value,
+    this.labelColor = AppColors.textSecondary,
+    this.valueFontSize,
+  });
+
+  final String label;
+  final String value;
+  final Color labelColor;
+  final double? valueFontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.labelSmall.copyWith(
+            color: labelColor,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ),
+        SizedBox(height: 2.h),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: (valueFontSize ?? 44).sp,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+            letterSpacing: -1.5,
+            height: 1.0,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _ErrorBanner
+// ---------------------------------------------------------------------------
 
 class _ErrorBanner extends StatelessWidget {
   const _ErrorBanner({required this.message, required this.onDismiss});
@@ -541,7 +672,6 @@ class _ErrorBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(bottom: AppSpacing.sm),
       padding: EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.sm,

@@ -37,11 +37,9 @@ void main() async {
 Future<void> _initNaverMap() async {
   try {
     await FlutterNaverMap().init(
-      // [보안] API 키는 --dart-define=NAVER_MAP_CLIENT_ID=xxx 로 주입
-      clientId: const String.fromEnvironment(
-        'NAVER_MAP_CLIENT_ID',
-        defaultValue: 'p46djv5v2u', // dev fallback only
-      ),
+      // [보안] API 키는 반드시 --dart-define=NAVER_MAP_CLIENT_ID=xxx 로 주입
+      // defaultValue 없음 — 키 누락 시 onAuthFailed 로 안전하게 처리됨
+      clientId: const String.fromEnvironment('NAVER_MAP_CLIENT_ID'),
       onAuthFailed: (ex) => _logger.e('Naver Map auth failed', error: ex),
     );
   } catch (e) {

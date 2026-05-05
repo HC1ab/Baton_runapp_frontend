@@ -5,39 +5,47 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 
 /// Shown while AuthNotifier.build() reads tokens from secure storage.
-/// GoRouter redirects away automatically once auth state resolves.
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
+      backgroundColor: AppColors.backgroundLight,
       body: SafeArea(
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Brand icon placeholder
-              Icon(
-                Icons.directions_run_rounded,
-                size: 64.r,
-                color: AppColors.primary,
+              // Logo circle
+              Container(
+                width: 72.r,
+                height: 72.r,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.directions_run_rounded,
+                  color: Colors.white,
+                  size: 36.r,
+                ),
               ),
-              SizedBox(height: 16.h),
+              SizedBox(height: 20.h),
               Text(
                 'RunApp',
                 style: AppTextStyles.displayMedium.copyWith(
                   color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               SizedBox(height: 48.h),
               SizedBox(
-                width: 24.r,
-                height: 24.r,
-                child: const CircularProgressIndicator(
+                width: 22.r,
+                height: 22.r,
+                child: CircularProgressIndicator(
                   color: AppColors.primary,
-                  strokeWidth: 2,
+                  strokeWidth: 2.5,
                 ),
               ),
             ],

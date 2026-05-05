@@ -3,7 +3,6 @@ import 'package:logger/logger.dart';
 
 import '../../../core/constants/error_messages.dart';
 import '../../../core/error/app_exception.dart';
-import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import 'auth_provider.dart';
 
@@ -49,7 +48,6 @@ class LoginNotifier extends Notifier<LoginState> {
     required String email,
     required String password,
   }) async {
-    // Client-side validation
     final validationError = _validate(email: email, password: password);
     if (validationError != null) {
       state = LoginState(
@@ -108,8 +106,6 @@ class LoginNotifier extends Notifier<LoginState> {
       state = const LoginState();
     }
   }
-
-  // --- Validation ---
 
   String? _validate({required String email, required String password}) {
     if (email.trim().isEmpty) return ErrorMessages.emptyEmail;

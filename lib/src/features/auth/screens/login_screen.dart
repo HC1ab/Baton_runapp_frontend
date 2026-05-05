@@ -5,8 +5,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
-import '../../../core/constants/error_messages.dart';
 import '../providers/login_provider.dart';
+
+// Injected via --dart-define=IS_DEV=true
+const bool _isDev = bool.fromEnvironment('IS_DEV', defaultValue: true);
+
+const _devEmail = 'dev@runapp.kr';
+const _devPassword = '1234';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -22,6 +27,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _obscurePassword = true;
 
   @override
+  void initState() {
+    super.initState();
+    if (_isDev) {
+      _emailController.text = _devEmail;
+      _passwordController.text = _devPassword;
+    }
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
@@ -29,35 +43,47 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _submit() async {
-    // Dismiss keyboard
     FocusScope.of(context).unfocus();
-
     await ref.read(loginProvider.notifier).login(
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
-    // GoRouter redirect handles navigation on success — no manual push needed.
   }
 
   @override
   Widget build(BuildContext context) {
     final loginState = ref.watch(loginProvider);
-    final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: AppColors.backgroundLight,
       body: SafeArea(
         child: GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
           child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.screenHorizontal,
+            ),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  SizedBox(height: 80.h),
-                  _Header(),
-                  SizedBox(height: 48.h),
+                  SizedBox(height: 64.h),
+                  const _Header(),
+                  SizedBox(height: 40.h),
+
+                  // Dev mode banner
+                  if (_isDev) ...[
+                    _DevBanner(
+                      onQuickLogin: () {
+                        _emailController.text = _devEmail;
+                        _passwordController.text = _devPassword;
+                        _submit();
+                      },
+                    ),
+                    SizedBox(height: AppSpacing.verticalMd),
+                  ],
+
                   _EmailField(controller: _emailController),
                   SizedBox(height: AppSpacing.verticalMd),
                   _PasswordField(
@@ -82,7 +108,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
 
-                  SizedBox(height: AppSpacing.verticalLg),
+                  SizedBox(height: AppSpacing.verticalXl),
                   _LoginButton(
                     isLoading: loginState.isLoading,
                     onPressed: loginState.isLoading ? null : _submit,
@@ -99,34 +125,108 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 }
 
 // ---------------------------------------------------------------------------
-// Sub-widgets (private — single file, not extracted to separate files
-// because total line count stays well under 1000)
+// Sub-widgets
 // ---------------------------------------------------------------------------
 
 class _Header extends StatelessWidget {
+  const _Header();
+
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          Icons.directions_run_rounded,
-          size: 40.r,
-          color: AppColors.primary,
+        // Logo circle
+        Container(
+          width: 52.r,
+          height: 52.r,
+          decoration: const BoxDecoration(
+            color: AppColors.primary,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.directions_run_rounded,
+            color: Colors.white,
+            size: 28.r,
+          ),
         ),
-        SizedBox(height: 16.h),
+        SizedBox(height: 24.h),
         Text(
           '반갑습니다 👋',
-          style: AppTextStyles.displayMedium,
+          style: AppTextStyles.displayMedium.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         SizedBox(height: 8.h),
         Text(
           '로그인하고 오늘의 러닝을 시작해보세요.',
           style: AppTextStyles.bodyMedium.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            color: AppColors.textSecondary,
           ),
         ),
       ],
+    );
+  }
+}
+
+class _DevBanner extends StatelessWidget {
+  const _DevBanner({required this.onQuickLogin});
+
+  final VoidCallback onQuickLogin;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.construction_rounded,
+            size: 15.r,
+            color: AppColors.primary,
+          ),
+          SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              '개발 모드 · $_devEmail',
+              style: AppTextStyles.labelSmall.copyWith(
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: onQuickLogin,
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: 4.h,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+              ),
+              child: Text(
+                '바로 입장',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -143,6 +243,7 @@ class _EmailField extends StatelessWidget {
       keyboardType: TextInputType.emailAddress,
       textInputAction: TextInputAction.next,
       autofillHints: const [AutofillHints.email],
+      style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: '이메일',
         hintText: 'hello@example.com',
@@ -173,12 +274,16 @@ class _PasswordField extends StatelessWidget {
       obscureText: obscure,
       textInputAction: TextInputAction.done,
       autofillHints: const [AutofillHints.password],
+      style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: '비밀번호',
         prefixIcon: const Icon(Icons.lock_outline),
         suffixIcon: IconButton(
           icon: Icon(
-            obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+            obscure
+                ? Icons.visibility_outlined
+                : Icons.visibility_off_outlined,
+            color: AppColors.textSecondary,
           ),
           onPressed: onToggleObscure,
         ),
@@ -202,28 +307,31 @@ class _LoginButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 52.h,
+      height: 54.h,
       child: FilledButton(
         onPressed: onPressed,
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.primary,
+          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
           ),
+          elevation: 0,
         ),
         child: isLoading
             ? SizedBox(
-                width: 20.r,
-                height: 20.r,
+                width: 22.r,
+                height: 22.r,
                 child: const CircularProgressIndicator(
                   color: Colors.white,
-                  strokeWidth: 2,
+                  strokeWidth: 2.5,
                 ),
               )
             : Text(
                 '로그인',
                 style: AppTextStyles.labelLarge.copyWith(
                   color: Colors.white,
+                  fontSize: 16,
                 ),
               ),
       ),

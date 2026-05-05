@@ -16,4 +16,12 @@ abstract final class ApiConstants {
   static const join = '/api/v1/member/join';
   static const me = '/api/v1/member/me';
   static const refresh = '/api/v1/member/refresh';
+
+  // Endpoints — Run
+  static const runStart = '/api/v1/runs/start';
+  static const runFinish = '/api/v1/runs'; // + /{runId}/finish
+
+  // Endpoints — Spot
+  static const spots = '/api/v1/spots';
+  static const spotsNearby = '/api/v1/spots/nearby';
 }

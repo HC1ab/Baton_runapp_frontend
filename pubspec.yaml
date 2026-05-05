@@ -5,7 +5,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.11.1
+  sdk: ^3.5.0
 
 dependencies:
   flutter:
@@ -13,47 +13,47 @@ dependencies:
 
   # UI
   cupertino_icons: ^1.0.8
-  flutter_screenutil: ^5.9.3   # ✅ iOS 지원 확인됨
+  flutter_screenutil: ^5.9.3      # ✅ iOS 지원 확인됨
 
   # State management
-  flutter_riverpod: ^3.3.1     # ✅ iOS 지원 확인됨
-  riverpod_annotation: ^3.3.1  # ✅ iOS 지원 확인됨
+  flutter_riverpod: ^2.6.1        # ✅ iOS 지원 확인됨
+  riverpod_annotation: ^2.6.1     # ✅ iOS 지원 확인됨
 
   # Navigation
-  go_router: ^14.8.1           # ✅ iOS 지원 확인됨
+  go_router: ^14.8.1              # ✅ iOS 지원 확인됨
 
   # Network
-  dio: ^5.9.0                  # ✅ iOS 지원 확인됨
+  dio: ^5.9.0                     # ✅ iOS 지원 확인됨
 
   # Storage
   flutter_secure_storage: ^9.2.4  # ✅ iOS 지원 확인됨
 
   # Logging
-  logger: ^2.5.0               # ✅ iOS 지원 확인됨
+  logger: ^2.5.0                  # ✅ iOS 지원 확인됨
 
   # Code generation
-  freezed_annotation: ^2.4.4   # ✅ iOS 지원 확인됨
-  json_annotation: ^4.9.0      # ✅ iOS 지원 확인됨
+  freezed_annotation: ^3.0.0      # ✅ custom_lint 0.7.4+ 요구 버전으로 업그레이드
+  json_annotation: ^4.9.0         # ✅ iOS 지원 확인됨
 
   # Map & Location
-  flutter_naver_map: ^1.4.4    # ⚠️ iOS 별도 설정 필요 (NMFAuthManager 초기화)
-  geolocator: ^14.0.2          # ✅ iOS 지원 확인됨 (Info.plist 키 추가 필요)
-  permission_handler: ^12.0.1  # ✅ iOS 지원 확인됨 (Info.plist 키 추가 필요)
+  flutter_naver_map: ^1.4.4       # ⚠️ iOS 별도 설정 필요 (NMFAuthManager 초기화)
+  geolocator: ^14.0.2             # ✅ iOS 지원 확인됨 (Info.plist 키 추가 필요)
+  permission_handler: ^12.0.1     # ✅ iOS 지원 확인됨 (Info.plist 키 추가 필요)
 
   # Utils
-  intl: ^0.20.2                # ✅ iOS 지원 확인됨
-  blurhash_dart: ^1.2.1        # ✅ iOS 지원 확인됨
+  intl: ^0.20.2                   # ✅ iOS 지원 확인됨
+  blurhash_dart: ^1.2.1           # ✅ iOS 지원 확인됨
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
   build_runner: ^2.4.15
-  freezed: ^2.5.8
+  freezed: ^3.0.0                 # freezed_annotation 3.x 에 맞는 버전
   json_serializable: ^6.9.5
-  riverpod_generator: ^3.3.1
+  riverpod_generator: ^2.6.2      # flutter_riverpod 2.x 에 맞는 버전
   custom_lint: ^0.7.5
-  riverpod_lint: ^3.3.1
+  riverpod_lint: ^2.6.2           # flutter_riverpod 2.x 에 맞는 버전
 
 flutter:
   uses-material-design: true

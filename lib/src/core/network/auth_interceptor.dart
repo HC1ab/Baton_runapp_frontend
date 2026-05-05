@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
 import '../constants/api_constants.dart';
-import '../constants/storage_keys.dart';
 import '../storage/token_storage.dart';
 
 final _logger = Logger();
@@ -67,12 +66,16 @@ class AuthInterceptor extends Interceptor {
       );
 
       final data = refreshResponse.data;
-      if (data is! Map<String, dynamic> || data['success'] != true) {
+      if (data is! Map<String, Object?> || data['success'] != true) {
         await _clearAndForward(handler, err);
         return;
       }
 
-      final newAccess = data['data']?['accessToken']?.toString() ?? '';
+      final dataMap = data['data'];
+      final newAccess = dataMap is Map<String, Object?>
+          ? (dataMap['accessToken']?.toString() ?? '')
+          : '';
+
       if (newAccess.isEmpty) {
         await _clearAndForward(handler, err);
         return;
@@ -102,8 +105,6 @@ class AuthInterceptor extends Interceptor {
     DioException err,
   ) async {
     await _ref.read(tokenStorageProvider).clear();
-    // AuthNotifier.build() watches tokenStorageProvider — clearing triggers
-    // re-evaluation and GoRouter redirect to /login.
     handler.next(err);
   }
 }

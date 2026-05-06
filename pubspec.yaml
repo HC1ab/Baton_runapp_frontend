@@ -40,6 +40,9 @@ dependencies:
   geolocator: ^14.0.2             # ✅ iOS 지원 확인됨 (Info.plist 키 추가 필요)
   permission_handler: ^12.0.1     # ✅ iOS 지원 확인됨 (Info.plist 키 추가 필요)
 
+  # Env
+  flutter_dotenv: ^5.2.1          # ✅ iOS 지원 확인됨 (.env 파일 로드)
+
   # Utils
   intl: ^0.20.2                   # ✅ iOS 지원 확인됨
   blurhash_dart: ^1.2.1           # ✅ iOS 지원 확인됨
@@ -57,3 +60,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - .env.dev
+    - .env.prod

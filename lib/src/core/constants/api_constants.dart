@@ -1,10 +1,11 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 /// API endpoint and timeout constants.
 abstract final class ApiConstants {
-  // Base URL is injected via --dart-define=API_BASE_URL=https://...
-  static const baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8080', // Android emulator localhost
-  );
+  // .env 파일에서 API_BASE_URL 읽기
+  // 없으면 Android 에뮬레이터 localhost 기본값 사용
+  static String get baseUrl =>
+      dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:8080';
 
   // Timeouts
   static const connectTimeoutMs = 5000;

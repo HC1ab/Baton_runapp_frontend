@@ -113,8 +113,12 @@ class SpotService implements SpotServiceBase {
     if (status == 401) return const AuthException();
     if (status != null && status >= 500) return const ServerException();
     if (e.type == DioExceptionType.connectionTimeout ||
-        e.type == DioExceptionType.receiveTimeout) return const TimeoutException();
-    if (e.type == DioExceptionType.connectionError) return const NetworkException();
+        e.type == DioExceptionType.receiveTimeout) {
+      return const TimeoutException();
+    }
+    if (e.type == DioExceptionType.connectionError) {
+      return const NetworkException();
+    }
     return const UnknownException();
   }
 }

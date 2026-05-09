@@ -39,6 +39,7 @@ dependencies:
   flutter_naver_map: ^1.4.4       # ⚠️ iOS 별도 설정 필요 (NMFAuthManager 초기화)
   geolocator: ^14.0.2             # ✅ iOS 지원 확인됨 (Info.plist 키 추가 필요)
   permission_handler: ^12.0.1     # ✅ iOS 지원 확인됨 (Info.plist 키 추가 필요)
+  geocoding: ^3.0.0               # ✅ iOS 지원 확인됨 (역지오코딩 — 좌표→주소)
 
   # Env
   flutter_dotenv: ^5.2.1          # ✅ iOS 지원 확인됨 (.env 파일 로드)

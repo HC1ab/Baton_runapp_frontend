@@ -6,7 +6,7 @@ import 'tab_registry.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/running/screens/running_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
-import '../../features/social/screens/social_group_running_screen.dart';
+import '../../features/social/social_feed_screen.dart';
 
 /// 앱 전체 탭 목록을 제공하는 provider.
 /// HomeScreen은 이 provider만 watch하고 feature를 직접 import하지 않음.
@@ -33,6 +33,6 @@ Widget _buildSpot(BuildContext _) => const PlaceholderTab(
       label: '스팟',
     );
 
-Widget _buildSocial(BuildContext _) => const SocialGroupRunningScreen();
+Widget _buildSocial(BuildContext _) => const SocialFeedScreen();
 
 Widget _buildProfile(BuildContext _) => const ProfileScreen();

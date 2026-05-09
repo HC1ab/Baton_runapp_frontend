@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
 import '../../../core/storage/token_storage.dart';
-import '../models/user_model.dart';
 import '../services/auth_service.dart';
 
 final _logger = Logger();
@@ -21,10 +20,10 @@ final class AuthStateLoading extends AuthState {
   const AuthStateLoading();
 }
 
-/// User is authenticated and profile is loaded.
+/// User is authenticated.
+/// UserModel은 /me API 구현 후 추가 예정
 final class AuthStateAuthenticated extends AuthState {
-  const AuthStateAuthenticated(this.user);
-  final UserModel user;
+  const AuthStateAuthenticated();
 }
 
 /// User is not authenticated (no token, token invalid, or logged out).
@@ -45,7 +44,8 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   /// Called once on app startup.
-  /// Reads stored token → validates with server → sets state.
+  /// Reads stored token → token 존재 여부만 확인 → sets state.
+  /// (getMe 검증은 /me API 구현 후 추가 예정)
   Future<void> _initialize() async {
     try {
       final storage = ref.read(tokenStorageProvider);
@@ -56,22 +56,21 @@ class AuthNotifier extends Notifier<AuthState> {
         return;
       }
 
-      // Validate token by fetching user profile.
-      final service = ref.read(authServiceProvider);
-      final user = await service.getMe(pair.accessToken);
-      state = AuthStateAuthenticated(user);
+      // 토큰이 존재하면 인증된 상태로 처리
+      // TODO: /me API 구현 후 토큰 유효성 검증 추가
+      state = const AuthStateAuthenticated();
     } catch (e) {
       _logger.w('Auth initialization failed', error: e);
-      // Clear potentially invalid token.
       await ref.read(tokenStorageProvider).clear();
       state = const AuthStateUnauthenticated();
     }
   }
 
   /// Called from LoginNotifier after a successful login response.
-  Future<void> onLoginSuccess(TokenPair pair, UserModel user) async {
+  Future<void> onLoginSuccess(TokenPair pair) async {
     await ref.read(tokenStorageProvider).write(pair);
-    state = AuthStateAuthenticated(user);
+    _logger.i('Token saved — access: ${pair.accessToken.substring(0, 20)}...');
+    state = const AuthStateAuthenticated();
   }
 
   /// Clears token and returns to unauthenticated state.

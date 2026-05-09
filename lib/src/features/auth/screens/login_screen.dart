@@ -7,11 +7,8 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../providers/login_provider.dart';
 
-// Injected via --dart-define=IS_DEV=true
-const bool _isDev = bool.fromEnvironment('IS_DEV', defaultValue: true);
-
-const _devEmail = 'dev@runapp.kr';
-const _devPassword = '1234';
+const _devEmail = 'username1234@naver.com';
+const _devPassword = 'password1234';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -29,7 +26,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    if (_isDev) {
+    // dev 환경에서 테스트 계정 자동 입력
+    if (const String.fromEnvironment('ENV', defaultValue: 'dev') == 'dev') {
       _emailController.text = _devEmail;
       _passwordController.text = _devPassword;
     }
@@ -73,7 +71,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   SizedBox(height: 40.h),
 
                   // Dev mode banner
-                  if (_isDev) ...[
+                  if (const String.fromEnvironment('ENV', defaultValue: 'dev') == 'dev') ...[
                     _DevBanner(
                       onQuickLogin: () {
                         _emailController.text = _devEmail;

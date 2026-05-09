@@ -30,6 +30,9 @@ class AuthInterceptor extends Interceptor {
     final pair = await storage.read();
     if (pair != null) {
       options.headers['Authorization'] = 'Bearer ${pair.accessToken}';
+      _logger.d('Token attached to ${options.method} ${options.path}');
+    } else {
+      _logger.w('No token found for ${options.method} ${options.path}');
     }
     handler.next(options);
   }

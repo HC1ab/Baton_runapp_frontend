@@ -13,8 +13,7 @@ import '../../../core/constants/app_text_styles.dart';
 import '../models/run_record_model.dart';
 import '../providers/running_provider.dart';
 import 'widgets/running_mock_panel.dart';
-
-const bool _isDev = bool.fromEnvironment('IS_DEV', defaultValue: true);
+import '../../../core/constants/app_env.dart';
 
 const _defaultCamera = NCameraPosition(
   target: NLatLng(37.5113, 126.9940),
@@ -64,10 +63,11 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   // -------------------------------------------------------------------------
 
   Future<void> _init() async {
-    await ref.read(runningProvider.notifier).initialize(useMock: _isDev);
+    final useMockGps = ref.read(useMockGpsProvider);
+    await ref.read(runningProvider.notifier).initialize(useMock: useMockGps);
     if (!mounted) return;
 
-    if (_isDev) {
+    if (useMockGps) {
       _mockPos = _makeMockPos(lat: 37.5113, lng: 126.9940, speed: 0);
       await ref
           .read(runningProvider.notifier)
@@ -320,7 +320,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
             bottom: AppSpacing.sm,
             child: _BottomPanel(
               record: record,
-              isDev: _isDev,
+              isDev: ref.read(useMockGpsProvider),
               mockStepMeters: _mockStepMeters,
               mockAutoWalk: _mockAutoWalk,
               bottomExpanded: _bottomExpanded,

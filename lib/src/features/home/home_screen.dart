@@ -8,7 +8,6 @@ import '../../core/constants/app_routes.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/shell/shell_providers.dart';
-import '../../core/shell/tab_registry.dart';
 
 /// Root shell: owns the bottom nav + IndexedStack.
 /// Does NOT import any feature directly — tabs are registered via [TabRegistry].

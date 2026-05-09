@@ -30,6 +30,10 @@ class RunService implements RunServiceBase {
         data: {'startTime': startTimeIsoLocal},
       );
       final data = _unwrap(res.data);
+      // 서버 응답: data: {runId: 1, memberId: 1}
+      if (data is Map<String, dynamic>) {
+        return (data['runId'] as num).toInt();
+      }
       return (data as num).toInt();
     } on AppException {
       rethrow;

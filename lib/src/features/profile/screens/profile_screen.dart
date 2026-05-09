@@ -9,8 +9,8 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authProvider);
-    final user = authState is AuthStateAuthenticated ? authState.user : null;
+    // TODO: /me API 구현 후 실제 유저 정보로 교체
+    final UserModel? user = null;
 
     return SafeArea(
       child: ListView(
@@ -35,7 +35,7 @@ class ProfileScreen extends ConsumerWidget {
               ),
               const Spacer(),
               IconButton(
-                onPressed: user == null ? null : () => ref.read(authProvider.notifier).logout(),
+                onPressed: () => ref.read(authProvider.notifier).logout(),
                 icon: const Icon(Icons.logout_rounded),
                 tooltip: '로그아웃',
               ),

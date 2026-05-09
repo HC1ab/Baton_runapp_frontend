@@ -17,6 +17,7 @@ abstract final class ApiConstants {
   static const join = '/api/v1/member/join';
   static const me = '/api/v1/member/me';
   static const refresh = '/api/v1/member/refresh';
+  static const password = '/api/v1/member/password';
 
   // Endpoints — Run
   static const runStart = '/api/v1/runs/start';

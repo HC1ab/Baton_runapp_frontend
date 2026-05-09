@@ -5,32 +5,45 @@ import 'package:logger/logger.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/constants/error_messages.dart';
 import '../../../core/error/app_exception.dart';
+import '../../../core/network/dio_client.dart';
 import '../../../core/storage/token_storage.dart';
 import '../models/user_model.dart';
 
 final _logger = Logger();
 
-/// Abstract interface — allows MockAuthService to substitute in dev mode.
+/// Abstract interface for auth operations.
 abstract class AuthServiceBase {
   Future<TokenPair> login({
     required String email,
     required String password,
   });
 
+  Future<TokenPair> join({
+    required String email,
+    required String password,
+    required String realname,
+    required String nickname,
+  });
+
   Future<UserModel> getMe(String accessToken);
 
   Future<void> logout();
+
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  });
 }
 
 // ---------------------------------------------------------------------------
+// Real implementation
+// ---------------------------------------------------------------------------
 
-/// Real implementation using Dio.
-/// All API calls live here — never call Dio outside service files.
 class AuthService implements AuthServiceBase {
   const AuthService(this._dio);
-
   final Dio _dio;
 
+  // ── Login ────────────────────────────────────────────────────────────────
   @override
   Future<TokenPair> login({
     required String email,
@@ -47,18 +60,59 @@ class AuthService implements AuthServiceBase {
       }
       final access = (data['accessToken'] ?? '').toString();
       final refresh = (data['refreshToken'] ?? '').toString();
-      if (access.isEmpty) throw const ServerException(ErrorMessages.invalidResponse);
+      if (access.isEmpty) {
+        throw const ServerException(ErrorMessages.invalidResponse);
+      }
       return TokenPair(accessToken: access, refreshToken: refresh);
     } on AppException {
       rethrow;
     } on DioException catch (e) {
-      throw _mapDioError(e);
+      throw _mapDio(e);
     } catch (e) {
       _logger.e('login error', error: e);
       throw const UnknownException();
     }
   }
 
+  // ── Join ─────────────────────────────────────────────────────────────────
+  @override
+  Future<TokenPair> join({
+    required String email,
+    required String password,
+    required String realname,
+    required String nickname,
+  }) async {
+    try {
+      final response = await _dio.post(
+        ApiConstants.join,
+        data: {
+          'email': email,
+          'password': password,
+          'realname': realname,
+          'nickname': nickname,
+        },
+      );
+      final data = _unwrap(response.data);
+      if (data is! Map<String, dynamic>) {
+        throw const ServerException(ErrorMessages.invalidResponse);
+      }
+      final access = (data['accessToken'] ?? '').toString();
+      final refresh = (data['refreshToken'] ?? '').toString();
+      if (access.isEmpty) {
+        throw const ServerException(ErrorMessages.invalidResponse);
+      }
+      return TokenPair(accessToken: access, refreshToken: refresh);
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _mapDio(e);
+    } catch (e) {
+      _logger.e('join error', error: e);
+      throw const UnknownException();
+    }
+  }
+
+  // ── GetMe ────────────────────────────────────────────────────────────────
   @override
   Future<UserModel> getMe(String accessToken) async {
     try {
@@ -76,13 +130,14 @@ class AuthService implements AuthServiceBase {
     } on AppException {
       rethrow;
     } on DioException catch (e) {
-      throw _mapDioError(e);
+      throw _mapDio(e);
     } catch (e) {
       _logger.e('getMe error', error: e);
       throw const UnknownException();
     }
   }
 
+  // ── Logout ───────────────────────────────────────────────────────────────
   @override
   Future<void> logout() async {
     try {
@@ -90,26 +145,54 @@ class AuthService implements AuthServiceBase {
     } on AppException {
       rethrow;
     } on DioException catch (e) {
-      throw _mapDioError(e);
+      throw _mapDio(e);
     } catch (e) {
       _logger.e('logout error', error: e);
       throw const UnknownException();
     }
   }
 
-  // --- Helpers ---
+  // ── Change Password ───────────────────────────────────────────────────────
+  @override
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    try {
+      await _dio.patch(
+        ApiConstants.password,
+        data: {
+          'oldPassword': oldPassword,
+          'newPassword': newPassword,
+        },
+      );
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _mapDio(e);
+    } catch (e) {
+      _logger.e('changePassword error', error: e);
+      throw const UnknownException();
+    }
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
 
   /// Unwraps { success: true, data: ... } envelope.
+  /// Also handles { status: 'fail', code: ..., message: ... } format.
   dynamic _unwrap(dynamic raw) {
     if (raw is Map<String, dynamic>) {
+      // 성공 응답: { success: true, data: ... }
       if (raw['success'] == true) return raw['data'];
-      final msg = (raw['message'] ?? ErrorMessages.serverError).toString();
+
+      // 실패 응답: { status: 'fail', message: ... }
+      final msg = (raw['message'] ?? raw['error'] ?? ErrorMessages.serverError).toString();
       throw ServerException(msg);
     }
     throw const ServerException(ErrorMessages.invalidResponse);
   }
 
-  AppException _mapDioError(DioException e) {
+  AppException _mapDio(DioException e) {
     final status = e.response?.statusCode;
     if (status == 401) return const AuthException();
     if (status != null && status >= 500) return const ServerException();
@@ -128,20 +211,14 @@ class AuthService implements AuthServiceBase {
 // Provider
 // ---------------------------------------------------------------------------
 
-/// Swap to mockAuthServiceProvider in dev mode via override in main.dart.
 final authServiceProvider = Provider<AuthServiceBase>((ref) {
-  // Dio instance here is a plain one — token attachment is handled by
-  // AuthInterceptor in dio_client.dart (used for other requests).
-  // Login/getMe use their own header logic inside the service.
-  final dio = Dio(
-    BaseOptions(
-      baseUrl: ApiConstants.baseUrl,
-      connectTimeout:
-          const Duration(milliseconds: ApiConstants.connectTimeoutMs),
-      receiveTimeout:
-          const Duration(milliseconds: ApiConstants.receiveTimeoutMs),
-      headers: {'Content-Type': 'application/json'},
-    ),
-  );
-  return AuthService(dio);
+  // dioProvider 재사용 → ApiLogInterceptor 자동 적용
+  // AuthInterceptor가 붙어있지만 login/join은 토큰 없이 호출하므로 문제없음
+  // [iOS 대응] iOS 인증서 문제 발생 시 dio_client.dart의 AuthInterceptor 확인 필요
+  return AuthService(ref.watch(dioProvider));
+});
+
+/// changePassword는 인증된 상태에서 호출 → AuthInterceptor가 붙은 Dio 사용
+final authServiceWithTokenProvider = Provider<AuthServiceBase>((ref) {
+  return AuthService(ref.watch(dioProvider));
 });

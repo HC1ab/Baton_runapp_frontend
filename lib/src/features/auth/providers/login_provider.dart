@@ -37,7 +37,7 @@ class LoginState {
 }
 
 // ---------------------------------------------------------------------------
-// Notifier
+// Login Notifier
 // ---------------------------------------------------------------------------
 
 class LoginNotifier extends Notifier<LoginState> {
@@ -61,16 +61,8 @@ class LoginNotifier extends Notifier<LoginState> {
 
     try {
       final service = ref.read(authServiceProvider);
-
-      // 1. Get tokens
       final pair = await service.login(email: email, password: password);
-
-      // 2. Fetch user profile
-      final user = await service.getMe(pair.accessToken);
-
-      // 3. Persist tokens + update global auth state
-      await ref.read(authProvider.notifier).onLoginSuccess(pair, user);
-
+      await ref.read(authProvider.notifier).onLoginSuccess(pair);
       state = const LoginState(status: LoginStatus.success);
     } on AuthException {
       state = const LoginState(
@@ -88,10 +80,7 @@ class LoginNotifier extends Notifier<LoginState> {
         errorMessage: ErrorMessages.timeoutError,
       );
     } on AppException catch (e) {
-      state = LoginState(
-        status: LoginStatus.error,
-        errorMessage: e.message,
-      );
+      state = LoginState(status: LoginStatus.error, errorMessage: e.message);
     } catch (e) {
       _logger.e('Unexpected login error', error: e);
       state = const LoginState(
@@ -120,9 +109,104 @@ class LoginNotifier extends Notifier<LoginState> {
 }
 
 // ---------------------------------------------------------------------------
-// Provider
+// Join Notifier
+// ---------------------------------------------------------------------------
+
+enum JoinStatus { idle, loading, success, error }
+
+class JoinState {
+  const JoinState({
+    this.status = JoinStatus.idle,
+    this.errorMessage,
+  });
+
+  final JoinStatus status;
+  final String? errorMessage;
+
+  bool get isLoading => status == JoinStatus.loading;
+
+  JoinState copyWith({JoinStatus? status, String? errorMessage}) {
+    return JoinState(
+      status: status ?? this.status,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
+}
+
+class JoinNotifier extends Notifier<JoinState> {
+  @override
+  JoinState build() => const JoinState();
+
+  Future<void> join({
+    required String email,
+    required String password,
+    required String realname,
+    required String nickname,
+  }) async {
+    final error = _validate(
+      email: email,
+      password: password,
+      realname: realname,
+      nickname: nickname,
+    );
+    if (error != null) {
+      state = JoinState(status: JoinStatus.error, errorMessage: error);
+      return;
+    }
+
+    state = const JoinState(status: JoinStatus.loading);
+
+    try {
+      final service = ref.read(authServiceProvider);
+      final pair = await service.join(
+        email: email,
+        password: password,
+        realname: realname,
+        nickname: nickname,
+      );
+      await ref.read(authProvider.notifier).onLoginSuccess(pair);
+      state = const JoinState(status: JoinStatus.success);
+    } on AppException catch (e) {
+      state = JoinState(status: JoinStatus.error, errorMessage: e.message);
+    } catch (e) {
+      _logger.e('Unexpected join error', error: e);
+      state = const JoinState(
+        status: JoinStatus.error,
+        errorMessage: ErrorMessages.unknownError,
+      );
+    }
+  }
+
+  void resetError() {
+    if (state.status == JoinStatus.error) state = const JoinState();
+  }
+
+  String? _validate({
+    required String email,
+    required String password,
+    required String realname,
+    required String nickname,
+  }) {
+    if (email.trim().isEmpty) return ErrorMessages.emptyEmail;
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+      return ErrorMessages.invalidEmail;
+    }
+    if (password.isEmpty) return ErrorMessages.emptyPassword;
+    if (password.length < 8) return '비밀번호는 8자 이상이어야 해요.';
+    if (realname.trim().isEmpty) return '이름을 입력해주세요.';
+    if (nickname.trim().isEmpty) return '닉네임을 입력해주세요.';
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Providers
 // ---------------------------------------------------------------------------
 
 final loginProvider = NotifierProvider<LoginNotifier, LoginState>(
   LoginNotifier.new,
+);
+
+final joinProvider = NotifierProvider<JoinNotifier, JoinState>(
+  JoinNotifier.new,
 );

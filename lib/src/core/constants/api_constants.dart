@@ -16,7 +16,8 @@ abstract final class ApiConstants {
   static const logout = '/api/v1/member/logout';
   static const join = '/api/v1/member/join';
   static const me = '/api/v1/member/me';
-  static const refresh = '/api/v1/member/refresh';
+  // TODO: refresh API 구현 후 활성화
+  // static const refresh = '/api/v1/member/refresh';
   static const password = '/api/v1/member/password';
 
   // Endpoints — Run

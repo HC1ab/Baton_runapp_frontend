@@ -36,10 +36,11 @@ class SpotService implements SpotServiceBase {
     required double longitude,
   }) async {
     try {
+      // GET /api/v1/spots/nearby?latitude=...&longitude=...
       // [iOS 대응] iOS에서 동일하게 동작 확인 필요
-      final res = await _dio.post(
+      final res = await _dio.get(
         ApiConstants.spotsNearby,
-        data: {'latitude': latitude, 'longitude': longitude},
+        queryParameters: {'latitude': latitude, 'longitude': longitude},
       );
       final data = _unwrap(res.data);
       if (data is! List) throw const ServerException();

@@ -46,12 +46,6 @@ lib/
 └── main.dart                      # 진입점 (Naver Map 초기화)
 ```
 
-## 실행
-
-```bash
-cd runapp
-flutter run
-```
 
 ## 백엔드 연결
 

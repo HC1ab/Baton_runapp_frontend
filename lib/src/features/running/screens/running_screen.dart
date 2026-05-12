@@ -16,7 +16,7 @@ import 'widgets/running_mock_panel.dart';
 import '../../../core/constants/app_env.dart';
 
 const _defaultCamera = NCameraPosition(
-  target: NLatLng(37.5113, 126.9940),
+  target: NLatLng(35.2475, 129.0914),  // 구서역 1호선
   zoom: 15.0,
 );
 
@@ -68,7 +68,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     if (!mounted) return;
 
     if (useMockGps) {
-      _mockPos = _makeMockPos(lat: 37.5113, lng: 126.9940, speed: 0);
+      _mockPos = _makeMockPos(lat: 35.2475, lng: 129.0914, speed: 0); // 구서역 1호선
       await ref
           .read(runningProvider.notifier)
           .onPositionUpdate(_mockPos!, isDev: true);

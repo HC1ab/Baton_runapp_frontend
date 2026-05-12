@@ -2,24 +2,20 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
-import '../constants/api_constants.dart';
 import '../storage/token_storage.dart';
 
 final _logger = Logger();
 
 /// Attaches Bearer token to every request.
-/// On 401 → attempts silent token refresh → retries original request.
-/// On refresh failure → clears tokens (AuthNotifier watches storage change).
+/// 토큰 갱신(refresh)은 미구현 — 추후 /member/refresh API 구현 후 추가 예정.
+/// 401 발생 시 토큰 클리어 후 에러 전달 (재로그인 필요).
 class AuthInterceptor extends Interceptor {
   AuthInterceptor({
     required Ref ref,
     required Dio dio,
-  })  : _ref = ref,
-        _dio = dio;
+  })  : _ref = ref;
 
   final Ref _ref;
-  final Dio _dio;
-  bool _isRefreshing = false;
 
   @override
   Future<void> onRequest(
@@ -42,72 +38,12 @@ class AuthInterceptor extends Interceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    final status = err.response?.statusCode;
-
-    // Only handle 401 and avoid infinite refresh loop.
-    if (status != 401 || _isRefreshing) {
-      handler.next(err);
-      return;
+    // TODO: /member/refresh API 구현 후 토큰 자동 갱신 로직 추가
+    // 현재는 401 발생 시 토큰 클리어 후 에러 그대로 전달
+    if (err.response?.statusCode == 401) {
+      _logger.w('401 received — clearing token. Re-login required.');
+      await _ref.read(tokenStorageProvider).clear();
     }
-
-    _isRefreshing = true;
-
-    try {
-      final storage = _ref.read(tokenStorageProvider);
-      final pair = await storage.read();
-
-      if (pair == null || pair.refreshToken.isEmpty) {
-        await _clearAndForward(handler, err);
-        return;
-      }
-
-      // Attempt token refresh.
-      final refreshResponse = await _dio.post(
-        ApiConstants.refresh,
-        data: {'refreshToken': pair.refreshToken},
-        options: Options(headers: {'Authorization': null}), // No auth header
-      );
-
-      final data = refreshResponse.data;
-      if (data is! Map<String, Object?> || data['success'] != true) {
-        await _clearAndForward(handler, err);
-        return;
-      }
-
-      final dataMap = data['data'];
-      final newAccess = dataMap is Map<String, Object?>
-          ? (dataMap['accessToken']?.toString() ?? '')
-          : '';
-
-      if (newAccess.isEmpty) {
-        await _clearAndForward(handler, err);
-        return;
-      }
-
-      // Persist new tokens.
-      await storage.write(TokenPair(
-        accessToken: newAccess,
-        refreshToken: pair.refreshToken,
-      ));
-
-      // Retry original request with new token.
-      final retryOptions = err.requestOptions;
-      retryOptions.headers['Authorization'] = 'Bearer $newAccess';
-      final retryResponse = await _dio.fetch(retryOptions);
-      handler.resolve(retryResponse);
-    } catch (e) {
-      _logger.w('Token refresh failed', error: e);
-      await _clearAndForward(handler, err);
-    } finally {
-      _isRefreshing = false;
-    }
-  }
-
-  Future<void> _clearAndForward(
-    ErrorInterceptorHandler handler,
-    DioException err,
-  ) async {
-    await _ref.read(tokenStorageProvider).clear();
     handler.next(err);
   }
 }

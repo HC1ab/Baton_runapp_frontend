@@ -11,18 +11,48 @@ final _logger = Logger();
 
 abstract class SpotServiceBase {
   /// POST /api/v1/spots/nearby
-  /// Body: { latitude, longitude }
   Future<List<SpotSummary>> nearby({
     required double latitude,
     required double longitude,
   });
 
   /// GET /api/v1/spots/{spotId}
-  /// No request body
   Future<SpotDetail> detail(int spotId);
 
   /// POST /api/v1/spots/{spotId}/checkin
-  Future<int> checkIn({required int spotId});
+  Future<CheckInResult> checkIn({
+    required int spotId,
+    required int runId,
+    required double latitude,
+    required double longitude,
+    required String timestamp,
+  });
+}
+
+/// 체크인 성공 결과 모델
+class CheckInResult {
+  const CheckInResult({
+    required this.spotName,
+    required this.earnedPoints,
+    required this.currentTotalPoints,
+    required this.visitLogId,
+    this.isAlreadyCheckedIn = false,
+  });
+
+  final String spotName;
+  final int earnedPoints;
+  final int currentTotalPoints;
+  final int visitLogId;
+  final bool isAlreadyCheckedIn;
+
+  /// 이미 체크인한 스팟 알림용 팩토리
+  factory CheckInResult.alreadyCheckedIn(String spotName) => CheckInResult(
+        spotName: spotName,
+        earnedPoints: 0,
+        currentTotalPoints: 0,
+        visitLogId: 0,
+        isAlreadyCheckedIn: true,
+      );
 }
 
 class SpotService implements SpotServiceBase {
@@ -79,19 +109,49 @@ class SpotService implements SpotServiceBase {
 
   // ── CheckIn ──────────────────────────────────────────────────────────────
   @override
-  Future<int> checkIn({required int spotId}) async {
+  Future<CheckInResult> checkIn({
+    required int spotId,
+    required int runId,
+    required double latitude,
+    required double longitude,
+    required String timestamp,
+  }) async {
     try {
-      final res = await _dio.post('${ApiConstants.spots}/$spotId/checkin');
+      final res = await _dio.post(
+        '${ApiConstants.spots}/$spotId/checkin',
+        data: {
+          'runId': runId,
+          'latitude': latitude,
+          'longitude': longitude,
+          'timestamp': timestamp,
+        },
+      );
       final data = _unwrap(res.data);
-      if (data is num) return data.toInt();
-      if (data is Map<String, Object?>) {
-        final v = data['rewardAmount'] ?? data['points'] ?? data['reward'];
-        if (v is num) return v.toInt();
-      }
-      throw const ServerException();
+      if (data is! Map<String, Object?>) throw const ServerException();
+      return CheckInResult(
+        spotName: data['spotName']?.toString() ?? '',
+        earnedPoints: (data['earnedPoints'] as num?)?.toInt() ?? 0,
+        currentTotalPoints: (data['currentTotalPoints'] as num?)?.toInt() ?? 0,
+        visitLogId: (data['visitLogId'] as num?)?.toInt() ?? 0,
+      );
     } on AppException {
       rethrow;
     } on DioException catch (e) {
+      // 에러 코드별 메시지 처리
+      final data = e.response?.data;
+      if (data is Map<String, Object?>) {
+        final code = data['code']?.toString();
+        final msg = data['message']?.toString() ?? '';
+        switch (code) {
+          case 'C001': throw ServerException('존재하지 않는 러닝 기록이에요.');
+          case 'C002': throw ServerException('본인의 러닝 기록이 아니에요.');
+          case 'C003': throw ServerException('24시간 이내에 이미 체크인했어요.');
+          case 'C004': throw ServerException('반경 30m 밖에서는 체크인할 수 없어요.');
+          case 'C005': throw ServerException('러닝 중에만 체크인할 수 있어요.');
+          case 'S004': throw ServerException('존재하지 않는 스팀이에요.');
+          default: if (msg.isNotEmpty) throw ServerException(msg);
+        }
+      }
       throw _mapDio(e);
     } catch (e) {
       _logger.e('checkIn error', error: e);

@@ -18,8 +18,8 @@ final _logger = Logger();
 // Check-in radius constant
 // ---------------------------------------------------------------------------
 
-/// Maximum distance in meters to allow spot check-in.
-const double spotCheckInRadiusMeters = 15.0;
+/// Maximum distance in meters to allow spot check-in (서버 기준 30m).
+const double spotCheckInRadiusMeters = 30.0;
 
 // ---------------------------------------------------------------------------
 // Notifier
@@ -30,6 +30,7 @@ class RunningNotifier extends Notifier<RunRecordModel> {
   Timer? _clockTimer;
   Timer? _spotsDebounce;
   Position? _lastPosition;
+  Position? _lastSpotsRefreshPos; // 마지막으로 스팀 조회한 위치
   double _filteredPace = 0.0; // Low-pass filtered pace value
 
   @override
@@ -103,10 +104,7 @@ class RunningNotifier extends Notifier<RunRecordModel> {
     // Debounced nearby spot refresh (only when not running or not frozen)
     _debouncedRefreshSpots(position);
 
-    // Auto check-in for spots within radius
-    if (state.isRunning) {
-      _tryAutoCheckIn(position);
-    }
+    // Auto check-in 제거 — 마커 탭으로만 체크인 가능
   }
 
   /// Starts a new running session.
@@ -186,8 +184,14 @@ class RunningNotifier extends Notifier<RunRecordModel> {
       state = state.copyWith(errorMessage: '러닝 중에만 체크인할 수 있어요.');
       return;
     }
+
+    // 이미 체크인한 스팟 → 에러 대신 카드로 알려줌
     if (state.checkedInSpotIds.contains(spot.id)) {
-      state = state.copyWith(errorMessage: '이미 체크인한 스팟이에요.');
+      final alreadyResult = CheckInResult.alreadyCheckedIn(spot.name);
+      state = state.copyWith(lastCheckIn: alreadyResult);
+      Future.delayed(const Duration(seconds: 3), () {
+        state = state.copyWith(clearCheckIn: true);
+      });
       return;
     }
 
@@ -232,8 +236,21 @@ class RunningNotifier extends Notifier<RunRecordModel> {
   }
 
   void _debouncedRefreshSpots(Position pos) {
-    // Freeze spot list while running to prevent layout jumps
+    // 러닝 중에는 스팟 목록 고정
     if (state.isRunning) return;
+
+    // 50m 이상 이동했을 때만 재조회
+    final lastRefresh = _lastSpotsRefreshPos;
+    if (lastRefresh != null) {
+      final moved = Geolocator.distanceBetween(
+        lastRefresh.latitude,
+        lastRefresh.longitude,
+        pos.latitude,
+        pos.longitude,
+      );
+      if (moved < 50.0) return;
+    }
+
     _spotsDebounce?.cancel();
     _spotsDebounce = Timer(const Duration(milliseconds: 600), () async {
       await _loadNearbySpots(pos);
@@ -246,37 +263,38 @@ class RunningNotifier extends Notifier<RunRecordModel> {
             latitude: pos.latitude,
             longitude: pos.longitude,
           );
+      _lastSpotsRefreshPos = pos; // 조회 성공 시에만 위치 저장
       state = state.copyWith(nearbySpots: spots);
     } catch (e) {
-      // Non-fatal: silently ignore spot load failures
       _logger.w('loadNearbySpots failed', error: e);
     }
   }
 
-  void _tryAutoCheckIn(Position pos) {
-    for (final spot in state.nearbySpots) {
-      if (state.checkedInSpotIds.contains(spot.id)) continue;
-
-      final dist = Geolocator.distanceBetween(
-        pos.latitude, pos.longitude,
-        spot.latitude, spot.longitude,
-      );
-      if (dist <= spotCheckInRadiusMeters) {
-        // Fire-and-forget; errors handled inside
-        unawaited(_doCheckIn(spot));
-      }
-    }
-  }
-
   Future<void> _doCheckIn(SpotSummary spot) async {
+    final runId = state.runId;
+    final pos = _lastPosition;
+    if (runId == null || pos == null) return;
+
     try {
-      final gained = await ref.read(spotServiceProvider).checkIn(spotId: spot.id);
+      final result = await ref.read(spotServiceProvider).checkIn(
+            spotId: spot.id,
+            runId: runId,
+            latitude: pos.latitude,
+            longitude: pos.longitude,
+            timestamp: _isoLocal(DateTime.now()),
+          );
       final newIds = {...state.checkedInSpotIds, spot.id};
       state = state.copyWith(
         checkedInSpotIds: newIds,
-        spotPoints: state.spotPoints + gained,
+        spotPoints: state.spotPoints + result.earnedPoints,
+        lastCheckIn: result,
         clearError: true,
       );
+
+      // 3초 후 체크인 카드 자동 제거
+      Future.delayed(const Duration(seconds: 3), () {
+        state = state.copyWith(clearCheckIn: true);
+      });
     } catch (e) {
       _logger.e('checkIn error spot=${spot.id}', error: e);
       state = state.copyWith(errorMessage: _toMessage(e));

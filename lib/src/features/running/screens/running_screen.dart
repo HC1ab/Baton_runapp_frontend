@@ -13,6 +13,7 @@ import '../../../core/constants/app_text_styles.dart';
 import '../models/run_record_model.dart';
 import '../providers/running_provider.dart';
 import 'widgets/running_mock_panel.dart';
+import 'widgets/check_in_result_card.dart';
 import '../../../core/constants/app_env.dart';
 
 const _defaultCamera = NCameraPosition(
@@ -43,6 +44,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
 
   // Overlay cache
   final Map<String, NMarker> _spotMarkers = {};
+  final Map<String, NCircleOverlay> _spotCircles = {};
   NPolylineOverlay? _pathPolyline;
 
   @override
@@ -192,10 +194,11 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   // Overlays
   // -------------------------------------------------------------------------
 
-  void _syncOverlays(RunRecordModel record) {
+  Future<void> _syncOverlays(RunRecordModel record) async {
     final ctrl = _mapCtrl;
     if (ctrl == null) return;
 
+    // 러닝 경로 polyline
     if (record.path.length >= 2) {
       final coords = record.path.map((p) => NLatLng(p.lat, p.lng)).toList();
       final polyline = NPolylineOverlay(
@@ -212,28 +215,91 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     final oldIds = _spotMarkers.keys.toSet();
 
     if (newIds != oldIds || record.checkedInSpotIds.isNotEmpty) {
+      // 기존 마커 + 서클 제거
       ctrl.clearOverlays(type: NOverlayType.marker);
+      ctrl.clearOverlays(type: NOverlayType.circleOverlay);
       _spotMarkers.clear();
+      _spotCircles.clear();
 
       for (final spot in record.nearbySpots) {
         final markerId = 'spot_${spot.id}';
+        final circleId = 'circle_${spot.id}';
         final checked = record.checkedInSpotIds.contains(spot.id);
+        final pos = NLatLng(spot.latitude, spot.longitude);
+
+        // 원형 오버레이 — 미체크인: 반투명 회색 / 체크인: 반투명 주황
+        final circle = NCircleOverlay(
+          id: circleId,
+          center: pos,
+          radius: 30,
+          color: checked
+              ? AppColors.primary.withValues(alpha: 0.25)
+              : const Color(0xFF888888).withValues(alpha: 0.15),
+          outlineColor: checked
+              ? AppColors.primary.withValues(alpha: 0.6)
+              : const Color(0xFF888888).withValues(alpha: 0.4),
+          outlineWidth: checked ? 2 : 1,
+        );
+
+        // 중심 마커 — 체크인 여부에 따라 색상 변경
         final marker = NMarker(
           id: markerId,
-          position: NLatLng(spot.latitude, spot.longitude),
-          caption: NOverlayCaption(text: spot.name),
+          position: pos,
+          icon: await NOverlayImage.fromWidget(
+            widget: Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: checked ? AppColors.primary : Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: checked
+                      ? AppColors.primary
+                      : const Color(0xFF888888).withValues(alpha: 0.6),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                checked
+                    ? Icons.check_rounded
+                    : Icons.location_on_rounded,
+                size: 14,
+                color: checked ? Colors.white : AppColors.primary,
+              ),
+            ),
+            size: const Size(28, 28),
+            context: context,
+          ),
+          caption: NOverlayCaption(
+            text: spot.name,
+            color: checked ? AppColors.primary : AppColors.textSecondary,
+            textSize: 11,
+          ),
           subCaption: NOverlayCaption(
-            text: checked
-                ? '✅ +${spot.rewardAmount}P'
-                : '+${spot.rewardAmount}P',
+            text: checked ? '✅ +${spot.rewardAmount}P' : '+${spot.rewardAmount}P',
+            color: checked ? AppColors.primary : AppColors.textSecondary,
+            textSize: 10,
           ),
         );
+
         marker.setOnTapListener((_) {
           if (!mounted) return;
           unawaited(ref.read(runningProvider.notifier).checkInSpot(spot));
         });
+
         _spotMarkers[markerId] = marker;
+        _spotCircles[circleId] = circle;
       }
+
+      // 서클 먼저 추가 (마커 아래에 그려지도록)
+      ctrl.addOverlayAll(_spotCircles.values.toSet());
       ctrl.addOverlayAll(_spotMarkers.values.toSet());
 
       final poly = _pathPolyline;
@@ -275,7 +341,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     final topPadding = MediaQuery.of(context).padding.top;
 
     WidgetsBinding.instance
-        .addPostFrameCallback((_) => _syncOverlays(record));
+        .addPostFrameCallback((_) => unawaited(_syncOverlays(record)));
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -305,12 +371,21 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
                   await _updateCamera(pos);
                   if (!mounted) return;
                 }
-                _syncOverlays(ref.read(runningProvider));
+                unawaited(_syncOverlays(ref.read(runningProvider)));
               },
               onMapTapped: (_, __) =>
                   FocusManager.instance.primaryFocus?.unfocus(),
             ),
           ),
+
+          // ── 체크인 결과 카드 ─────────────────────────────────────────
+          if (record.lastCheckIn != null)
+            Positioned(
+              top: topPadding + 16.h,
+              left: 0,
+              right: 0,
+              child: CheckInResultCard(result: record.lastCheckIn!),
+            ),
 
           // ── Bottom panel ─────────────────────────────────────────────────
           // bottom: AppSpacing.sm 으로 네브바와 살짝 띄움

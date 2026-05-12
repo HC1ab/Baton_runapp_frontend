@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../core/utils/running_utils.dart';
 import '../../../core/utils/format_utils.dart';
+import '../services/spot_service.dart';
 import 'run_path_point_model.dart';
 import 'spot_model.dart';
 
@@ -25,6 +26,7 @@ class RunRecordModel {
     this.runId,
     this.startTime,
     this.errorMessage,
+    this.lastCheckIn,  // 최근 체크인 결과 (카드 표시용)
   });
 
   final RunStatus status;
@@ -35,10 +37,11 @@ class RunRecordModel {
   final List<RunPathPoint> path;
   final List<SpotSummary> nearbySpots;
   final Set<int> checkedInSpotIds;
-  final int spotPoints;        // Points earned from spot check-ins
+  final int spotPoints;
   final int? runId;
   final DateTime? startTime;
   final String? errorMessage;
+  final CheckInResult? lastCheckIn;
 
   bool get isRunning => status == RunStatus.running;
   bool get isIdle => status == RunStatus.idle;
@@ -80,6 +83,8 @@ class RunRecordModel {
     String? errorMessage,
     bool clearError = false,
     bool clearRunId = false,
+    bool clearCheckIn = false,
+    CheckInResult? lastCheckIn,
   }) {
     return RunRecordModel(
       status: status ?? this.status,
@@ -96,6 +101,7 @@ class RunRecordModel {
       runId: clearRunId ? null : (runId ?? this.runId),
       startTime: startTime ?? this.startTime,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      lastCheckIn: clearCheckIn ? null : (lastCheckIn ?? this.lastCheckIn),
     );
   }
 }

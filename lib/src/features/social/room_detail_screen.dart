@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import 'models/run_card_data.dart';
 
@@ -194,36 +194,30 @@ class _RealMiniMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final target = NLatLng(card.latitude, card.longitude);
+    final target = LatLng(card.latitude, card.longitude);
 
     return SizedBox(
       height: 250,
       width: double.infinity,
-      child: NaverMap(
-        options: NaverMapViewOptions(
-          initialCameraPosition: NCameraPosition(
-            target: target,
-            zoom: 15,
-          ),
-          rotationGesturesEnable: false,
-          scrollGesturesEnable: false,
-          tiltGesturesEnable: false,
-          zoomGesturesEnable: false,
-          stopGesturesEnable: false,
-          locationButtonEnable: false,
-          compassEnable: false,
-          scaleBarEnable: false,
-          indoorLevelPickerEnable: false,
-          indoorEnable: false,
-          locale: const Locale('ko'),
+      child: GoogleMap(
+        initialCameraPosition: CameraPosition(
+          target: target,
+          zoom: 15,
         ),
-        onMapReady: (controller) {
-          final marker = NMarker(
-            id: 'room_detail_spot',
+        zoomGesturesEnabled: false,
+        scrollGesturesEnabled: false,
+        tiltGesturesEnabled: false,
+        rotateGesturesEnabled: false,
+        zoomControlsEnabled: false,
+        mapToolbarEnabled: false,
+        myLocationButtonEnabled: false,
+        markers: {
+          Marker(
+            markerId: const MarkerId('room_detail_spot'),
             position: target,
-            iconTintColor: const Color(0xFFF7673B),
-          );
-          controller.addOverlay(marker);
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+                BitmapDescriptor.hueOrange),
+          ),
         },
       ),
     );

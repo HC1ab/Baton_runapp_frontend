@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 /// 지도에서 한 지점을 탭해 좌표를 선택하는 전체 화면.
-/// 선택 완료 시 `Navigator.pop(context, NLatLng)`로 결과를 반환합니다.
+/// 선택 완료 시 `Navigator.pop(context, LatLng)`로 결과를 반환합니다.
 class LocationPickerScreen extends StatefulWidget {
   const LocationPickerScreen({super.key, this.initialLatLng});
 
-  final NLatLng? initialLatLng;
+  final LatLng? initialLatLng;
 
   static const Color _submitOrange = Color(0xFFF7673B);
 
-  static final NCameraPosition _initialCamera = NCameraPosition(
-    target: NLatLng(35.1631, 129.0536),
+  static const CameraPosition _initialCamera = CameraPosition(
+    target: LatLng(35.1631, 129.0536),
     zoom: 15,
   );
 
@@ -20,42 +20,24 @@ class LocationPickerScreen extends StatefulWidget {
 }
 
 class _LocationPickerScreenState extends State<LocationPickerScreen> {
-  NaverMapController? _map;
-  NMarker? _marker;
-  NLatLng? _selectedLatLng;
-  NLatLng? _pendingTapLatLng;
+  Marker? _marker;
+  LatLng? _selectedLatLng;
 
-  Future<void> _onMapTapped(NPoint _, NLatLng latLng) async {
-    final map = _map;
-    if (map == null) {
-      setState(() {
-        _pendingTapLatLng = latLng;
-        _selectedLatLng = latLng;
-      });
-      return;
-    }
-
-    if (_marker == null) {
-      final next = NMarker(
-        id: 'location_pick_marker',
-        position: latLng,
-        iconTintColor: Colors.red,
-      );
-      await map.addOverlay(next);
-      _marker = next;
-    } else {
-      _marker!.setPosition(latLng);
-    }
-
+  Future<void> _onMapTapped(LatLng latLng) async {
     setState(() {
       _selectedLatLng = latLng;
+      _marker = Marker(
+        markerId: const MarkerId('location_pick_marker'),
+        position: latLng,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+      );
     });
   }
 
   void _confirm() {
     final selected = _selectedLatLng;
     if (selected == null) return;
-    Navigator.of(context).pop<NLatLng>(selected);
+    Navigator.of(context).pop<LatLng>(selected);
   }
 
   @override
@@ -69,31 +51,20 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          NaverMap(
-            options: NaverMapViewOptions(
-              initialCameraPosition: LocationPickerScreen._initialCamera,
-              locale: const Locale('ko'),
-            ),
-            onMapReady: (controller) {
-              _map = controller;
+          GoogleMap(
+            initialCameraPosition: widget.initialLatLng != null
+                ? CameraPosition(target: widget.initialLatLng!, zoom: 16)
+                : LocationPickerScreen._initialCamera,
+            zoomControlsEnabled: false,
+            mapToolbarEnabled: false,
+            myLocationButtonEnabled: false,
+            markers: _marker != null ? {_marker!} : {},
+            onMapCreated: (ctrl) {
+              // 초기 위치가 있으면 마커 표시
               final initial = widget.initialLatLng;
-              if (initial != null) {
-                controller.updateCamera(
-                  NCameraUpdate.fromCameraPosition(
-                    NCameraPosition(target: initial, zoom: 16),
-                  ),
-                );
-                _onMapTapped(NPoint(0,0), initial);
-                return;
-              }
-
-              final pending = _pendingTapLatLng;
-              if (pending != null) {
-                _pendingTapLatLng = null;
-                _onMapTapped(NPoint(0,0), pending);
-              }
+              if (initial != null) _onMapTapped(initial);
             },
-            onMapTapped: _onMapTapped,
+            onTap: _onMapTapped,
           ),
           if (_selectedLatLng != null)
             Align(

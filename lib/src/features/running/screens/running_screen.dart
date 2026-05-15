@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
@@ -16,10 +16,30 @@ import 'widgets/running_mock_panel.dart';
 import 'widgets/check_in_result_card.dart';
 import '../../../core/constants/app_env.dart';
 
-const _defaultCamera = NCameraPosition(
-  target: NLatLng(35.2475, 129.0914),  // 구서역 1호선
-  zoom: 15.0,
-);
+// 구서역 1호선 기본 카메라 위치
+const _defaultLatLng = LatLng(35.2475, 129.0914);
+const _defaultZoom = 17.0;
+
+// 흰색 맵 스타일 JSON
+const _whiteMapStyle = '''
+[
+  {"elementType": "geometry", "stylers": [{"color": "#f5f5f5"}]},
+  {"elementType": "labels.icon", "stylers": [{"visibility": "off"}]},
+  {"elementType": "labels.text.fill", "stylers": [{"color": "#616161"}]},
+  {"elementType": "labels.text.stroke", "stylers": [{"color": "#f5f5f5"}]},
+  {"featureType": "administrative.land_parcel", "stylers": [{"visibility": "off"}]},
+  {"featureType": "administrative.neighborhood", "stylers": [{"visibility": "off"}]},
+  {"featureType": "poi", "stylers": [{"visibility": "off"}]},
+  {"featureType": "road", "elementType": "geometry", "stylers": [{"color": "#ffffff"}]},
+  {"featureType": "road.arterial", "elementType": "labels", "stylers": [{"visibility": "off"}]},
+  {"featureType": "road.highway", "elementType": "geometry", "stylers": [{"color": "#dadada"}]},
+  {"featureType": "road.highway", "elementType": "labels", "stylers": [{"visibility": "off"}]},
+  {"featureType": "road.local", "stylers": [{"visibility": "on"}]},
+  {"featureType": "transit", "stylers": [{"visibility": "off"}]},
+  {"featureType": "water", "elementType": "geometry", "stylers": [{"color": "#c9c9c9"}]},
+  {"featureType": "water", "elementType": "labels.text", "stylers": [{"visibility": "off"}]}
+]
+''';
 
 class RunningScreen extends ConsumerStatefulWidget {
   const RunningScreen({super.key});
@@ -29,7 +49,7 @@ class RunningScreen extends ConsumerStatefulWidget {
 }
 
 class _RunningScreenState extends ConsumerState<RunningScreen> {
-  NaverMapController? _mapCtrl;
+  GoogleMapController? _mapCtrl;
   StreamSubscription<Position>? _gpsSub;
 
   // Mock state
@@ -43,9 +63,9 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   bool _bottomExpanded = false;
 
   // Overlay cache
-  final Map<String, NMarker> _spotMarkers = {};
-  final Map<String, NCircleOverlay> _spotCircles = {};
-  NPolylineOverlay? _pathPolyline;
+  final Map<String, Marker> _spotMarkers = {};
+  final Set<Circle> _spotCircles = {};
+  final Set<Polyline> _polylines = {};
 
   @override
   void initState() {
@@ -57,6 +77,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   void dispose() {
     _gpsSub?.cancel();
     _mockTimer?.cancel();
+    _mapCtrl?.dispose();
     super.dispose();
   }
 
@@ -70,12 +91,11 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     if (!mounted) return;
 
     if (useMockGps) {
-      _mockPos = _makeMockPos(lat: 35.2475, lng: 129.0914, speed: 0); // 구서역 1호선
+      _mockPos = _makeMockPos(lat: 35.2475, lng: 129.0914, speed: 0);
       await ref
           .read(runningProvider.notifier)
           .onPositionUpdate(_mockPos!, isDev: true);
     } else {
-      // [iOS 대응] NSLocationWhenInUseUsageDescription 추가 필요
       _gpsSub = Geolocator.getPositionStream(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
@@ -173,138 +193,89 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     if (ctrl == null || !mounted) return;
 
     final record = ref.read(runningProvider);
-    final zoom = record.isRunning ? 18.0 : 15.0;
+    final zoom = record.isRunning ? 18.0 : 17.0;
     final tilt = record.isRunning ? 45.0 : 0.0;
 
-    final update = NCameraUpdate.fromCameraPosition(
-      NCameraPosition(
-        target: NLatLng(pos.latitude, pos.longitude),
-        zoom: zoom,
-        tilt: tilt,
+    await ctrl.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: LatLng(pos.latitude, pos.longitude),
+          zoom: zoom,
+          tilt: tilt,
+        ),
       ),
-    )..setAnimation(
-        animation: NCameraAnimation.easing,
-        duration: const Duration(milliseconds: 300),
-      );
-
-    await ctrl.updateCamera(update);
+    );
   }
 
   // -------------------------------------------------------------------------
   // Overlays
   // -------------------------------------------------------------------------
 
-  Future<void> _syncOverlays(RunRecordModel record) async {
-    final ctrl = _mapCtrl;
-    if (ctrl == null) return;
+  void _syncOverlays(RunRecordModel record) {
+    if (!mounted) return;
 
-    // 러닝 경로 polyline
-    if (record.path.length >= 2) {
-      final coords = record.path.map((p) => NLatLng(p.lat, p.lng)).toList();
-      final polyline = NPolylineOverlay(
-        id: 'run_path',
-        coords: coords,
-        width: 5,
-        color: AppColors.primary,
-      );
-      _pathPolyline = polyline;
-      ctrl.addOverlay(polyline);
-    }
+    final newMarkers = <String, Marker>{};
+    final newCircles = <Circle>{};
 
-    final newIds = record.nearbySpots.map((s) => 'spot_${s.id}').toSet();
-    final oldIds = _spotMarkers.keys.toSet();
+    for (final spot in record.nearbySpots) {
+      final markerId = 'spot_${spot.id}';
+      final checked = record.checkedInSpotIds.contains(spot.id);
+      final pos = LatLng(spot.latitude, spot.longitude);
 
-    if (newIds != oldIds || record.checkedInSpotIds.isNotEmpty) {
-      // 기존 마커 + 서클 제거
-      ctrl.clearOverlays(type: NOverlayType.marker);
-      ctrl.clearOverlays(type: NOverlayType.circleOverlay);
-      _spotMarkers.clear();
-      _spotCircles.clear();
+      // 반투명 원
+      newCircles.add(Circle(
+        circleId: CircleId('circle_${spot.id}'),
+        center: pos,
+        radius: 30,
+        fillColor: checked
+            ? AppColors.primary.withValues(alpha: 0.25)
+            : const Color(0xFF888888).withValues(alpha: 0.15),
+        strokeColor: checked
+            ? AppColors.primary.withValues(alpha: 0.6)
+            : const Color(0xFF888888).withValues(alpha: 0.4),
+        strokeWidth: checked ? 2 : 1,
+      ));
 
-      for (final spot in record.nearbySpots) {
-        final markerId = 'spot_${spot.id}';
-        final circleId = 'circle_${spot.id}';
-        final checked = record.checkedInSpotIds.contains(spot.id);
-        final pos = NLatLng(spot.latitude, spot.longitude);
-
-        // 원형 오버레이 — 미체크인: 반투명 회색 / 체크인: 반투명 주황
-        final circle = NCircleOverlay(
-          id: circleId,
-          center: pos,
-          radius: 30,
-          color: checked
-              ? AppColors.primary.withValues(alpha: 0.25)
-              : const Color(0xFF888888).withValues(alpha: 0.15),
-          outlineColor: checked
-              ? AppColors.primary.withValues(alpha: 0.6)
-              : const Color(0xFF888888).withValues(alpha: 0.4),
-          outlineWidth: checked ? 2 : 1,
-        );
-
-        // 중심 마커 — 체크인 여부에 따라 색상 변경
-        final marker = NMarker(
-          id: markerId,
-          position: pos,
-          icon: await NOverlayImage.fromWidget(
-            widget: Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: checked ? AppColors.primary : Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: checked
-                      ? AppColors.primary
-                      : const Color(0xFF888888).withValues(alpha: 0.6),
-                  width: 2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(
-                checked
-                    ? Icons.check_rounded
-                    : Icons.location_on_rounded,
-                size: 14,
-                color: checked ? Colors.white : AppColors.primary,
-              ),
-            ),
-            size: const Size(28, 28),
-            context: context,
-          ),
-          caption: NOverlayCaption(
-            text: spot.name,
-            color: checked ? AppColors.primary : AppColors.textSecondary,
-            textSize: 11,
-          ),
-          subCaption: NOverlayCaption(
-            text: checked ? '✅ +${spot.rewardAmount}P' : '+${spot.rewardAmount}P',
-            color: checked ? AppColors.primary : AppColors.textSecondary,
-            textSize: 10,
-          ),
-        );
-
-        marker.setOnTapListener((_) {
+      // 마커
+      newMarkers[markerId] = Marker(
+        markerId: MarkerId(markerId),
+        position: pos,
+        icon: checked
+            ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange)
+            : BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        infoWindow: InfoWindow(
+          title: spot.name,
+          snippet: checked ? '✅ +${spot.rewardAmount}P' : '+${spot.rewardAmount}P',
+        ),
+        onTap: () {
           if (!mounted) return;
           unawaited(ref.read(runningProvider.notifier).checkInSpot(spot));
-        });
-
-        _spotMarkers[markerId] = marker;
-        _spotCircles[circleId] = circle;
-      }
-
-      // 서클 먼저 추가 (마커 아래에 그려지도록)
-      ctrl.addOverlayAll(_spotCircles.values.toSet());
-      ctrl.addOverlayAll(_spotMarkers.values.toSet());
-
-      final poly = _pathPolyline;
-      if (poly != null) ctrl.addOverlay(poly);
+        },
+      );
     }
+
+    // 러닝 경로 polyline
+    final newPolylines = <Polyline>{};
+    if (record.path.length >= 2) {
+      newPolylines.add(Polyline(
+        polylineId: const PolylineId('run_path'),
+        points: record.path.map((p) => LatLng(p.lat, p.lng)).toList(),
+        color: AppColors.primary,
+        width: 5,
+      ));
+    }
+
+    setState(() {
+      _spotMarkers
+        ..clear()
+        ..addAll(newMarkers);
+      _spotCircles
+        ..clear()
+        ..addAll(newCircles);
+      _polylines
+        ..clear()
+        ..addAll(newPolylines);
+    });
   }
 
   // -------------------------------------------------------------------------
@@ -340,45 +311,44 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     final record = ref.watch(runningProvider);
     final topPadding = MediaQuery.of(context).padding.top;
 
+    // 오버레이 동기화
     WidgetsBinding.instance
-        .addPostFrameCallback((_) => unawaited(_syncOverlays(record)));
+        .addPostFrameCallback((_) => _syncOverlays(record));
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       body: Stack(
         children: [
-          // ── Full-screen map ──────────────────────────────────────────────
+          // ── Full-screen Google Map ────────────────────────────────────────
           Positioned.fill(
-            child: NaverMap(
-              options: NaverMapViewOptions(
-                initialCameraPosition: _defaultCamera,
-                locationButtonEnable: false,
-                compassEnable: false,
-                tiltGesturesEnable: true,
-                indoorEnable: true,
-                locale: const Locale('ko'),
-                contentPadding: EdgeInsets.only(
-                  top: topPadding,
-                  bottom: 200,
-                ),
+            child: GoogleMap(
+              style: _whiteMapStyle,
+              initialCameraPosition: const CameraPosition(
+                target: _defaultLatLng,
+                zoom: _defaultZoom,
+                tilt: 0,
               ),
-              onMapReady: (ctrl) async {
+              myLocationEnabled: true,
+              myLocationButtonEnabled: false,
+              compassEnabled: false,
+              zoomControlsEnabled: false,
+              mapToolbarEnabled: false,
+              tiltGesturesEnabled: true,
+              buildingsEnabled: true,   // 3D 건물 활성화
+              markers: _spotMarkers.values.toSet(),
+              circles: _spotCircles,
+              polylines: _polylines,
+              onMapCreated: (ctrl) async {
                 _mapCtrl = ctrl;
-                await Future<void>.delayed(const Duration(milliseconds: 300));
                 if (!mounted) return;
                 final pos = _mockPos;
-                if (pos != null) {
-                  await _updateCamera(pos);
-                  if (!mounted) return;
-                }
-                unawaited(_syncOverlays(ref.read(runningProvider)));
+                if (pos != null) await _updateCamera(pos);
               },
-              onMapTapped: (_, __) =>
-                  FocusManager.instance.primaryFocus?.unfocus(),
+              onTap: (_) => FocusManager.instance.primaryFocus?.unfocus(),
             ),
           ),
 
-          // ── 체크인 결과 카드 ─────────────────────────────────────────
+          // ── 체크인 결과 카드 ──────────────────────────────────────────────
           if (record.lastCheckIn != null)
             Positioned(
               top: topPadding + 16.h,
@@ -387,8 +357,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
               child: CheckInResultCard(result: record.lastCheckIn!),
             ),
 
-          // ── Bottom panel ─────────────────────────────────────────────────
-          // bottom: AppSpacing.sm 으로 네브바와 살짝 띄움
+          // ── Bottom panel ──────────────────────────────────────────────────
           Positioned(
             left: 0,
             right: 0,
@@ -423,7 +392,6 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
 
 // ---------------------------------------------------------------------------
 // _BottomPanel
-// layout: [Mock Panel (dev)] → [white card: metrics + action btn]
 // ---------------------------------------------------------------------------
 
 class _BottomPanel extends StatelessWidget {
@@ -463,7 +431,6 @@ class _BottomPanel extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ── Dev: Mock panel ────────────────────────────────────────────────
         if (isDev)
           Padding(
             padding: EdgeInsets.symmetric(
@@ -481,7 +448,6 @@ class _BottomPanel extends StatelessWidget {
 
         SizedBox(height: 6.h),
 
-        // ── White card (좌우 여백, 전체 모서리 둥글게) ─────────────────────
         Padding(
           padding: EdgeInsets.symmetric(
             horizontal: AppSpacing.screenHorizontal,
@@ -503,7 +469,6 @@ class _BottomPanel extends StatelessWidget {
               children: [
                 SizedBox(height: AppSpacing.verticalMd),
 
-                // Error banner
                 if (record.errorMessage != null)
                   Padding(
                     padding: EdgeInsets.symmetric(
@@ -515,33 +480,23 @@ class _BottomPanel extends StatelessWidget {
                     ),
                   ),
 
-                // ── Main metrics row ──────────────────────────────────────
                 Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // 거리
                       _MetricBlock(
                         label: '거리 (KM)',
                         value: (record.distanceMeters / 1000)
                             .toStringAsFixed(1),
                         labelColor: AppColors.primary,
                       ),
-
                       SizedBox(width: AppSpacing.lg),
-
-                      // 페이스
                       _MetricBlock(
                         label: '페이스',
                         value: record.formattedCurrentPace,
                       ),
-
                       const Spacer(),
-
-                      // 플레이/정지 버튼 + 화살표
                       Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -566,13 +521,11 @@ class _BottomPanel extends StatelessWidget {
                   ),
                 ),
 
-                // ── 확장: 추가 지표 ───────────────────────────────────────
                 if (bottomExpanded) ...[
                   SizedBox(height: AppSpacing.verticalMd),
                   Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                    ),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: AppSpacing.md),
                     child: Row(
                       children: [
                         _MetricBlock(
@@ -591,13 +544,11 @@ class _BottomPanel extends StatelessWidget {
                   ),
                 ],
 
-                // ── 스팟 포인트 배지 ──────────────────────────────────────
                 if (record.spotPoints > 0) ...[
                   SizedBox(height: AppSpacing.sm),
                   Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                    ),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: AppSpacing.md),
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Container(
@@ -606,9 +557,10 @@ class _BottomPanel extends StatelessWidget {
                           vertical: 4.h,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.08),
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.radiusFull),
+                          color:
+                              AppColors.primary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(
+                              AppSpacing.radiusFull),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -630,7 +582,6 @@ class _BottomPanel extends StatelessWidget {
                   ),
                 ],
 
-                // 카드 내부 하단 여백
                 SizedBox(height: AppSpacing.verticalMd),
               ],
             ),
@@ -648,13 +599,8 @@ class _BottomPanel extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// _RunButton
-// ---------------------------------------------------------------------------
-
 class _RunButton extends StatelessWidget {
   const _RunButton({required this.isRunning, required this.onTap});
-
   final bool isRunning;
   final VoidCallback onTap;
 
@@ -687,10 +633,6 @@ class _RunButton extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// _MetricBlock
-// ---------------------------------------------------------------------------
-
 class _MetricBlock extends StatelessWidget {
   const _MetricBlock({
     required this.label,
@@ -698,7 +640,6 @@ class _MetricBlock extends StatelessWidget {
     this.labelColor = AppColors.textSecondary,
     this.valueFontSize,
   });
-
   final String label;
   final String value;
   final Color labelColor;
@@ -734,13 +675,8 @@ class _MetricBlock extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// _ErrorBanner
-// ---------------------------------------------------------------------------
-
 class _ErrorBanner extends StatelessWidget {
   const _ErrorBanner({required this.message, required this.onDismiss});
-
   final String message;
   final VoidCallback onDismiss;
 
@@ -763,12 +699,14 @@ class _ErrorBanner extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
+              style:
+                  AppTextStyles.bodySmall.copyWith(color: AppColors.error),
             ),
           ),
           GestureDetector(
             onTap: onDismiss,
-            child: Icon(Icons.close, size: 16.r, color: AppColors.error),
+            child:
+                Icon(Icons.close, size: 16.r, color: AppColors.error),
           ),
         ],
       ),

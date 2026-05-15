@@ -7,10 +7,10 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
-        <!-- Naver Map SDK client ID -->
+        <!-- Google Maps API Key (local.properties에서 주입) -->
         <meta-data
-            android:name="com.naver.maps.map.CLIENT_ID"
-            android:value="0dz77rdfgy" />
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${MAPS_API_KEY}"/>
 
         <activity
             android:name=".MainActivity"

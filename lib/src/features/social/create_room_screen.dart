@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/network/api_client.dart';
@@ -41,7 +41,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   TimeOfDay _endTime = const TimeOfDay(hour: 21, minute: 30);
   int _memberCount = 2;
   int _distanceIndex = 4;
-  NLatLng? _selectedLatLng;
+  LatLng? _selectedLatLng;
   bool _isSubmitting = false;
 
   @override
@@ -84,8 +84,8 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
 
   /// 지도에서 좌표를 고른 뒤 역지오코딩으로 주소를 채웁니다.
   Future<void> _openMapPicker() async {
-    final selected = await Navigator.of(context).push<NLatLng>(
-      MaterialPageRoute<NLatLng>(
+    final selected = await Navigator.of(context).push<LatLng>(
+      MaterialPageRoute<LatLng>(
         builder: (_) => LocationPickerScreen(initialLatLng: _selectedLatLng),
       ),
     );

@@ -18,7 +18,7 @@ import '../../../core/constants/app_env.dart';
 
 // 구서역 1호선 기본 카메라 위치
 const _defaultLatLng = LatLng(35.2475, 129.0914);
-const _defaultZoom = 17.0;
+const _defaultZoom = 18.0;
 
 // 흰색 맵 스타일 JSON
 const _whiteMapStyle = '''
@@ -64,6 +64,9 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
 
   // Overlay cache
   final Map<String, Marker> _spotMarkers = {};
+  // 마커 아이콘 캐시 — initState에서 한 번만 생성
+  BitmapDescriptor? _iconDefault;
+  BitmapDescriptor? _iconChecked;
   final Set<Circle> _spotCircles = {};
   final Set<Polyline> _polylines = {};
 
@@ -86,6 +89,16 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   // -------------------------------------------------------------------------
 
   Future<void> _init() async {
+    // 마커 아이콘 선로딩 (한 번만)
+    _iconDefault = await BitmapDescriptor.asset(
+      const ImageConfiguration(size: Size(48, 48)),
+      'assets/images/spot_default.png',
+    );
+    _iconChecked = await BitmapDescriptor.asset(
+      const ImageConfiguration(size: Size(48, 48)),
+      'assets/images/spot_checked.png',
+    );
+
     final useMockGps = ref.read(useMockGpsProvider);
     await ref.read(runningProvider.notifier).initialize(useMock: useMockGps);
     if (!mounted) return;
@@ -194,14 +207,13 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
 
     final record = ref.read(runningProvider);
     final zoom = record.isRunning ? 18.0 : 17.0;
-    final tilt = record.isRunning ? 45.0 : 0.0;
 
     await ctrl.animateCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
           target: LatLng(pos.latitude, pos.longitude),
           zoom: zoom,
-          tilt: tilt,
+          tilt: 45.0,   // 러닝 중/대기 모두 3D 유지
         ),
       ),
     );
@@ -211,7 +223,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   // Overlays
   // -------------------------------------------------------------------------
 
-  void _syncOverlays(RunRecordModel record) {
+  Future<void> _syncOverlays(RunRecordModel record) async {
     if (!mounted) return;
 
     final newMarkers = <String, Marker>{};
@@ -236,13 +248,16 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
         strokeWidth: checked ? 2 : 1,
       ));
 
-      // 마커
+      // PNG 캐시 아이콘 사용
+      final icon = checked
+          ? (_iconChecked ?? BitmapDescriptor.defaultMarker)
+          : (_iconDefault ?? BitmapDescriptor.defaultMarker);
+
       newMarkers[markerId] = Marker(
         markerId: MarkerId(markerId),
         position: pos,
-        icon: checked
-            ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange)
-            : BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        icon: icon,
+        anchor: const Offset(0.5, 0.5),
         infoWindow: InfoWindow(
           title: spot.name,
           snippet: checked ? '✅ +${spot.rewardAmount}P' : '+${spot.rewardAmount}P',
@@ -261,10 +276,14 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
         polylineId: const PolylineId('run_path'),
         points: record.path.map((p) => LatLng(p.lat, p.lng)).toList(),
         color: AppColors.primary,
-        width: 5,
+        width: 6,
+        jointType: JointType.round,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
       ));
     }
 
+    if (!mounted) return;
     setState(() {
       _spotMarkers
         ..clear()
@@ -313,7 +332,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
 
     // 오버레이 동기화
     WidgetsBinding.instance
-        .addPostFrameCallback((_) => _syncOverlays(record));
+        .addPostFrameCallback((_) => unawaited(_syncOverlays(record)));
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -323,10 +342,11 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
           Positioned.fill(
             child: GoogleMap(
               style: _whiteMapStyle,
+              mapType: MapType.normal,
               initialCameraPosition: const CameraPosition(
                 target: _defaultLatLng,
                 zoom: _defaultZoom,
-                tilt: 0,
+                tilt: 45.0,   // 3D 보기
               ),
               myLocationEnabled: true,
               myLocationButtonEnabled: false,
@@ -334,7 +354,8 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
               zoomControlsEnabled: false,
               mapToolbarEnabled: false,
               tiltGesturesEnabled: true,
-              buildingsEnabled: true,   // 3D 건물 활성화
+              buildingsEnabled: true,
+              fortyFiveDegreeImageryEnabled: true,
               markers: _spotMarkers.values.toSet(),
               circles: _spotCircles,
               polylines: _polylines,

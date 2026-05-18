@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/screens/login_screen.dart';
+import '../../features/auth/screens/signup_screen.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../constants/app_routes.dart';
@@ -23,7 +24,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       if (authState is AuthStateUnauthenticated) {
-        return location == AppRoutes.login ? null : AppRoutes.login;
+        final allowedAuthPaths = {
+          AppRoutes.login,
+          AppRoutes.signup,
+        };
+        return allowedAuthPaths.contains(location) ? null : AppRoutes.login;
       }
 
       if (authState is AuthStateAuthenticated) {
@@ -42,6 +47,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.login,
         builder: (_, __) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.signup,
+        builder: (_, __) => const SignupScreen(),
       ),
       GoRoute(
         path: AppRoutes.home,

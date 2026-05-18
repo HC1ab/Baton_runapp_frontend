@@ -8,6 +8,7 @@ class RoomDetailScreen extends StatelessWidget {
     super.key,
     required this.card,
     this.onJoinPressed,
+    this.onEnterLivePressed,
     this.onLeavePressed,
     this.onUpdatePressed,
     this.onDeletePressed,
@@ -15,6 +16,7 @@ class RoomDetailScreen extends StatelessWidget {
 
   final RunCardData card;
   final VoidCallback? onJoinPressed;
+  final VoidCallback? onEnterLivePressed;
   final VoidCallback? onLeavePressed;
   final VoidCallback? onUpdatePressed;
   final VoidCallback? onDeletePressed;
@@ -64,6 +66,7 @@ class RoomDetailScreen extends StatelessWidget {
                 card: card,
                 pointOrange: _pointOrange,
                 onJoinPressed: onJoinPressed,
+                onEnterLivePressed: onEnterLivePressed,
                 onLeavePressed: onLeavePressed,
                 onUpdatePressed: onUpdatePressed,
                 onDeletePressed: onDeletePressed,
@@ -81,6 +84,7 @@ class _BottomActions extends StatelessWidget {
     required this.card,
     required this.pointOrange,
     required this.onJoinPressed,
+    required this.onEnterLivePressed,
     required this.onLeavePressed,
     required this.onUpdatePressed,
     required this.onDeletePressed,
@@ -89,6 +93,7 @@ class _BottomActions extends StatelessWidget {
   final RunCardData card;
   final Color pointOrange;
   final VoidCallback? onJoinPressed;
+  final VoidCallback? onEnterLivePressed;
   final VoidCallback? onLeavePressed;
   final VoidCallback? onUpdatePressed;
   final VoidCallback? onDeletePressed;
@@ -96,7 +101,30 @@ class _BottomActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (card.isHost) {
-      return Row(
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: FilledButton(
+              onPressed: onEnterLivePressed,
+              style: FilledButton.styleFrom(
+                backgroundColor: pointOrange,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              child: const Text('실시간 러닝 입장'),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
         children: [
           Expanded(
             child: SizedBox(
@@ -140,28 +168,55 @@ class _BottomActions extends StatelessWidget {
             ),
           ),
         ],
+          ),
+        ],
       );
     }
 
     if (card.isParticipating) {
-      return SizedBox(
-        width: double.infinity,
-        height: 52,
-        child: FilledButton(
-          onPressed: onLeavePressed,
-          style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF8C8C8C),
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: FilledButton(
+              onPressed: onEnterLivePressed,
+              style: FilledButton.styleFrom(
+                backgroundColor: pointOrange,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              child: const Text('실시간 러닝 입장'),
             ),
           ),
-          child: const Text('나가기'),
-        ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: OutlinedButton(
+              onPressed: onLeavePressed,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF666666),
+                side: const BorderSide(color: Color(0xFFCCCCCC)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              child: const Text('나가기'),
+            ),
+          ),
+        ],
       );
     }
 

@@ -158,14 +158,28 @@ class JoinNotifier extends Notifier<JoinState> {
 
     try {
       final service = ref.read(authServiceProvider);
-      final pair = await service.join(
+      await service.join(
         email: email,
         password: password,
         realname: realname,
         nickname: nickname,
       );
-      await ref.read(authProvider.notifier).onLoginSuccess(pair);
       state = const JoinState(status: JoinStatus.success);
+    } on AuthException {
+      state = const JoinState(
+        status: JoinStatus.error,
+        errorMessage: ErrorMessages.loginFailed,
+      );
+    } on NetworkException {
+      state = const JoinState(
+        status: JoinStatus.error,
+        errorMessage: ErrorMessages.networkError,
+      );
+    } on TimeoutException {
+      state = const JoinState(
+        status: JoinStatus.error,
+        errorMessage: ErrorMessages.timeoutError,
+      );
     } on AppException catch (e) {
       state = JoinState(status: JoinStatus.error, errorMessage: e.message);
     } catch (e) {
@@ -176,6 +190,8 @@ class JoinNotifier extends Notifier<JoinState> {
       );
     }
   }
+
+  void reset() => state = const JoinState();
 
   void resetError() {
     if (state.status == JoinStatus.error) state = const JoinState();

@@ -1,0 +1,243 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
+
+import '../../social/models/run_card_data.dart';
+import '../models/participant_location.dart';
+import '../providers/run_location_provider.dart';
+
+/// Group run live map — STOMP location stream + Naver Map markers.
+class GroupRunLiveScreen extends ConsumerStatefulWidget {
+  const GroupRunLiveScreen({super.key, required this.card});
+
+  final RunCardData card;
+
+  @override
+  ConsumerState<GroupRunLiveScreen> createState() => _GroupRunLiveScreenState();
+}
+
+class _GroupRunLiveScreenState extends ConsumerState<GroupRunLiveScreen> {
+  static const Color _pointOrange = Color(0xFFF7673B);
+
+  NaverMapController? _mapCtrl;
+  StreamSubscription<Position>? _gpsSub;
+  final Map<int, NMarker> _markers = {};
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
+  }
+
+  Future<void> _bootstrap() async {
+    final groupId = widget.card.groupId;
+    if (groupId == null) return;
+
+    await ref.read(runLocationProvider.notifier).joinRoom(groupId);
+    _startLocalGpsTracking();
+  }
+
+  void _startLocalGpsTracking() {
+    _gpsSub?.cancel();
+    _gpsSub = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 3,
+      ),
+    ).listen((pos) {
+      if (!mounted) return;
+      ref.read(runLocationProvider.notifier).updateMyLocation(
+            pos.latitude,
+            pos.longitude,
+          );
+      unawaited(_moveCameraIfNeeded(pos.latitude, pos.longitude));
+    });
+  }
+
+  Future<void> _moveCameraIfNeeded(double lat, double lng) async {
+    final ctrl = _mapCtrl;
+    if (ctrl == null || !mounted) return;
+    final update = NCameraUpdate.fromCameraPosition(
+      NCameraPosition(target: NLatLng(lat, lng), zoom: 16),
+    )..setAnimation(
+        animation: NCameraAnimation.easing,
+        duration: const Duration(milliseconds: 400),
+      );
+    await ctrl.updateCamera(update);
+  }
+
+  @override
+  void dispose() {
+    _gpsSub?.cancel();
+    unawaited(ref.read(runLocationProvider.notifier).leaveRoom());
+    super.dispose();
+  }
+
+  void _syncMarkers(RunLocationState locState) {
+    final ctrl = _mapCtrl;
+    if (ctrl == null) return;
+
+    final all = <int, ParticipantLocation>{
+      ...locState.participants,
+      if (locState.myLocation != null) locState.myMemberId!: locState.myLocation!,
+    };
+
+    final staleIds = _markers.keys.toSet()..removeAll(all.keys);
+    for (final id in staleIds) {
+      final marker = _markers.remove(id);
+      if (marker != null) ctrl.deleteOverlay(marker.info);
+    }
+
+    for (final entry in all.entries) {
+      final isMe = entry.key == locState.myMemberId;
+      final pos = NLatLng(entry.value.latitude, entry.value.longitude);
+      final existing = _markers[entry.key];
+
+      if (existing != null) {
+        existing.setPosition(pos);
+        existing.setCaption(
+          NOverlayCaption(
+            text: isMe ? '나' : (entry.value.nickname ?? '러너 ${entry.key}'),
+          ),
+        );
+      } else {
+        final marker = NMarker(
+          id: 'participant_${entry.key}',
+          position: pos,
+          iconTintColor: isMe ? _pointOrange : const Color(0xFF1F7E8A),
+          caption: NOverlayCaption(
+            text: isMe ? '나' : (entry.value.nickname ?? '러너 ${entry.key}'),
+          ),
+        );
+        _markers[entry.key] = marker;
+        ctrl.addOverlay(marker);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final locState = ref.watch(runLocationProvider);
+    final card = widget.card;
+    final target = NLatLng(card.latitude, card.longitude);
+
+    ref.listen<RunLocationState>(runLocationProvider, (_, next) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _syncMarkers(next);
+      });
+    });
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF4F4F4),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF4F4F4),
+        elevation: 0,
+        title: Text(
+          card.title,
+          style: const TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF1F1F1F),
+          ),
+        ),
+        actions: [
+          _ConnectionBadge(state: locState.connectionState),
+          const SizedBox(width: 12),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: NaverMap(
+              options: NaverMapViewOptions(
+                initialCameraPosition: NCameraPosition(target: target, zoom: 15),
+                locationButtonEnable: true,
+                compassEnable: false,
+                locale: const Locale('ko'),
+              ),
+              onMapReady: (ctrl) {
+                _mapCtrl = ctrl;
+                _syncMarkers(locState);
+              },
+            ),
+          ),
+          if (locState.errorMessage != null)
+            Container(
+              width: double.infinity,
+              color: const Color(0xFFFFEBEE),
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                locState.errorMessage!,
+                style: const TextStyle(color: Color(0xFFC62828), fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.people_alt_rounded,
+                    size: 20,
+                    color: Colors.grey.shade700,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '참가자 ${locState.participants.length + (locState.myLocation != null ? 1 : 0)}명 표시 중',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF444444),
+                    ),
+                  ),
+                  const Spacer(),
+                  if (locState.isConnected)
+                    const Icon(Icons.circle, size: 10, color: Color(0xFF4CAF50)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConnectionBadge extends StatelessWidget {
+  const _ConnectionBadge({required this.state});
+
+  final RunLocationConnectionState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color) = switch (state) {
+      RunLocationConnectionState.connected => ('연결됨', const Color(0xFF4CAF50)),
+      RunLocationConnectionState.connecting => ('연결 중…', const Color(0xFFFF9800)),
+      RunLocationConnectionState.error => ('오류', const Color(0xFFE53935)),
+      RunLocationConnectionState.idle => ('대기', Colors.grey),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.wifi, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: color),
+          ),
+        ],
+      ),
+    );
+  }
+}

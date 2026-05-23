@@ -7,6 +7,7 @@ class SpotSummary {
     required this.rewardAmount,
     required this.latitude,
     required this.longitude,
+    this.canCheckIn = true,
   });
 
   final int id;
@@ -14,6 +15,8 @@ class SpotSummary {
   final int rewardAmount;
   final double latitude;
   final double longitude;
+  /// 서버 기준 체크인 가능 여부 (false = 24시간 이내 이미 체크인)
+  final bool canCheckIn;
 
   factory SpotSummary.fromJson(Map<String, Object?> json) {
     return SpotSummary(
@@ -22,6 +25,7 @@ class SpotSummary {
       rewardAmount: (json['rewardAmount'] as num).toInt(),
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),
+      canCheckIn: (json['canCheckIn'] as bool?) ?? true,
     );
   }
 }

@@ -231,7 +231,8 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
 
     for (final spot in record.nearbySpots) {
       final markerId = 'spot_${spot.id}';
-      final checked = record.checkedInSpotIds.contains(spot.id);
+      // 프론트 체크인 기록 OR 서버 기준 이미 체크인
+      final checked = record.checkedInSpotIds.contains(spot.id) || !spot.canCheckIn;
       final pos = LatLng(spot.latitude, spot.longitude);
 
       // 반투명 원

@@ -5,6 +5,7 @@ import 'tab_registry.dart';
 
 import '../../features/home/home_screen.dart';
 import '../../features/running/screens/running_screen.dart';
+import '../../features/profile/screens/my_room_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/social/social_feed_screen.dart';
 
@@ -21,10 +22,15 @@ final tabRegistryProvider = Provider<List<TabEntry>>((ref) {
     // Tab 2: Social
     const TabEntry(builder: _buildSocial),
 
-    // Tab 3: Profile
+    // Tab 3: My Room
+    const TabEntry(builder: _buildMyRoom),
+
+    // Tab 4: Profile
     const TabEntry(builder: _buildProfile),
   ];
 });
+
+Widget _buildMyRoom(BuildContext _) => const MyRoomScreen();
 
 Widget _buildRunning(BuildContext _) => const RunningScreen();
 

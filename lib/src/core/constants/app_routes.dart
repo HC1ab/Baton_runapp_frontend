@@ -13,5 +13,6 @@ abstract final class AppTabs {
   static const running = 0;
   static const spot = 1;
   static const social = 2;
-  static const profile = 3;
+  static const myRoom = 3;
+  static const profile = 4;
 }

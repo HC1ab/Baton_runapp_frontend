@@ -76,13 +76,13 @@ class _RunButton extends StatelessWidget {
             ? Padding(
                 padding: EdgeInsets.all(18.r),
                 child: const CircularProgressIndicator(
-                  color: Colors.white,
+                  color: AppColors.textOnPrimary,
                   strokeWidth: 2.5,
                 ),
               )
             : Icon(
                 isRunning ? Icons.stop_rounded : Icons.play_arrow_rounded,
-                color: Colors.white,
+                color: AppColors.textOnPrimary,
                 size: 32.r,
               ),
       ),

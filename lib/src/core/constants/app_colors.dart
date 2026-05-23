@@ -36,4 +36,7 @@ abstract final class AppColors {
   // --- Neutral ---
   static const divider = Color(0xFFEDE8E3);
   static const cardShadow = Color(0x1AE8704A); // primary @ 10%
+
+  // --- Map overlays ---
+  static const spotNeutral = Color(0xFF888888);
 }

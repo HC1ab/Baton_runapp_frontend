@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
 import '../../../core/constants/api_constants.dart';
+import '../../../core/constants/error_messages.dart';
 import '../../../core/error/app_exception.dart';
 import '../../../core/network/dio_client.dart';
 import '../models/spot_model.dart';
@@ -143,12 +144,12 @@ class SpotService implements SpotServiceBase {
         final code = data['code']?.toString();
         final msg = data['message']?.toString() ?? '';
         switch (code) {
-          case 'C001': throw ServerException('존재하지 않는 러닝 기록이에요.');
-          case 'C002': throw ServerException('본인의 러닝 기록이 아니에요.');
-          case 'C003': throw ServerException('24시간 이내에 이미 체크인했어요.');
-          case 'C004': throw ServerException('반경 30m 밖에서는 체크인할 수 없어요.');
-          case 'C005': throw ServerException('러닝 중에만 체크인할 수 있어요.');
-          case 'S004': throw ServerException('존재하지 않는 스팀이에요.');
+          case 'C001': throw ServerException(ErrorMessages.spotRunNotFound);
+          case 'C002': throw ServerException(ErrorMessages.spotRunNotOwned);
+          case 'C003': throw ServerException(ErrorMessages.spotAlreadyCheckedIn);
+          case 'C004': throw ServerException(ErrorMessages.spotOutOfRange);
+          case 'C005': throw ServerException(ErrorMessages.runningOnly);
+          case 'S004': throw ServerException(ErrorMessages.spotNotFound);
           default: if (msg.isNotEmpty) throw ServerException(msg);
         }
       }

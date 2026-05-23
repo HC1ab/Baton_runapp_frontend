@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:logger/logger.dart';
 
+import '../../../core/constants/error_messages.dart';
 import '../../../core/error/app_exception.dart';
 import '../../../core/utils/running_utils.dart';
 import '../models/run_path_point_model.dart';
@@ -64,47 +65,52 @@ class RunningNotifier extends Notifier<RunRecordModel> {
   /// Called by real GPS stream or MockLocationController.
   /// Updates position, path (if running), pace, and triggers spot refresh.
   Future<void> onPositionUpdate(Position position, {bool isDev = false}) async {
-    // --- Distance & pace update ---
-    double distanceDelta = 0;
-    if (_lastPosition != null && state.isRunning) {
-      distanceDelta = Geolocator.distanceBetween(
-        _lastPosition!.latitude,
-        _lastPosition!.longitude,
-        position.latitude,
-        position.longitude,
+    try {
+      // --- Distance & pace update ---
+      double distanceDelta = 0;
+      if (_lastPosition != null && state.isRunning) {
+        distanceDelta = Geolocator.distanceBetween(
+          _lastPosition!.latitude,
+          _lastPosition!.longitude,
+          position.latitude,
+          position.longitude,
+        );
+      }
+
+      // Low-pass filter on pace (80% old / 20% new) — from original RunNotifier
+      final rawPace = RunningUtils.paceFromSpeed(position.speed);
+      if (_filteredPace == 0.0) {
+        _filteredPace = rawPace;
+      } else if (rawPace > 0) {
+        _filteredPace = (_filteredPace * 0.8) + (rawPace * 0.2);
+      } else {
+        _filteredPace = 0.0;
+      }
+
+      _lastPosition = position;
+
+      final newDistance = state.distanceMeters + distanceDelta;
+      final newPath = state.isRunning
+          ? [...state.path, RunPathPoint(lat: position.latitude, lng: position.longitude)]
+          : state.path;
+
+      state = state.copyWith(
+        distanceMeters: newDistance,
+        path: newPath,
+        currentPaceSecondsPerKm: _filteredPace,
+        averagePaceSecondsPerKm:
+            RunningUtils.averagePace(newDistance, state.duration),
+        clearError: true,
       );
+
+      // Debounced nearby spot refresh (only when not running or not frozen)
+      _debouncedRefreshSpots(position);
+
+      // Auto check-in 제거 — 마커 탭으로만 체크인 가능
+    } catch (e) {
+      _logger.e('onPositionUpdate error', error: e);
+      state = state.copyWith(errorMessage: _toMessage(e));
     }
-
-    // Low-pass filter on pace (80% old / 20% new) — from original RunNotifier
-    final rawPace = RunningUtils.paceFromSpeed(position.speed);
-    if (_filteredPace == 0.0) {
-      _filteredPace = rawPace;
-    } else if (rawPace > 0) {
-      _filteredPace = (_filteredPace * 0.8) + (rawPace * 0.2);
-    } else {
-      _filteredPace = 0.0;
-    }
-
-    _lastPosition = position;
-
-    final newDistance = state.distanceMeters + distanceDelta;
-    final newPath = state.isRunning
-        ? [...state.path, RunPathPoint(lat: position.latitude, lng: position.longitude)]
-        : state.path;
-
-    state = state.copyWith(
-      distanceMeters: newDistance,
-      path: newPath,
-      currentPaceSecondsPerKm: _filteredPace,
-      averagePaceSecondsPerKm:
-          RunningUtils.averagePace(newDistance, state.duration),
-      clearError: true,
-    );
-
-    // Debounced nearby spot refresh (only when not running or not frozen)
-    _debouncedRefreshSpots(position);
-
-    // Auto check-in 제거 — 마커 탭으로만 체크인 가능
   }
 
   /// Starts a new running session.
@@ -181,7 +187,7 @@ class RunningNotifier extends Notifier<RunRecordModel> {
   /// Manually triggers a spot check-in (from map marker tap).
   Future<void> checkInSpot(SpotSummary spot) async {
     if (!state.isRunning) {
-      state = state.copyWith(errorMessage: '러닝 중에만 체크인할 수 있어요.');
+      state = state.copyWith(errorMessage: ErrorMessages.runningOnly);
       return;
     }
 
@@ -304,7 +310,7 @@ class RunningNotifier extends Notifier<RunRecordModel> {
   Future<void> _checkLocationPermission() async {
     // [iOS 대응] NSLocationWhenInUseUsageDescription / NSLocationAlwaysUsageDescription 추가 필요
     final enabled = await Geolocator.isLocationServiceEnabled();
-    if (!enabled) throw const ServerException('위치 서비스가 꺼져 있어요.');
+    if (!enabled) throw const ServerException(ErrorMessages.locationDisabled);
 
     var perm = await Geolocator.checkPermission();
     if (perm == LocationPermission.denied) {
@@ -312,7 +318,7 @@ class RunningNotifier extends Notifier<RunRecordModel> {
     }
     if (perm == LocationPermission.denied ||
         perm == LocationPermission.deniedForever) {
-      throw const ServerException('위치 권한이 필요해요.');
+      throw const ServerException(ErrorMessages.locationPermissionDenied);
     }
   }
 
@@ -336,7 +342,7 @@ class RunningNotifier extends Notifier<RunRecordModel> {
 
   String _toMessage(Object e) {
     if (e is AppException) return e.message;
-    return '알 수 없는 오류가 발생했어요.';
+    return ErrorMessages.unknownError;
   }
 }
 

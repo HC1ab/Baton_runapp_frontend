@@ -17,4 +17,17 @@ abstract final class ErrorMessages {
   static const emptyEmail = '이메일을 입력해주세요.';
   static const emptyPassword = '비밀번호를 입력해주세요.';
   static const invalidEmail = '올바른 이메일 형식이 아니에요.';
+
+  // --- Running ---
+  static const runningOnly = '러닝 중에만 체크인할 수 있어요.';
+  static const locationDisabled = '위치 서비스가 꺼져 있어요.';
+  static const locationPermissionDenied = '위치 권한이 필요해요.';
+
+  // --- Spot ---
+  static const spotRunNotFound = '존재하지 않는 러닝 기록이에요.';
+  static const spotRunNotOwned = '본인의 러닝 기록이 아니에요.';
+  static const spotAlreadyCheckedIn = '24시간 이내에 이미 체크인했어요.';
+  static const spotOutOfRange = '반경 30m 밖에서는 체크인할 수 없어요.';
+  static const spotNotFound = '존재하지 않는 스팟이에요.';
+  static const spotAlreadyCheckedInCard = '24시간 이내 이미 체크인한 스팟이에요.';
 }

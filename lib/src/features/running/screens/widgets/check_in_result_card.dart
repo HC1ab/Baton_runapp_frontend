@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/error_messages.dart';
 import '../../services/spot_service.dart';
 
 /// 체크인 성공 / 이미 체크인 시 지도 위에 표시되는 팝업 카드
@@ -15,7 +16,7 @@ class CheckInResultCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isAlready = result.isAlreadyCheckedIn;
-    final accentColor = isAlready ? Colors.grey : AppColors.primary;
+    final accentColor = isAlready ? AppColors.textSecondary : AppColors.primary;
 
     return Container(
       margin: EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
@@ -24,7 +25,7 @@ class CheckInResultCard extends StatelessWidget {
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         boxShadow: [
           BoxShadow(
@@ -77,7 +78,7 @@ class CheckInResultCard extends StatelessWidget {
                 SizedBox(height: 2.h),
                 Text(
                   isAlready
-                      ? '24시간 이내 이미 체크인한 스팟이에요.'
+                      ? ErrorMessages.spotAlreadyCheckedInCard
                       : '체크인 완료! 현재 ${result.currentTotalPoints}P 보유',
                   style: AppTextStyles.labelSmall.copyWith(
                     color: AppColors.textSecondary,
@@ -103,13 +104,13 @@ class CheckInResultCard extends StatelessWidget {
               child: Text(
                 '+${result.earnedPoints}P',
                 style: AppTextStyles.labelSmall.copyWith(
-                  color: Colors.white,
+                  color: AppColors.textOnPrimary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             )
           else
-            Icon(Icons.block_rounded, color: Colors.grey, size: 20.r),
+            Icon(Icons.block_rounded, color: AppColors.textSecondary, size: 20.r),
         ],
       ),
     );

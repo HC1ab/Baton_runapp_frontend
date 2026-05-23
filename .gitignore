@@ -84,6 +84,11 @@ migrate_working_dir/
 # VSCode launch 설정은 팀 공유 가능하므로 커밋 허용
 # .vscode/
 
+# ── Claude Code ──────────────────────────────────────────────
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+
 # ── 기타 ─────────────────────────────────────────────────────
 *.class
 *.log

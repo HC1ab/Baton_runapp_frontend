@@ -157,7 +157,7 @@ class _BlinkingDotState extends State<_BlinkingDot>
         width: 8.r,
         height: 8.r,
         decoration: const BoxDecoration(
-          color: Colors.red,
+          color: AppColors.error,
           shape: BoxShape.circle,
         ),
       ),

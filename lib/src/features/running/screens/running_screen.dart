@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:logger/logger.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
@@ -15,6 +16,8 @@ import '../providers/running_provider.dart';
 import 'widgets/running_mock_panel.dart';
 import 'widgets/check_in_result_card.dart';
 import '../../../core/constants/app_env.dart';
+
+final _logger = Logger();
 
 // 구서역 1호선 기본 카메라 위치
 const _defaultLatLng = LatLng(35.2475, 129.0914);
@@ -89,37 +92,45 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   // -------------------------------------------------------------------------
 
   Future<void> _init() async {
-    // 마커 아이콘 선로딩 (한 번만)
-    _iconDefault = await BitmapDescriptor.asset(
-      const ImageConfiguration(size: Size(48, 48)),
-      'assets/images/spot_default.png',
-    );
-    _iconChecked = await BitmapDescriptor.asset(
-      const ImageConfiguration(size: Size(48, 48)),
-      'assets/images/spot_checked.png',
-    );
+    try {
+      // 마커 아이콘 선로딩 (한 번만)
+      _iconDefault = await BitmapDescriptor.asset(
+        const ImageConfiguration(size: Size(48, 48)),
+        'assets/images/spot_default.png',
+      );
+      _iconChecked = await BitmapDescriptor.asset(
+        const ImageConfiguration(size: Size(48, 48)),
+        'assets/images/spot_checked.png',
+      );
 
-    final useMockGps = ref.read(useMockGpsProvider);
-    await ref.read(runningProvider.notifier).initialize(useMock: useMockGps);
-    if (!mounted) return;
+      final useMockGps = ref.read(useMockGpsProvider);
+      await ref.read(runningProvider.notifier).initialize(useMock: useMockGps);
+      if (!mounted) return;
 
-    if (useMockGps) {
-      _mockPos = _makeMockPos(lat: 35.2475, lng: 129.0914, speed: 0);
-      await ref
-          .read(runningProvider.notifier)
-          .onPositionUpdate(_mockPos!, isDev: true);
-    } else {
-      _gpsSub = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          distanceFilter: 5,
-        ),
-      ).listen((pos) async {
-        if (!mounted) return;
-        await ref.read(runningProvider.notifier).onPositionUpdate(pos);
-        if (!mounted) return;
-        await _updateCamera(pos);
-      });
+      if (useMockGps) {
+        _mockPos = _makeMockPos(lat: 35.2475, lng: 129.0914, speed: 0);
+        await ref
+            .read(runningProvider.notifier)
+            .onPositionUpdate(_mockPos!, isDev: true);
+      } else {
+        _gpsSub = Geolocator.getPositionStream(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: 5,
+          ),
+        ).listen((pos) async {
+          try {
+            if (!mounted) return;
+            await ref.read(runningProvider.notifier).onPositionUpdate(pos);
+            if (!mounted) return;
+            await _updateCamera(pos);
+          } catch (e) {
+            _logger.e('GPS update error', error: e);
+          }
+        });
+      }
+    } catch (e) {
+      _logger.e('RunningScreen init error', error: e);
     }
   }
 
@@ -205,18 +216,23 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     final ctrl = _mapCtrl;
     if (ctrl == null || !mounted) return;
 
-    final record = ref.read(runningProvider);
-    final zoom = record.isRunning ? 18.0 : 17.0;
+    try {
+      final record = ref.read(runningProvider);
+      final zoom = record.isRunning ? 18.0 : 17.0;
+      final tilt = record.isRunning ? 45.0 : 0.0;
 
-    await ctrl.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: LatLng(pos.latitude, pos.longitude),
-          zoom: zoom,
-          tilt: 45.0,   // 러닝 중/대기 모두 3D 유지
+      await ctrl.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: LatLng(pos.latitude, pos.longitude),
+            zoom: zoom,
+            tilt: tilt,
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      _logger.w('Camera update failed', error: e);
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -242,10 +258,10 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
         radius: 30,
         fillColor: checked
             ? AppColors.primary.withValues(alpha: 0.25)
-            : const Color(0xFF888888).withValues(alpha: 0.15),
+            : AppColors.spotNeutral.withValues(alpha: 0.15),
         strokeColor: checked
             ? AppColors.primary.withValues(alpha: 0.6)
-            : const Color(0xFF888888).withValues(alpha: 0.4),
+            : AppColors.spotNeutral.withValues(alpha: 0.4),
         strokeWidth: checked ? 2 : 1,
       ));
 
@@ -470,145 +486,147 @@ class _BottomPanel extends StatelessWidget {
 
         SizedBox(height: 6.h),
 
-        Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenHorizontal,
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.surfaceLight,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.07),
-                  blurRadius: 20,
-                  offset: const Offset(0, -4),
-                ),
-              ],
+        if (!record.isRunning)
+          Center(child: _RunButton(isRunning: false, onTap: onStart))
+        else
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.screenHorizontal,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(height: AppSpacing.verticalMd),
-
-                if (record.errorMessage != null)
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                    ).copyWith(bottom: AppSpacing.sm),
-                    child: _ErrorBanner(
-                      message: record.errorMessage!,
-                      onDismiss: onDismissError,
-                    ),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.surfaceLight,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.07),
+                    blurRadius: 20,
+                    offset: const Offset(0, -4),
                   ),
-
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      _MetricBlock(
-                        label: '거리 (KM)',
-                        value: (record.distanceMeters / 1000)
-                            .toStringAsFixed(1),
-                        labelColor: AppColors.primary,
-                      ),
-                      SizedBox(width: AppSpacing.lg),
-                      _MetricBlock(
-                        label: '페이스',
-                        value: record.formattedCurrentPace,
-                      ),
-                      const Spacer(),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _RunButton(
-                            isRunning: record.isRunning,
-                            onTap: record.isRunning ? onFinish : onStart,
-                          ),
-                          SizedBox(height: 4.h),
-                          GestureDetector(
-                            onTap: onToggleExpand,
-                            child: Icon(
-                              bottomExpanded
-                                  ? Icons.keyboard_arrow_up_rounded
-                                  : Icons.keyboard_arrow_down_rounded,
-                              color: AppColors.textSecondary,
-                              size: 24.r,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                if (bottomExpanded) ...[
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                   SizedBox(height: AppSpacing.verticalMd),
+
+                  if (record.errorMessage != null)
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                      ).copyWith(bottom: AppSpacing.sm),
+                      child: _ErrorBanner(
+                        message: record.errorMessage!,
+                        onDismiss: onDismissError,
+                      ),
+                    ),
+
                   Padding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                    padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         _MetricBlock(
-                          label: '시간',
-                          value: _formatDuration(record.duration),
-                          valueFontSize: 28,
+                          label: '거리 (KM)',
+                          value: (record.distanceMeters / 1000)
+                              .toStringAsFixed(1),
+                          labelColor: AppColors.primary,
                         ),
                         SizedBox(width: AppSpacing.lg),
                         _MetricBlock(
-                          label: '평균 페이스',
-                          value: record.formattedAveragePace,
-                          valueFontSize: 28,
+                          label: '페이스',
+                          value: record.formattedCurrentPace,
                         ),
-                      ],
-                    ),
-                  ),
-                ],
-
-                if (record.spotPoints > 0) ...[
-                  SizedBox(height: AppSpacing.sm),
-                  Padding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: AppSpacing.md,
-                          vertical: 4.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              AppColors.primary.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(
-                              AppSpacing.radiusFull),
-                        ),
-                        child: Row(
+                        const Spacer(),
+                        Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.stars_rounded,
-                                size: 14.r, color: AppColors.primary),
-                            SizedBox(width: 4.w),
-                            Text(
-                              '스팟 ${record.checkedInSpotIds.length}개 · +${record.spotPoints}P',
-                              style: AppTextStyles.labelSmall.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.bold,
+                            _RunButton(
+                              isRunning: true,
+                              onTap: onFinish,
+                            ),
+                            SizedBox(height: 4.h),
+                            GestureDetector(
+                              onTap: onToggleExpand,
+                              child: Icon(
+                                bottomExpanded
+                                    ? Icons.keyboard_arrow_up_rounded
+                                    : Icons.keyboard_arrow_down_rounded,
+                                color: AppColors.textSecondary,
+                                size: 24.r,
                               ),
                             ),
                           ],
                         ),
-                      ),
+                      ],
                     ),
                   ),
-                ],
 
-                SizedBox(height: AppSpacing.verticalMd),
-              ],
+                  if (bottomExpanded) ...[
+                    SizedBox(height: AppSpacing.verticalMd),
+                    Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                      child: Row(
+                        children: [
+                          _MetricBlock(
+                            label: '시간',
+                            value: _formatDuration(record.duration),
+                            valueFontSize: 28,
+                          ),
+                          SizedBox(width: AppSpacing.lg),
+                          _MetricBlock(
+                            label: '평균 페이스',
+                            value: record.formattedAveragePace,
+                            valueFontSize: 28,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  if (record.spotPoints > 0) ...[
+                    SizedBox(height: AppSpacing.sm),
+                    Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md,
+                            vertical: 4.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(
+                                AppSpacing.radiusFull),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.stars_rounded,
+                                  size: 14.r, color: AppColors.primary),
+                              SizedBox(width: 4.w),
+                              Text(
+                                '스팟 ${record.checkedInSpotIds.length}개 · +${record.spotPoints}P',
+                                style: AppTextStyles.labelSmall.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  SizedBox(height: AppSpacing.verticalMd),
+                ],
+              ),
             ),
           ),
-        ),
       ],
     );
   }

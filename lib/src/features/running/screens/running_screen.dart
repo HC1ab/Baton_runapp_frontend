@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:geolocator/geolocator.dart';
@@ -13,6 +15,7 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../models/run_record_model.dart';
 import '../providers/running_provider.dart';
+import 'widgets/run_finish_card.dart';
 import 'widgets/running_mock_panel.dart';
 import 'widgets/check_in_result_card.dart';
 import '../../../core/constants/app_env.dart';
@@ -70,8 +73,13 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   // 마커 아이콘 캐시 — initState에서 한 번만 생성
   BitmapDescriptor? _iconDefault;
   BitmapDescriptor? _iconChecked;
+  BytesMapBitmap? _iconCharacter;
   final Set<Circle> _spotCircles = {};
   final Set<Polyline> _polylines = {};
+  Set<GroundOverlay> _myGroundOverlay = {};
+
+  // 현재 위치 (mock + 실 GPS 공통)
+  LatLng? _myLatLng;
 
   @override
   void initState() {
@@ -91,9 +99,8 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   // Init
   // -------------------------------------------------------------------------
 
-  Future<void> _init() async {
+  Future<void> _loadMarkerIcons() async {
     try {
-      // 마커 아이콘 선로딩 (한 번만)
       _iconDefault = await BitmapDescriptor.asset(
         const ImageConfiguration(size: Size(48, 48)),
         'assets/images/spot_default.png',
@@ -102,13 +109,81 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
         const ImageConfiguration(size: Size(48, 48)),
         'assets/images/spot_checked.png',
       );
+    } catch (e) {
+      _logger.w('Spot marker icons failed to load', error: e);
+    }
 
+    _iconCharacter = await _buildCircularMarker(
+      'assets/images/test_charactor.png',
+      logicalSize: 96,
+    );
+  }
+
+  Future<BytesMapBitmap?> _buildCircularMarker(
+    String assetPath, {
+    required double logicalSize,
+  }) async {
+    try {
+      final dpr =
+          WidgetsBinding.instance.platformDispatcher.views.first.devicePixelRatio;
+      final px = (logicalSize * dpr).round();
+
+      final data = await rootBundle.load(assetPath);
+      final codec = await ui.instantiateImageCodec(
+        data.buffer.asUint8List(),
+        targetWidth: px,
+        targetHeight: px,
+      );
+      final frame = await codec.getNextFrame();
+      final image = frame.image;
+
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+
+      // 원형 클리핑
+      canvas.clipPath(
+        Path()..addOval(Rect.fromLTWH(0, 0, px.toDouble(), px.toDouble())),
+      );
+      canvas.drawImage(image, Offset.zero, Paint()..isAntiAlias = true);
+
+      // 브랜드 컬러 테두리
+      canvas.drawCircle(
+        Offset(px / 2, px / 2),
+        px / 2 - 2,
+        Paint()
+          ..color = AppColors.primary
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = (4 * dpr),
+      );
+
+      final picture = recorder.endRecording();
+      final img = await picture.toImage(px, px);
+      final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
+      if (bytes == null) return null;
+
+      // GroundOverlay는 MapBitmapScaling.none 필수
+      return BytesMapBitmap(
+        bytes.buffer.asUint8List(),
+        bitmapScaling: MapBitmapScaling.none,
+      );
+    } catch (e) {
+      _logger.w('Character marker build failed: $assetPath', error: e);
+      return null;
+    }
+  }
+
+  Future<void> _init() async {
+    // 이미지 로딩 실패해도 GPS 초기화는 반드시 실행
+    await _loadMarkerIcons();
+
+    try {
       final useMockGps = ref.read(useMockGpsProvider);
       await ref.read(runningProvider.notifier).initialize(useMock: useMockGps);
       if (!mounted) return;
 
       if (useMockGps) {
         _mockPos = _makeMockPos(lat: 35.2475, lng: 129.0914, speed: 0);
+        _myLatLng = LatLng(_mockPos!.latitude, _mockPos!.longitude);
         await ref
             .read(runningProvider.notifier)
             .onPositionUpdate(_mockPos!, isDev: true);
@@ -121,6 +196,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
         ).listen((pos) async {
           try {
             if (!mounted) return;
+            _myLatLng = LatLng(pos.latitude, pos.longitude);
             await ref.read(runningProvider.notifier).onPositionUpdate(pos);
             if (!mounted) return;
             await _updateCamera(pos);
@@ -201,6 +277,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       speed: speed,
     );
     _mockPos = next;
+    _myLatLng = LatLng(next.latitude, next.longitude);
 
     unawaited(
       ref.read(runningProvider.notifier).onPositionUpdate(next, isDev: true),
@@ -218,7 +295,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
 
     try {
       final record = ref.read(runningProvider);
-      final zoom = record.isRunning ? 18.0 : 17.0;
+      final zoom = record.isRunning ? 18.5 : 17.0;
       final tilt = record.isRunning ? 45.0 : 0.0;
 
       await ctrl.animateCamera(
@@ -286,6 +363,21 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       );
     }
 
+    // 캐릭터 GroundOverlay (자기 위치 — 줌/틸트 따라감)
+    GroundOverlay? myOverlay;
+    final myPos = _myLatLng;
+    final charBitmap = _iconCharacter;
+    if (myPos != null && charBitmap != null) {
+      myOverlay = GroundOverlay.fromPosition(
+        groundOverlayId: const GroundOverlayId('my_character'),
+        image: charBitmap,
+        position: myPos,
+        width: 16, // 16미터
+        anchor: const Offset(0.5, 0.5),
+        zIndex: 10,
+      );
+    }
+
     // 러닝 경로 polyline
     final newPolylines = <Polyline>{};
     if (record.path.length >= 2) {
@@ -311,6 +403,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       _polylines
         ..clear()
         ..addAll(newPolylines);
+      _myGroundOverlay = myOverlay != null ? {myOverlay} : {};
     });
   }
 
@@ -365,7 +458,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
                 zoom: _defaultZoom,
                 tilt: 45.0,   // 3D 보기
               ),
-              myLocationEnabled: true,
+              myLocationEnabled: false,
               myLocationButtonEnabled: false,
               compassEnabled: false,
               zoomControlsEnabled: false,
@@ -376,6 +469,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
               markers: _spotMarkers.values.toSet(),
               circles: _spotCircles,
               polylines: _polylines,
+              groundOverlays: _myGroundOverlay,
               onMapCreated: (ctrl) async {
                 _mapCtrl = ctrl;
                 if (!mounted) return;
@@ -393,6 +487,26 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
               left: 0,
               right: 0,
               child: CheckInResultCard(result: record.lastCheckIn!),
+            ),
+
+          // ── 러닝 종료 결과 카드 ───────────────────────────────────────────
+          if (record.status == RunStatus.finished)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => ref.read(runningProvider.notifier).resetToIdle(),
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  alignment: Alignment.bottomCenter,
+                  child: GestureDetector(
+                    onTap: () {}, // 카드 탭 시 배경 닫힘 방지
+                    child: RunFinishCard(
+                      record: record,
+                      onConfirm: () =>
+                          ref.read(runningProvider.notifier).resetToIdle(),
+                    ),
+                  ),
+                ),
+              ),
             ),
 
           // ── Bottom panel ──────────────────────────────────────────────────

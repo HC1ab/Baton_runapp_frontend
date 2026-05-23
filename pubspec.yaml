@@ -67,3 +67,4 @@ flutter:
     - .env.prod
     - assets/images/spot_default.png
     - assets/images/spot_checked.png
+    - assets/images/test_charactor.png

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_routes.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../providers/login_provider.dart';
@@ -110,6 +112,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   _LoginButton(
                     isLoading: loginState.isLoading,
                     onPressed: loginState.isLoading ? null : _submit,
+                  ),
+                  SizedBox(height: 16.h),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '계정이 없으신가요?',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: loginState.isLoading
+                            ? null
+                            : () => context.push(AppRoutes.signup),
+                        child: Text(
+                          '회원가입',
+                          style: AppTextStyles.labelLarge.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   SizedBox(height: 32.h),
                 ],

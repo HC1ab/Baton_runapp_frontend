@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/api_client.dart';
-import '../../common/widgets/app_bottom_nav_bar.dart';
+import '../group_running/screens/group_run_live_screen.dart';
 import 'create_room_screen.dart';
 import 'models/run_card_data.dart';
 import 'room_detail_screen.dart';
@@ -39,7 +39,22 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
     });
   }
 
-  Future<void> _joinGroup(RunCardData card) async {
+  void _openLiveRun(RunCardData card) {
+    final groupId = card.groupId;
+    if (groupId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('아직 서버 그룹 ID가 없는 데이터입니다.')),
+      );
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => GroupRunLiveScreen(card: card),
+      ),
+    );
+  }
+
+  Future<void> _joinGroup(RunCardData card, {bool enterLiveAfter = false}) async {
     final groupId = card.groupId;
     if (groupId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -50,18 +65,23 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
     try {
       await ref.read(groupApiProvider).join(groupId: groupId);
       if (!mounted) return;
+      RunCardData updated = card.copyWith(
+        isParticipating: true,
+        currentMembers: (card.currentMembers + 1).clamp(0, card.maxMembers),
+      );
       setState(() {
         final idx = _cards.indexOf(card);
         if (idx >= 0) {
-          _cards[idx] = _cards[idx].copyWith(
-            isParticipating: true,
-            currentMembers: (_cards[idx].currentMembers + 1).clamp(0, _cards[idx].maxMembers),
-          );
+          _cards[idx] = updated;
+          updated = _cards[idx];
         }
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('그룹 참여가 완료됐습니다.')),
       );
+      if (enterLiveAfter) {
+        _openLiveRun(updated);
+      }
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -279,7 +299,9 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
                                 builder: (_) =>
                                     RoomDetailScreen(
                                       card: card,
-                                      onJoinPressed: () => _joinGroup(card),
+                                      onJoinPressed: () =>
+                                          _joinGroup(card, enterLiveAfter: true),
+                                      onEnterLivePressed: () => _openLiveRun(card),
                                       onLeavePressed: () => _leaveGroup(card),
                                       onUpdatePressed: () => _updateGroup(card),
                                       onDeletePressed: () => _deleteGroup(card),
@@ -318,10 +340,6 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
         label: const Text('+ 모집하기'),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: 2,
-        onTap: (_) {},
-      ),
     );
   }
 }

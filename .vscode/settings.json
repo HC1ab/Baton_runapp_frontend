@@ -1,3 +1,7 @@
 {
+<<<<<<< HEAD
     "cmake.sourceDirectory": "C:/001_Projects/002_running_app/linux"
+=======
+    "cmake.sourceDirectory": "C:/Users/kai12/Desktop/baton/windows"
+>>>>>>> origin/feature/websocket
 }

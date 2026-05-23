@@ -18,7 +18,8 @@ abstract class AuthServiceBase {
     required String password,
   });
 
-  Future<TokenPair> join({
+  /// Returns new member id from `{ success: true, data: <id> }`.
+  Future<int> join({
     required String email,
     required String password,
     required String realname,
@@ -76,7 +77,7 @@ class AuthService implements AuthServiceBase {
 
   // ── Join ─────────────────────────────────────────────────────────────────
   @override
-  Future<TokenPair> join({
+  Future<int> join({
     required String email,
     required String password,
     required String realname,
@@ -93,15 +94,9 @@ class AuthService implements AuthServiceBase {
         },
       );
       final data = _unwrap(response.data);
-      if (data is! Map<String, dynamic>) {
-        throw const ServerException(ErrorMessages.invalidResponse);
-      }
-      final access = (data['accessToken'] ?? '').toString();
-      final refresh = (data['refreshToken'] ?? '').toString();
-      if (access.isEmpty) {
-        throw const ServerException(ErrorMessages.invalidResponse);
-      }
-      return TokenPair(accessToken: access, refreshToken: refresh);
+      if (data is int) return data;
+      if (data is num) return data.toInt();
+      throw const ServerException(ErrorMessages.invalidResponse);
     } on AppException {
       rethrow;
     } on DioException catch (e) {
@@ -185,7 +180,7 @@ class AuthService implements AuthServiceBase {
       // 성공 응답: { success: true, data: ... }
       if (raw['success'] == true) return raw['data'];
 
-      // 실패 응답: { status: 'fail', message: ... }
+      // 실패 응답: { status: 'fail', code: ..., message: ... }
       final msg = (raw['message'] ?? raw['error'] ?? ErrorMessages.serverError).toString();
       throw ServerException(msg);
     }
@@ -194,6 +189,15 @@ class AuthService implements AuthServiceBase {
 
   AppException _mapDio(DioException e) {
     final status = e.response?.statusCode;
+    final body = e.response?.data;
+    if (body is Map<String, dynamic>) {
+      if (body['status'] == 'fail' || body['success'] == false) {
+        final msg =
+            (body['message'] ?? body['data'] ?? ErrorMessages.serverError)
+                .toString();
+        return ServerException(msg);
+      }
+    }
     if (status == 401) return const AuthException();
     if (status != null && status >= 500) return const ServerException();
     if (e.type == DioExceptionType.connectionTimeout ||

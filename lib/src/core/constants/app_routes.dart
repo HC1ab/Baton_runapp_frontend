@@ -3,6 +3,7 @@
 abstract final class AppRoutes {
   static const splash = '/';
   static const login = '/login';
+  static const signup = '/signup';
   static const home = '/home';
   static const running = '/running';
 }
@@ -12,5 +13,6 @@ abstract final class AppTabs {
   static const running = 0;
   static const spot = 1;
   static const social = 2;
-  static const profile = 3;
+  static const myRoom = 3;
+  static const profile = 4;
 }

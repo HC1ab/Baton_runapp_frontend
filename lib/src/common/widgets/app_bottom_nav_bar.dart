@@ -21,6 +21,7 @@ class AppBottomNavBar extends StatelessWidget {
     _NavItem(icon: Icons.directions_run_rounded, label: '러닝'),
     _NavItem(icon: Icons.location_on_rounded, label: '스팟'),
     _NavItem(icon: Icons.people_alt_rounded, label: '소셜'),
+    _NavItem(icon: Icons.home_outlined, label: 'My Room'),
     _NavItem(icon: Icons.person_rounded, label: '프로필'),
   ];
 

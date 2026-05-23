@@ -47,7 +47,7 @@ class TokenStorage {
 final _flutterSecureStorageProvider = Provider<FlutterSecureStorage>((ref) {
   return const FlutterSecureStorage(
     // [iOS 대응] kSecAttrAccessible 옵션이 필요한 경우 iOptions 추가
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    aOptions: AndroidOptions(),
   );
 });
 

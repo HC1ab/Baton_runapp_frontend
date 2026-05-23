@@ -39,10 +39,9 @@ class AuthInterceptor extends Interceptor {
     ErrorInterceptorHandler handler,
   ) async {
     // TODO: /member/refresh API 구현 후 토큰 자동 갱신 로직 추가
-    // 현재는 401 발생 시 토큰 클리어 후 에러 그대로 전달
+    // 토큰 clear 금지 — 러닝 중 spot/check-in 401로 finishRun 토큰 날아가는 버그 방지
     if (err.response?.statusCode == 401) {
-      _logger.w('401 received — clearing token. Re-login required.');
-      await _ref.read(tokenStorageProvider).clear();
+      _logger.w('401 received — ${err.requestOptions.method} ${err.requestOptions.path}');
     }
     handler.next(err);
   }

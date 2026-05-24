@@ -1,100 +1,64 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// My Room — 사용자의 러닝 레벨, 누적 거리, 평균 페이스 등을 보여주는
-/// 대시보드 형태의 홈 화면.
-///
-/// 디자인 기준:
-/// - 상단: 아바타 + "Baton" 로고 + 알림 아이콘
-/// - 가운데: 큰 원형 그래픽 + 닉네임 + 등급
-/// - 러닝 레벨 카드 (Lv. + EXP 진행 바)
-/// - 2x2 대시보드 그리드
-class MyRoomScreen extends ConsumerWidget {
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_spacing.dart';
+import '../../../core/constants/app_text_styles.dart';
+
+class MyRoomScreen extends ConsumerStatefulWidget {
   const MyRoomScreen({super.key});
 
-  static const Color _bg = Color(0xFFFBF1EC);
-  static const Color _primary = Color(0xFFDD6A3E);
-  static const Color _primarySoft = Color(0xFFF7CDB8);
-  static const Color _cardLight = Color(0xFFFFFFFF);
-  static const Color _cardSoft = Color(0xFFFCE6DA);
-  static const Color _textPrimary = Color(0xFF1F1A17);
-  static const Color _textSub = Color(0xFF8C857F);
+  @override
+  ConsumerState<MyRoomScreen> createState() => _MyRoomScreenState();
+}
+
+class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
+  int _selectedTab = 0;
+  int _selectedColorIdx = 0;
+
+  static const List<Color?> _coreColors = [
+    Color(0xFFBB6B4D), // dark coral
+    Color(0xFFE8936A), // salmon
+    Color(0xFF8CB87A), // sage green
+    Color(0xFF87B3D3), // sky blue
+    Color(0xFFE8C55A), // yellow
+    Color(0xFFB39BC8), // lavender
+    Color(0xFF6BB8A6), // teal
+    null,              // locked
+  ];
+
+  static const List<String> _tabs = ['Core Colors', 'Aura', 'Titles'];
+
+  Color get _selectedColor =>
+      _coreColors[_selectedColorIdx] ?? AppColors.primary;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: AppColors.backgroundLight,
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.screenHorizontal,
+            AppSpacing.verticalSm,
+            AppSpacing.screenHorizontal,
+            AppSpacing.verticalXl,
+          ),
           children: [
             _buildAppBar(),
-            const SizedBox(height: 12),
-            _buildHeroAvatar(),
-            const SizedBox(height: 20),
-            const Text(
-              'Baton user 1',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: _textPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Pro Runner',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                color: _textSub,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 20),
-            _buildLevelCard(),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: _MetricCard(
-                    icon: Icons.straighten_rounded,
-                    label: '총 거리',
-                    value: '124.8 km',
-                  ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: _MetricCard(
-                    icon: Icons.speed_rounded,
-                    label: '평균 페이스',
-                    value: "5'42\"",
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: const [
-                Expanded(
-                  child: _BigActionCard(
-                    icon: Icons.emoji_events_rounded,
-                    title: '러닝 히스토리',
-                    subtitle: '레벨 혜택 및 기록',
-                    filled: true,
-                  ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: _BigActionCard(
-                    icon: Icons.place_rounded,
-                    title: '나의 스팟',
-                    subtitle: '저장된 코스 확인',
-                    filled: false,
-                  ),
-                ),
-              ],
-            ),
+            SizedBox(height: AppSpacing.xs),
+            _buildSubtitle(),
+            SizedBox(height: AppSpacing.verticalLg),
+            _buildHeroSphere(),
+            SizedBox(height: AppSpacing.verticalMd),
+            _buildEquippedTitle(),
+            SizedBox(height: AppSpacing.verticalMd),
+            _buildShopBanner(),
+            SizedBox(height: AppSpacing.verticalMd),
+            _buildTabSelector(),
+            SizedBox(height: AppSpacing.verticalMd),
+            _buildTabContent(),
           ],
         ),
       ),
@@ -102,256 +66,251 @@ class MyRoomScreen extends ConsumerWidget {
   }
 
   Widget _buildAppBar() {
-    return Row(
-      children: [
-        const CircleAvatar(
-          radius: 18,
-          backgroundColor: _primary,
-          child: Icon(Icons.person, color: Colors.white, size: 20),
-        ),
-        const SizedBox(width: 10),
-        const Text(
-          'Baton',
-          style: TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.w900,
-            color: _primary,
-            letterSpacing: -0.5,
-          ),
-        ),
-        const Spacer(),
-        IconButton(
-          onPressed: () {},
-          icon: const Icon(
-            Icons.notifications_none_rounded,
-            color: _primary,
-            size: 26,
-          ),
-        ),
-      ],
+    return Text(
+      'My Room',
+      style: AppTextStyles.headlineMedium.copyWith(
+        fontWeight: FontWeight.w800,
+      ),
     );
   }
 
-  Widget _buildHeroAvatar() {
+  Widget _buildSubtitle() {
+    return Text(
+      'Customize your core sphere and identity.',
+      style: AppTextStyles.bodySmall.copyWith(
+        color: AppColors.textSecondary,
+      ),
+    );
+  }
+
+  Widget _buildHeroSphere() {
+    final double size = 180.r;
     return Center(
-      child: Container(
-        width: 180,
-        height: 180,
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            center: Alignment(-0.2, -0.3),
-            radius: 0.95,
-            colors: [
-              Color(0xFFF5A57E),
-              Color(0xFFD96A3F),
-              Color(0xFF8E3A1E),
-            ],
-            stops: [0.0, 0.55, 1.0],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x33D96A3F),
-              blurRadius: 30,
-              offset: Offset(0, 12),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // 1. Base — color target
+            // TODO: replace child with Image.asset('assets/character_base.png', fit: BoxFit.contain)
+            ColorFiltered(
+              colorFilter: ColorFilter.mode(_selectedColor, BlendMode.srcATop),
+              child: Container(
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                ),
+              ),
             ),
+            // 2. Shadow — dark shading (fixed, multiply blend)
+            // TODO: Image.asset('assets/character_shadow.png', fit: BoxFit.contain)
+            const SizedBox.shrink(),
+            // 3. Highlight — bright highlight (fixed)
+            // TODO: Image.asset('assets/character_highlight.png', fit: BoxFit.contain)
+            const SizedBox.shrink(),
+            // 4. Outline (fixed)
+            // TODO: Image.asset('assets/character_outline.png', fit: BoxFit.contain)
+            const SizedBox.shrink(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLevelCard() {
-    const double progress = 0.6;
+  Widget _buildEquippedTitle() {
+    return Column(
+      children: [
+        Text(
+          'EQUIPPED TITLE',
+          textAlign: TextAlign.center,
+          style: AppTextStyles.labelSmall.copyWith(
+            color: AppColors.textSecondary,
+            letterSpacing: 1.4,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        SizedBox(height: 4.h),
+        Text(
+          'Dawn Runner',
+          textAlign: TextAlign.center,
+          style: AppTextStyles.headlineLarge.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShopBanner() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: 14.h,
+      ),
       decoration: BoxDecoration(
-        color: _cardLight,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 16,
-            offset: Offset(0, 4),
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40.r,
+            height: 40.r,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.storefront_rounded,
+              color: Colors.white,
+              size: 20.r,
+            ),
+          ),
+          SizedBox(width: AppSpacing.sm + AppSpacing.xs),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Baton Shop',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  'GET EXCLUSIVE ITEMS',
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(
+            Icons.chevron_right_rounded,
+            color: Colors.white,
+            size: 24.r,
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '러닝 레벨',
-            style: TextStyle(
-              fontSize: 14,
-              color: _textSub,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: const [
-              Text(
-                'Lv.12',
-                style: TextStyle(
-                  fontSize: 38,
-                  fontWeight: FontWeight.w900,
-                  color: _primary,
-                  height: 1.0,
+    );
+  }
+
+  Widget _buildTabSelector() {
+    return Container(
+      padding: EdgeInsets.all(4.r),
+      decoration: BoxDecoration(
+        color: AppColors.divider,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+      ),
+      child: Row(
+        children: List.generate(_tabs.length, (index) {
+          final selected = _selectedTab == index;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedTab = index),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: EdgeInsets.symmetric(vertical: 8.h),
+                decoration: BoxDecoration(
+                  color: selected ? Colors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
                 ),
-              ),
-              Spacer(),
-              Padding(
-                padding: EdgeInsets.only(bottom: 6),
                 child: Text(
-                  '다음 레벨까지 240 EXP',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: _textSub,
-                    fontWeight: FontWeight.w500,
+                  _tabs[index],
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    fontWeight:
+                        selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
                   ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 10,
-              backgroundColor: _primarySoft.withValues(alpha: 0.45),
-              valueColor: const AlwaysStoppedAnimation<Color>(_primary),
             ),
-          ),
-        ],
+          );
+        }),
       ),
     );
   }
-}
 
-class _MetricCard extends StatelessWidget {
-  const _MetricCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-      decoration: BoxDecoration(
-        color: MyRoomScreen._bg,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: const Color(0xFFEBD9CC),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: MyRoomScreen._primary, size: 22),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: MyRoomScreen._textSub,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: MyRoomScreen._textPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
+  Widget _buildTabContent() {
+    return switch (_selectedTab) {
+      0 => _buildCoreColorGrid(),
+      _ => _buildComingSoon(),
+    };
   }
-}
 
-class _BigActionCard extends StatelessWidget {
-  const _BigActionCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.filled,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final bool filled;
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = filled ? MyRoomScreen._primary : MyRoomScreen._cardSoft;
-    final fg = filled ? Colors.white : MyRoomScreen._textPrimary;
-    final subFg = filled
-        ? Colors.white.withValues(alpha: 0.85)
-        : MyRoomScreen._textSub;
-    final iconBg = filled
-        ? Colors.white.withValues(alpha: 0.22)
-        : Colors.white.withValues(alpha: 0.7);
-    final iconColor = filled ? Colors.white : MyRoomScreen._primary;
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: filled
-            ? const [
-                BoxShadow(
-                  color: Color(0x33D96A3F),
-                  blurRadius: 14,
-                  offset: Offset(0, 6),
-                ),
-              ]
-            : null,
+  Widget _buildCoreColorGrid() {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        mainAxisSpacing: 12.h,
+        crossAxisSpacing: 12.w,
+        childAspectRatio: 1,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 38,
-            height: 38,
+      itemCount: _coreColors.length,
+      itemBuilder: (context, index) {
+        final color = _coreColors[index];
+        final isSelected = _selectedColorIdx == index;
+        final isLocked = color == null;
+
+        return GestureDetector(
+          onTap: isLocked
+              ? null
+              : () => setState(() => _selectedColorIdx = index),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
             decoration: BoxDecoration(
-              color: iconBg,
+              color: isLocked ? AppColors.divider : color,
               shape: BoxShape.circle,
+              border: isSelected
+                  ? Border.all(
+                      color: AppColors.textPrimary,
+                      width: 2.5,
+                    )
+                  : null,
             ),
-            child: Icon(icon, color: iconColor, size: 20),
+            child: isSelected
+                ? Icon(Icons.check_rounded, color: Colors.white, size: 24.r)
+                : isLocked
+                    ? Icon(
+                        Icons.lock_rounded,
+                        color: AppColors.textSecondary,
+                        size: 18.r,
+                      )
+                    : null,
           ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: fg,
-            ),
+        );
+      },
+    );
+  }
+
+  Widget _buildComingSoon() {
+    return SizedBox(
+      height: 100.h,
+      child: Center(
+        child: Text(
+          'Coming soon',
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
           ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 12,
-              color: subFg,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

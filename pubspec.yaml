@@ -36,7 +36,9 @@ dependencies:
   json_annotation: ^4.9.0         # ✅ iOS 지원 확인됨
 
   # Map & Location
-  google_maps_flutter: ^2.9.0     # ✅ Android/iOS 통합 지도 SDK
+  google_maps_flutter: ^2.9.0                    # ✅ Android/iOS 통합 지도 SDK
+  google_maps_flutter_android: ^2.0.0            # Android renderer 초기화 (LATEST renderer 전환용)
+  google_maps_flutter_platform_interface: ^2.0.0 # GoogleMapsFlutterPlatform 접근용
   geolocator: ^14.0.2             # ✅ iOS 지원 확인됨 (Info.plist 키 추가 필요)
   permission_handler: ^12.0.1     # ✅ iOS 지원 확인됨 (Info.plist 키 추가 필요)
   geocoding: ^4.0.0               # ✅ iOS 지원 확인됨 (역지오코딩 — 좌표→주소)

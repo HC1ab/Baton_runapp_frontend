@@ -89,6 +89,9 @@ migrate_working_dir/
 CLAUDE.md
 CLAUDE.local.md
 
+# ── API 스펙 (민감 정보 포함 가능 — 커밋 금지) ───────────────
+Baton - RunApp.openapi.yaml
+
 # ── 기타 ─────────────────────────────────────────────────────
 *.class
 *.log

@@ -13,7 +13,9 @@ import 'package:logger/logger.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../models/run_path_point_model.dart';
 import '../models/run_record_model.dart';
+import '../models/spot_model.dart';
 import '../providers/running_provider.dart';
 import 'widgets/run_finish_card.dart';
 import 'widgets/running_mock_panel.dart';
@@ -24,7 +26,8 @@ final _logger = Logger();
 
 // 구서역 1호선 기본 카메라 위치
 const _defaultLatLng = LatLng(35.2475, 129.0914);
-const _defaultZoom = 18.0;
+const _defaultZoom = 18.5;
+const _defaultTilt = 45.0;
 
 // 흰색 맵 스타일 JSON
 const _whiteMapStyle = '''
@@ -68,18 +71,28 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   // Bottom panel expand
   bool _bottomExpanded = false;
 
-  // Overlay cache
-  final Map<String, Marker> _spotMarkers = {};
   // 마커 아이콘 캐시 — initState에서 한 번만 생성
   BitmapDescriptor? _iconDefault;
   BitmapDescriptor? _iconChecked;
   BytesMapBitmap? _iconCharacter;
-  final Set<Circle> _spotCircles = {};
-  final Set<Polyline> _polylines = {};
-  Set<GroundOverlay> _myGroundOverlay = {};
 
   // 현재 위치 (mock + 실 GPS 공통)
   LatLng? _myLatLng;
+
+  // GroundOverlay 캐시 — 위치 변경 시만 재생성
+  // Set도 캐시: 클럭 틱마다 동일 참조 반환 → GoogleMap.didUpdateWidget에서 변경 없음 판정
+  GroundOverlay? _cachedGroundOverlay;
+  LatLng? _cachedGroundOverlayPos;
+  Set<GroundOverlay> _cachedGroundOverlaySet = const {};
+
+  // Marker/Circle/Polyline 캐시 — 소스 데이터 identity 변경 시만 재계산
+  // (클럭 틱은 duration만 바꾸므로 nearbySpots/checkedInSpotIds/path ref 불변 → 재계산 없음)
+  Set<Marker> _cachedMarkers = {};
+  Set<Circle> _cachedCircles = {};
+  Set<Polyline> _cachedPolylines = {};
+  List<SpotSummary>? _prevNearbySpots;
+  Set<int>? _prevCheckedInIds;
+  List<RunPathPoint>? _prevPath;
 
   @override
   void initState() {
@@ -208,6 +221,9 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     } catch (e) {
       _logger.e('RunningScreen init error', error: e);
     }
+
+    // 아이콘 로드 완료 후 화면 갱신 (setState로 rebuild 유발 → build()에서 오버레이 재계산)
+    if (mounted) setState(() {});
   }
 
   // -------------------------------------------------------------------------
@@ -294,16 +310,12 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     if (ctrl == null || !mounted) return;
 
     try {
-      final record = ref.read(runningProvider);
-      final zoom = record.isRunning ? 18.5 : 17.0;
-      final tilt = record.isRunning ? 45.0 : 0.0;
-
       await ctrl.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
             target: LatLng(pos.latitude, pos.longitude),
-            zoom: zoom,
-            tilt: tilt,
+            zoom: _defaultZoom,
+            tilt: _defaultTilt,
           ),
         ),
       );
@@ -313,25 +325,40 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   }
 
   // -------------------------------------------------------------------------
-  // Overlays
+  // Overlay helpers — build()에서 동기 계산, setState 없음
   // -------------------------------------------------------------------------
 
-  Future<void> _syncOverlays(RunRecordModel record) async {
-    if (!mounted) return;
+  Set<Marker> _buildSpotMarkers(RunRecordModel record) {
+    return {
+      for (final spot in record.nearbySpots)
+        Marker(
+          markerId: MarkerId('spot_${spot.id}'),
+          position: LatLng(spot.latitude, spot.longitude),
+          icon: (record.checkedInSpotIds.contains(spot.id) || !spot.canCheckIn)
+              ? (_iconChecked ?? BitmapDescriptor.defaultMarker)
+              : (_iconDefault ?? BitmapDescriptor.defaultMarker),
+          anchor: const Offset(0.5, 0.5),
+          infoWindow: InfoWindow(
+            title: spot.name,
+            snippet: (record.checkedInSpotIds.contains(spot.id) || !spot.canCheckIn)
+                ? '✅ +${spot.rewardAmount}P'
+                : '+${spot.rewardAmount}P',
+          ),
+          // onTap 없음 — Marker.== 에 onTap 포함되므로 클로저 재생성 시
+          // 매 build마다 "변경됨" 판정 → 20개 마커를 platform channel로 재전송 → ANR
+          // 체크인은 _autoCheckIn(위치 기반)으로 처리
+        ),
+    };
+  }
 
-    final newMarkers = <String, Marker>{};
-    final newCircles = <Circle>{};
-
+  Set<Circle> _buildSpotCircles(RunRecordModel record) {
+    final result = <Circle>{};
     for (final spot in record.nearbySpots) {
-      final markerId = 'spot_${spot.id}';
-      // 프론트 체크인 기록 OR 서버 기준 이미 체크인
-      final checked = record.checkedInSpotIds.contains(spot.id) || !spot.canCheckIn;
-      final pos = LatLng(spot.latitude, spot.longitude);
-
-      // 반투명 원
-      newCircles.add(Circle(
+      final checked =
+          record.checkedInSpotIds.contains(spot.id) || !spot.canCheckIn;
+      result.add(Circle(
         circleId: CircleId('circle_${spot.id}'),
-        center: pos,
+        center: LatLng(spot.latitude, spot.longitude),
         radius: 30,
         fillColor: checked
             ? AppColors.primary.withValues(alpha: 0.25)
@@ -341,47 +368,14 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
             : AppColors.spotNeutral.withValues(alpha: 0.4),
         strokeWidth: checked ? 2 : 1,
       ));
-
-      // PNG 캐시 아이콘 사용
-      final icon = checked
-          ? (_iconChecked ?? BitmapDescriptor.defaultMarker)
-          : (_iconDefault ?? BitmapDescriptor.defaultMarker);
-
-      newMarkers[markerId] = Marker(
-        markerId: MarkerId(markerId),
-        position: pos,
-        icon: icon,
-        anchor: const Offset(0.5, 0.5),
-        infoWindow: InfoWindow(
-          title: spot.name,
-          snippet: checked ? '✅ +${spot.rewardAmount}P' : '+${spot.rewardAmount}P',
-        ),
-        onTap: () {
-          if (!mounted) return;
-          unawaited(ref.read(runningProvider.notifier).checkInSpot(spot));
-        },
-      );
     }
+    return result;
+  }
 
-    // 캐릭터 GroundOverlay (자기 위치 — 줌/틸트 따라감)
-    GroundOverlay? myOverlay;
-    final myPos = _myLatLng;
-    final charBitmap = _iconCharacter;
-    if (myPos != null && charBitmap != null) {
-      myOverlay = GroundOverlay.fromPosition(
-        groundOverlayId: const GroundOverlayId('my_character'),
-        image: charBitmap,
-        position: myPos,
-        width: 16, // 16미터
-        anchor: const Offset(0.5, 0.5),
-        zIndex: 10,
-      );
-    }
-
-    // 러닝 경로 polyline
-    final newPolylines = <Polyline>{};
-    if (record.path.length >= 2) {
-      newPolylines.add(Polyline(
+  Set<Polyline> _buildPolylines(RunRecordModel record) {
+    if (record.path.length < 2) return {};
+    return {
+      Polyline(
         polylineId: const PolylineId('run_path'),
         points: record.path.map((p) => LatLng(p.lat, p.lng)).toList(),
         color: AppColors.primary,
@@ -389,22 +383,30 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
         jointType: JointType.round,
         startCap: Cap.roundCap,
         endCap: Cap.roundCap,
-      ));
-    }
+      ),
+    };
+  }
 
-    if (!mounted) return;
-    setState(() {
-      _spotMarkers
-        ..clear()
-        ..addAll(newMarkers);
-      _spotCircles
-        ..clear()
-        ..addAll(newCircles);
-      _polylines
-        ..clear()
-        ..addAll(newPolylines);
-      _myGroundOverlay = myOverlay != null ? {myOverlay} : {};
-    });
+  // 위치 변경 시만 GroundOverlay 재생성 (BytesMapBitmap 네이티브 재전송 방지)
+  // Set 자체도 캐시 → 위치 불변 시 동일 Set 참조 반환 → GoogleMap이 변경 없음으로 판정
+  Set<GroundOverlay> _buildGroundOverlays() {
+    final pos = _myLatLng;
+    final bitmap = _iconCharacter;
+    if (pos == null || bitmap == null) return const {};
+
+    if (_cachedGroundOverlayPos != pos) {
+      _cachedGroundOverlayPos = pos;
+      _cachedGroundOverlay = GroundOverlay.fromPosition(
+        groundOverlayId: const GroundOverlayId('my_character'),
+        image: bitmap,
+        position: pos,
+        width: 16,
+        anchor: const Offset(0.5, 0.5),
+        zIndex: 10,
+      );
+      _cachedGroundOverlaySet = {_cachedGroundOverlay!};
+    }
+    return _cachedGroundOverlaySet;
   }
 
   // -------------------------------------------------------------------------
@@ -440,12 +442,24 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     final record = ref.watch(runningProvider);
     final topPadding = MediaQuery.of(context).padding.top;
 
-    // 오버레이 동기화
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => unawaited(_syncOverlays(record)));
+    // identical() 체크 — 소스 ref 바뀔 때만 재계산
+    // copyWith(duration:...) 는 nearbySpots/checkedInSpotIds/path ref 유지 → 클럭 틱에서 재계산 없음
+    if (!identical(_prevNearbySpots, record.nearbySpots) ||
+        !identical(_prevCheckedInIds, record.checkedInSpotIds)) {
+      _prevNearbySpots = record.nearbySpots;
+      _prevCheckedInIds = record.checkedInSpotIds;
+      _cachedMarkers = _buildSpotMarkers(record);
+      _cachedCircles = _buildSpotCircles(record);
+    }
+    if (!identical(_prevPath, record.path)) {
+      _prevPath = record.path;
+      _cachedPolylines = _buildPolylines(record);
+    }
+    final groundOverlays = _buildGroundOverlays();
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
+      resizeToAvoidBottomInset: false, // 키보드 inset이 지도 크기를 변경하지 않도록 방지
       body: Stack(
         children: [
           // ── Full-screen Google Map ────────────────────────────────────────
@@ -456,7 +470,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
               initialCameraPosition: const CameraPosition(
                 target: _defaultLatLng,
                 zoom: _defaultZoom,
-                tilt: 45.0,   // 3D 보기
+                tilt: _defaultTilt,
               ),
               myLocationEnabled: false,
               myLocationButtonEnabled: false,
@@ -466,10 +480,10 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
               tiltGesturesEnabled: true,
               buildingsEnabled: true,
               fortyFiveDegreeImageryEnabled: true,
-              markers: _spotMarkers.values.toSet(),
-              circles: _spotCircles,
-              polylines: _polylines,
-              groundOverlays: _myGroundOverlay,
+              markers: _cachedMarkers,
+              circles: _cachedCircles,
+              polylines: _cachedPolylines,
+              groundOverlays: groundOverlays,
               onMapCreated: (ctrl) async {
                 _mapCtrl = ctrl;
                 if (!mounted) return;
@@ -487,26 +501,6 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
               left: 0,
               right: 0,
               child: CheckInResultCard(result: record.lastCheckIn!),
-            ),
-
-          // ── 러닝 종료 결과 카드 ───────────────────────────────────────────
-          if (record.status == RunStatus.finished)
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: () => ref.read(runningProvider.notifier).resetToIdle(),
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  alignment: Alignment.bottomCenter,
-                  child: GestureDetector(
-                    onTap: () {}, // 카드 탭 시 배경 닫힘 방지
-                    child: RunFinishCard(
-                      record: record,
-                      onConfirm: () =>
-                          ref.read(runningProvider.notifier).resetToIdle(),
-                    ),
-                  ),
-                ),
-              ),
             ),
 
           // ── Bottom panel ──────────────────────────────────────────────────
@@ -536,6 +530,26 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
                   ref.read(runningProvider.notifier).clearError(),
             ),
           ),
+
+          // ── 러닝 종료 결과 카드 (최상위 — BottomPanel 위) ─────────────────
+          if (record.status == RunStatus.finished)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => ref.read(runningProvider.notifier).resetToIdle(),
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  alignment: Alignment.center,
+                  child: GestureDetector(
+                    onTap: () {}, // 카드 탭 시 배경 닫힘 방지
+                    child: RunFinishCard(
+                      record: record,
+                      onConfirm: () =>
+                          ref.read(runningProvider.notifier).resetToIdle(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

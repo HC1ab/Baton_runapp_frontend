@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../../common/widgets/character_sphere_widget.dart';
+import '../../../core/character/character_provider.dart';
+import '../../../core/character/character_style.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -15,26 +18,13 @@ class MyRoomScreen extends ConsumerStatefulWidget {
 
 class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
   int _selectedTab = 0;
-  int _selectedColorIdx = 0;
-
-  static const List<Color?> _coreColors = [
-    Color(0xFFBB6B4D), // dark coral
-    Color(0xFFE8936A), // salmon
-    Color(0xFF8CB87A), // sage green
-    Color(0xFF87B3D3), // sky blue
-    Color(0xFFE8C55A), // yellow
-    Color(0xFFB39BC8), // lavender
-    Color(0xFF6BB8A6), // teal
-    null,              // locked
-  ];
 
   static const List<String> _tabs = ['Core Colors', 'Aura', 'Titles'];
 
-  Color get _selectedColor =>
-      _coreColors[_selectedColorIdx] ?? AppColors.primary;
-
   @override
   Widget build(BuildContext context) {
+    final currentStyle = ref.watch(selectedCharacterStyleProvider);
+
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       body: SafeArea(
@@ -50,7 +40,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
             SizedBox(height: AppSpacing.xs),
             _buildSubtitle(),
             SizedBox(height: AppSpacing.verticalLg),
-            _buildHeroSphere(),
+            _buildHeroSphere(currentStyle),
             SizedBox(height: AppSpacing.verticalMd),
             _buildEquippedTitle(),
             SizedBox(height: AppSpacing.verticalMd),
@@ -58,7 +48,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
             SizedBox(height: AppSpacing.verticalMd),
             _buildTabSelector(),
             SizedBox(height: AppSpacing.verticalMd),
-            _buildTabContent(),
+            _buildTabContent(currentStyle),
           ],
         ),
       ),
@@ -83,38 +73,9 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
     );
   }
 
-  Widget _buildHeroSphere() {
-    final double size = 180.r;
+  Widget _buildHeroSphere(CharacterStyle style) {
     return Center(
-      child: SizedBox(
-        width: size,
-        height: size,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // 1. Base — color target
-            // TODO: replace child with Image.asset('assets/character_base.png', fit: BoxFit.contain)
-            ColorFiltered(
-              colorFilter: ColorFilter.mode(_selectedColor, BlendMode.srcATop),
-              child: Container(
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            // 2. Shadow — dark shading (fixed, multiply blend)
-            // TODO: Image.asset('assets/character_shadow.png', fit: BoxFit.contain)
-            const SizedBox.shrink(),
-            // 3. Highlight — bright highlight (fixed)
-            // TODO: Image.asset('assets/character_highlight.png', fit: BoxFit.contain)
-            const SizedBox.shrink(),
-            // 4. Outline (fixed)
-            // TODO: Image.asset('assets/character_outline.png', fit: BoxFit.contain)
-            const SizedBox.shrink(),
-          ],
-        ),
-      ),
+      child: CharacterSphereWidget(style: style),
     );
   }
 
@@ -247,14 +208,14 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
     );
   }
 
-  Widget _buildTabContent() {
+  Widget _buildTabContent(CharacterStyle currentStyle) {
     return switch (_selectedTab) {
-      0 => _buildCoreColorGrid(),
+      0 => _buildCoreColorGrid(currentStyle),
       _ => _buildComingSoon(),
     };
   }
 
-  Widget _buildCoreColorGrid() {
+  Widget _buildCoreColorGrid(CharacterStyle currentStyle) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -264,20 +225,21 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
         crossAxisSpacing: 12.w,
         childAspectRatio: 1,
       ),
-      itemCount: _coreColors.length,
+      itemCount: CharacterStylePresets.all.length,
       itemBuilder: (context, index) {
-        final color = _coreColors[index];
-        final isSelected = _selectedColorIdx == index;
-        final isLocked = color == null;
+        final style = CharacterStylePresets.all[index];
+        final isSelected = currentStyle == style;
 
         return GestureDetector(
-          onTap: isLocked
+          onTap: style.isLocked
               ? null
-              : () => setState(() => _selectedColorIdx = index),
+              : () => ref
+                  .read(selectedCharacterStyleProvider.notifier)
+                  .setStyle(style),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
             decoration: BoxDecoration(
-              color: isLocked ? AppColors.divider : color,
+              color: style.isLocked ? AppColors.divider : style.baseColor,
               shape: BoxShape.circle,
               border: isSelected
                   ? Border.all(
@@ -288,7 +250,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
             ),
             child: isSelected
                 ? Icon(Icons.check_rounded, color: Colors.white, size: 24.r)
-                : isLocked
+                : style.isLocked
                     ? Icon(
                         Icons.lock_rounded,
                         color: AppColors.textSecondary,

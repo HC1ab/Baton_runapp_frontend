@@ -21,8 +21,8 @@ class RunApp extends ConsumerWidget {
         return MaterialApp.router(
           title: 'RunApp',
           theme: AppTheme.light(),
-          darkTheme: AppTheme.dark(),
-          themeMode: ThemeMode.system,
+          darkTheme: AppTheme.dark(), // TODO: 다크모드 완성 후 활성화
+          themeMode: ThemeMode.light, // 기기 테마 무시 — 항상 라이트 모드
           routerConfig: router,
           debugShowCheckedModeBanner: false,
         );

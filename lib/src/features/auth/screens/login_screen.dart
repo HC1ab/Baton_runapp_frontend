@@ -7,10 +7,9 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
-import '../providers/login_provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-const _devEmail = 'username1234@naver.com';
-const _devPassword = 'password1234';
+import '../providers/login_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -28,10 +27,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    // dev 환경에서 테스트 계정 자동 입력
+    // dev 환경에서 테스트 계정 자동 입력 (env에 없으면 빈값 유지)
     if (const String.fromEnvironment('ENV', defaultValue: 'dev') == 'dev') {
-      _emailController.text = _devEmail;
-      _passwordController.text = _devPassword;
+      final devEmail = dotenv.env['DEV_EMAIL'] ?? '';
+      final devPassword = dotenv.env['DEV_PASSWORD'] ?? '';
+      if (devEmail.isNotEmpty) _emailController.text = devEmail;
+      if (devPassword.isNotEmpty) _passwordController.text = devPassword;
     }
   }
 
@@ -76,8 +77,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   if (const String.fromEnvironment('ENV', defaultValue: 'dev') == 'dev') ...[
                     _DevBanner(
                       onQuickLogin: () {
-                        _emailController.text = _devEmail;
-                        _passwordController.text = _devPassword;
+                        _emailController.text = dotenv.env['DEV_EMAIL'] ?? '';
+                        _passwordController.text = dotenv.env['DEV_PASSWORD'] ?? '';
                         _submit();
                       },
                     ),
@@ -223,7 +224,7 @@ class _DevBanner extends StatelessWidget {
           SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
-              '개발 모드 · $_devEmail',
+              '개발 모드 · ${dotenv.env['DEV_EMAIL'] ?? ''}',
               style: AppTextStyles.labelSmall.copyWith(
                 color: AppColors.primary,
               ),

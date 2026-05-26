@@ -14,6 +14,7 @@ dependencies:
   # UI
   cupertino_icons: ^1.0.8
   flutter_screenutil: ^5.9.3      # ✅ iOS 지원 확인됨
+  flutter_svg: ^2.0.10+1          # ✅ iOS 지원 확인됨 (SVG 렌더링)
 
   # State management
   flutter_riverpod: ^3.1.0        # ✅ iOS 지원 확인됨
@@ -27,6 +28,7 @@ dependencies:
 
   # Storage
   flutter_secure_storage: ^10.2.0  # ✅ iOS 지원 확인됨
+  shared_preferences: ^2.3.3       # ✅ iOS 지원 확인됨 (간단한 설정값 저장)
 
   # Logging
   logger: ^2.5.0                  # ✅ iOS 지원 확인됨
@@ -51,6 +53,9 @@ dependencies:
   blurhash_dart: ^1.2.1           # ✅ iOS 지원 확인됨
   stomp_dart_client: ^3.0.1
 
+  #firebase 배포
+  firebase_core: ^2.10.0         # ✅ iOS 지원 확인됨
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -70,3 +75,4 @@ flutter:
     - assets/images/spot_default.png
     - assets/images/spot_checked.png
     - assets/images/test_charactor.png
+    - assets/character/

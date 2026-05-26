@@ -3,13 +3,14 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:logger/logger.dart';
 
+import '../../../core/character/character_provider.dart';
+import '../../../core/character/character_style.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
@@ -93,6 +94,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   List<SpotSummary>? _prevNearbySpots;
   Set<int>? _prevCheckedInIds;
   List<RunPathPoint>? _prevPath;
+  Color? _prevTrailColor;
 
   @override
   void initState() {
@@ -126,47 +128,78 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       _logger.w('Spot marker icons failed to load', error: e);
     }
 
-    _iconCharacter = await _buildCircularMarker(
-      'assets/images/test_charactor.png',
-      logicalSize: 96,
-    );
+    final style = ref.read(selectedCharacterStyleProvider);
+    _iconCharacter = await _buildCharacterSphereBitmap(style.baseColor);
   }
 
-  Future<BytesMapBitmap?> _buildCircularMarker(
-    String assetPath, {
-    required double logicalSize,
-  }) async {
+  /// 맵 마커용 구체 비트맵 — Canvas로 직접 그림 (SVG 레이어와 동일한 시각 효과)
+  /// style.baseColor 변경 시 재호출하여 마커 교체.
+  Future<BytesMapBitmap?> _buildCharacterSphereBitmap(Color baseColor) async {
     try {
       final dpr =
           WidgetsBinding.instance.platformDispatcher.views.first.devicePixelRatio;
+      const logicalSize = 96.0;
       final px = (logicalSize * dpr).round();
-
-      final data = await rootBundle.load(assetPath);
-      final codec = await ui.instantiateImageCodec(
-        data.buffer.asUint8List(),
-        targetWidth: px,
-        targetHeight: px,
-      );
-      final frame = await codec.getNextFrame();
-      final image = frame.image;
+      final r = px / 2.0;
+      final center = Offset(r, r);
 
       final recorder = ui.PictureRecorder();
       final canvas = Canvas(recorder);
 
-      // 원형 클리핑
-      canvas.clipPath(
-        Path()..addOval(Rect.fromLTWH(0, 0, px.toDouble(), px.toDouble())),
-      );
-      canvas.drawImage(image, Offset.zero, Paint()..isAntiAlias = true);
+      // 1. Base — baseColor 원
+      canvas.drawCircle(center, r - 1, Paint()..color = baseColor);
 
-      // 브랜드 컬러 테두리
+      // 2. Shadow — 검정 radialGradient (좌상단 투명 → 우하단 어둡게)
       canvas.drawCircle(
-        Offset(px / 2, px / 2),
-        px / 2 - 2,
+        center,
+        r - 1,
         Paint()
-          ..color = AppColors.primary
+          ..shader = ui.Gradient.radial(
+            Offset(r * 0.8, r * 0.8),
+            r * 1.3,
+            [
+              Colors.black.withValues(alpha: 0),
+              Colors.black.withValues(alpha: 0.2),
+              Colors.black.withValues(alpha: 0.5),
+            ],
+            [0.0, 0.7, 1.0],
+          ),
+      );
+
+      // 3. Highlight — 흰색 specular ellipse (좌상단)
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: Offset(r * 0.72, r * 0.70),
+          width: r * 0.9,
+          height: r * 0.72,
+        ),
+        Paint()
+          ..shader = ui.Gradient.radial(
+            Offset(r * 0.72, r * 0.70),
+            r * 0.45,
+            [
+              Colors.white.withValues(alpha: 0.85),
+              Colors.white.withValues(alpha: 0.3),
+              Colors.white.withValues(alpha: 0),
+            ],
+            [0.0, 0.5, 1.0],
+          ),
+      );
+
+      // 4. Outline — baseColor보다 명도 25% 낮춘 어두운 외곽선
+      // stroke를 circle 안쪽에 완전히 위치시켜 shadow edge와 겹쳐도 명확히 보이도록 함
+      final hsl = HSLColor.fromColor(baseColor);
+      final outlineColor = hsl
+          .withLightness((hsl.lightness - 0.25).clamp(0.0, 1.0))
+          .toColor();
+      const strokeW = 3.5;
+      canvas.drawCircle(
+        center,
+        r - 1 - (strokeW * dpr / 2), // stroke 전체가 circle fill 안쪽에 위치
+        Paint()
+          ..color = outlineColor
           ..style = PaintingStyle.stroke
-          ..strokeWidth = (4 * dpr),
+          ..strokeWidth = strokeW * dpr,
       );
 
       final picture = recorder.endRecording();
@@ -174,15 +207,21 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
       if (bytes == null) return null;
 
-      // GroundOverlay는 MapBitmapScaling.none 필수
       return BytesMapBitmap(
         bytes.buffer.asUint8List(),
         bitmapScaling: MapBitmapScaling.none,
       );
     } catch (e) {
-      _logger.w('Character marker build failed: $assetPath', error: e);
+      _logger.w('Character sphere bitmap build failed', error: e);
       return null;
     }
+  }
+
+  void _rebuildCharacterMarker(CharacterStyle style) {
+    _buildCharacterSphereBitmap(style.baseColor).then((bitmap) {
+      if (!mounted) return;
+      setState(() => _iconCharacter = bitmap);
+    });
   }
 
   Future<void> _init() async {
@@ -372,13 +411,13 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     return result;
   }
 
-  Set<Polyline> _buildPolylines(RunRecordModel record) {
+  Set<Polyline> _buildPolylines(RunRecordModel record, Color trailColor) {
     if (record.path.length < 2) return {};
     return {
       Polyline(
         polylineId: const PolylineId('run_path'),
         points: record.path.map((p) => LatLng(p.lat, p.lng)).toList(),
-        color: AppColors.primary,
+        color: trailColor,
         width: 6,
         jointType: JointType.round,
         startCap: Cap.roundCap,
@@ -440,7 +479,15 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   @override
   Widget build(BuildContext context) {
     final record = ref.watch(runningProvider);
+    final characterStyle = ref.watch(selectedCharacterStyleProvider);
     final topPadding = MediaQuery.of(context).padding.top;
+
+    // 스타일 변경 시 맵 마커 재생성 (async)
+    ref.listen(selectedCharacterStyleProvider, (prev, next) {
+      if (prev?.id != next.id) {
+        _rebuildCharacterMarker(next);
+      }
+    });
 
     // identical() 체크 — 소스 ref 바뀔 때만 재계산
     // copyWith(duration:...) 는 nearbySpots/checkedInSpotIds/path ref 유지 → 클럭 틱에서 재계산 없음
@@ -451,9 +498,11 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       _cachedMarkers = _buildSpotMarkers(record);
       _cachedCircles = _buildSpotCircles(record);
     }
-    if (!identical(_prevPath, record.path)) {
+    if (!identical(_prevPath, record.path) ||
+        _prevTrailColor != characterStyle.baseColor) {
       _prevPath = record.path;
-      _cachedPolylines = _buildPolylines(record);
+      _prevTrailColor = characterStyle.baseColor;
+      _cachedPolylines = _buildPolylines(record, characterStyle.baseColor);
     }
     final groundOverlays = _buildGroundOverlays();
 

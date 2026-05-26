@@ -7,6 +7,11 @@
 .env.prod
 # .env.example 은 예시 파일이므로 커밋 허용
 
+# ── Firebase (API key, project ID 포함 — 절대 커밋 금지) ─────
+google-services.json
+lib/firebase_options.dart
+# firebase.json 은 프로젝트 설정만 포함 — 필요 시 커밋 허용
+
 # ── Flutter/Dart ─────────────────────────────────────────────
 **/doc/api/
 **/ios/Flutter/.last_build_id

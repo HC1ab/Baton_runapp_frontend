@@ -4,4 +4,7 @@ abstract final class StorageKeys {
   // --- Secure storage (flutter_secure_storage) ---
   static const accessToken = 'auth.accessToken';
   static const refreshToken = 'auth.refreshToken';
+
+  // --- SharedPreferences ---
+  static const characterStyleId = 'character.styleId';
 }

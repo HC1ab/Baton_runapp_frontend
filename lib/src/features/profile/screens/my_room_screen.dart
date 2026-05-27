@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
+import 'package:logger/logger.dart';
 
 import '../../../common/widgets/character_sphere_widget.dart';
 import '../../../core/character/character_provider.dart';
@@ -8,6 +10,11 @@ import '../../../core/character/character_style.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/constants/app_routes.dart';
+import '../../../core/error/app_exception.dart';
+import '../services/my_room_service.dart';
+
+final _logger = Logger();
 
 class MyRoomScreen extends ConsumerStatefulWidget {
   const MyRoomScreen({super.key});
@@ -18,6 +25,7 @@ class MyRoomScreen extends ConsumerStatefulWidget {
 
 class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
   int _selectedTab = 0;
+  bool _isChangingColor = false;
 
   static const List<String> _tabs = ['Core Colors', 'Aura', 'Titles'];
 
@@ -80,30 +88,41 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
   }
 
   Widget _buildEquippedTitle() {
-    return Column(
-      children: [
-        Text(
-          'EQUIPPED TITLE',
-          textAlign: TextAlign.center,
-          style: AppTextStyles.labelSmall.copyWith(
-            color: AppColors.textSecondary,
-            letterSpacing: 1.4,
-            fontWeight: FontWeight.w600,
+    return ref.watch(myRoomProvider).when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (myRoom) => Column(
+        children: [
+          Text(
+            'EQUIPPED TITLE',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: AppColors.textSecondary,
+              letterSpacing: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
-        SizedBox(height: 4.h),
-        Text(
-          'Dawn Runner',
-          textAlign: TextAlign.center,
-          style: AppTextStyles.headlineLarge.copyWith(
-            fontWeight: FontWeight.w800,
+          SizedBox(height: 4.h),
+          Text(
+            myRoom.equippedTitle.isEmpty ? 'No Title' : myRoom.equippedTitle,
+            textAlign: TextAlign.center,
+            style: AppTextStyles.headlineLarge.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildShopBanner() {
+    return GestureDetector(
+      onTap: () => context.push(AppRoutes.shop),
+      child: _buildShopBannerContent(),
+    );
+  }
+
+  Widget _buildShopBannerContent() {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
@@ -210,12 +229,28 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
 
   Widget _buildTabContent(CharacterStyle currentStyle) {
     return switch (_selectedTab) {
-      0 => _buildCoreColorGrid(currentStyle),
+      0 => _buildCoreColorSection(currentStyle),
       _ => _buildComingSoon(),
     };
   }
 
-  Widget _buildCoreColorGrid(CharacterStyle currentStyle) {
+  // ── Core Color Tab ──────────────────────────────────────────────────────
+
+  Widget _buildCoreColorSection(CharacterStyle currentStyle) {
+    return ref.watch(myRoomProvider).when(
+      loading: () => SizedBox(
+        height: 120.h,
+        child: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => _buildColorError(),
+      data: (myRoom) => _buildColorGrid(currentStyle, myRoom.colors),
+    );
+  }
+
+  Widget _buildColorGrid(
+    CharacterStyle currentStyle,
+    List<MyRoomColorItem> apiColors,
+  ) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -228,18 +263,26 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
       itemCount: CharacterStylePresets.all.length,
       itemBuilder: (context, index) {
         final style = CharacterStylePresets.all[index];
+
+        // API 응답에서 owned 상태 조회 — 없으면 CORE_ORANGE만 기본 소유
+        final apiColor = apiColors.cast<MyRoomColorItem?>().firstWhere(
+              (c) => c?.code == style.code,
+              orElse: () => null,
+            );
+        final isOwned = apiColor?.owned ??
+            (style.code == CharacterStylePresets.orange.code);
         final isSelected = currentStyle == style;
 
         return GestureDetector(
-          onTap: style.isLocked
+          onTap: _isChangingColor
               ? null
-              : () => ref
-                  .read(selectedCharacterStyleProvider.notifier)
-                  .setStyle(style),
+              : () => isOwned
+                  ? _onColorTap(style)
+                  : _showLockedMessage(),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
             decoration: BoxDecoration(
-              color: style.isLocked ? AppColors.divider : style.baseColor,
+              color: isOwned ? style.baseColor : AppColors.divider,
               shape: BoxShape.circle,
               border: isSelected
                   ? Border.all(
@@ -248,20 +291,91 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
                     )
                   : null,
             ),
-            child: isSelected
-                ? Icon(Icons.check_rounded, color: Colors.white, size: 24.r)
-                : style.isLocked
-                    ? Icon(
-                        Icons.lock_rounded,
-                        color: AppColors.textSecondary,
-                        size: 18.r,
-                      )
-                    : null,
+            child: _isChangingColor && isSelected
+                ? Padding(
+                    padding: EdgeInsets.all(10.r),
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : isSelected
+                    ? Icon(Icons.check_rounded, color: Colors.white, size: 24.r)
+                    : !isOwned
+                        ? Icon(
+                            Icons.lock_rounded,
+                            color: AppColors.textSecondary,
+                            size: 18.r,
+                          )
+                        : null,
           ),
         );
       },
     );
   }
+
+  Widget _buildColorError() {
+    return SizedBox(
+      height: 120.h,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            '색상 정보를 불러오지 못했어요.',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          SizedBox(height: 8.h),
+          TextButton(
+            onPressed: () => ref.invalidate(myRoomProvider),
+            child: const Text('다시 시도'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Color Change ────────────────────────────────────────────────────────
+
+  Future<void> _onColorTap(CharacterStyle style) async {
+    // 이미 선택된 색상이면 무시
+    if (ref.read(selectedCharacterStyleProvider) == style) return;
+    if (_isChangingColor) return;
+
+    setState(() => _isChangingColor = true);
+    try {
+      final service = ref.read(myRoomServiceProvider);
+      final confirmedCode = await service.changeCoreColor(style.code);
+      await ref
+          .read(selectedCharacterStyleProvider.notifier)
+          .setStyle(CharacterStylePresets.fromCode(confirmedCode));
+      _logger.i('Core color changed: $confirmedCode');
+    } on AppException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+    } catch (e) {
+      _logger.e('changeCoreColor unexpected error', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('색상 변경에 실패했어요. 다시 시도해주세요.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isChangingColor = false);
+    }
+  }
+
+  void _showLockedMessage() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Baton Shop에서 구매 후 사용할 수 있어요.')),
+    );
+  }
+
+  // ── Coming Soon ─────────────────────────────────────────────────────────
 
   Widget _buildComingSoon() {
     return SizedBox(

@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
+import '../../../core/constants/storage_keys.dart';
+import '../../../core/storage/shared_prefs_provider.dart';
 import '../../../core/storage/token_storage.dart';
 import '../services/auth_service.dart';
 
@@ -67,9 +69,15 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   /// Called from LoginNotifier after a successful login response.
-  Future<void> onLoginSuccess(TokenPair pair) async {
-    await ref.read(tokenStorageProvider).write(pair);
-    _logger.i('Token saved — access: ${pair.accessToken.substring(0, 20)}...');
+  /// Saves token pair to SecureStorage and coreColorCode to SharedPreferences.
+  Future<void> onLoginSuccess(LoginResult result) async {
+    await ref.read(tokenStorageProvider).write(result.tokenPair);
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setString(StorageKeys.coreColorCode, result.coreColorCode);
+    _logger.i(
+      'Login saved — access: ${result.tokenPair.accessToken.substring(0, 20)}... '
+      'coreColor: ${result.coreColorCode}',
+    );
     state = const AuthStateAuthenticated();
   }
 

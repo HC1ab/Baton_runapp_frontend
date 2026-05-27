@@ -484,7 +484,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
 
     // 스타일 변경 시 맵 마커 재생성 (async)
     ref.listen(selectedCharacterStyleProvider, (prev, next) {
-      if (prev?.id != next.id) {
+      if (prev?.code != next.code) {
         _rebuildCharacterMarker(next);
       }
     });

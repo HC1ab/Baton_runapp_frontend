@@ -6,5 +6,8 @@ abstract final class StorageKeys {
   static const refreshToken = 'auth.refreshToken';
 
   // --- SharedPreferences ---
-  static const characterStyleId = 'character.styleId';
+  /// Current core color code (e.g. CORE_ORANGE).
+  /// Set on login from LoginResponse.coreColorCode.
+  /// Updated on successful PATCH /api/v1/myroom/core-color.
+  static const coreColorCode = 'character.coreColorCode';
 }

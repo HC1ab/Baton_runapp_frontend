@@ -5,6 +5,7 @@
 # ── 환경변수 (실제 키 포함 — 절대 커밋 금지) ────────────────
 .env.dev
 .env.prod
+env.json
 # .env.example 은 예시 파일이므로 커밋 허용
 
 # ── Firebase (API key, project ID 포함 — 절대 커밋 금지) ─────
@@ -104,3 +105,4 @@ Baton - RunApp.openapi.yaml
 *.swp
 app.*.symbols
 app.*.map.json
+api.json

@@ -7,7 +7,7 @@ import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'src/app.dart';
-import 'src/core/character/character_provider.dart';
+import 'src/core/storage/shared_prefs_provider.dart';
 
 final _logger = Logger();
 

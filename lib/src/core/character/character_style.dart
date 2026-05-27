@@ -1,106 +1,103 @@
 import 'package:flutter/material.dart';
 
 /// Immutable character style definition.
-/// Manages character color independently from AppColors / theme.
+/// [code] matches the backend CORE_* code used for API calls and persistence.
 class CharacterStyle {
   const CharacterStyle({
-    required this.id,
+    required this.code,
     required this.name,
     required this.baseColor,
-    this.isLocked = false,
   });
 
-  /// Unique identifier — used for persistence key.
-  final String id;
+  /// Backend code (e.g. CORE_RED). Used as storage key and API value.
+  final String code;
 
   /// Display name shown in UI.
   final String name;
 
   /// Applied to sphere_base.svg via ColorFilter.mode(BlendMode.srcATop).
+  /// Owned/locked status is managed by the API — not stored here.
   final Color baseColor;
-
-  /// Locked styles are not selectable until unlocked (e.g. via Baton Shop).
-  final bool isLocked;
 
   @override
   bool operator ==(Object other) =>
-      other is CharacterStyle && other.id == id;
+      other is CharacterStyle && other.code == code;
 
   @override
-  int get hashCode => id.hashCode;
+  int get hashCode => code.hashCode;
 }
 
 /// All available character style presets.
-/// Add new styles here — no other file needs changing.
+/// Hex values are defined here as constants; owned status comes from API.
+/// Add new styles here only — no other file needs changing.
 abstract final class CharacterStylePresets {
-  static const darkCoral = CharacterStyle(
-    id: 'dark_coral',
-    name: 'Dark Coral',
-    baseColor: Color(0xFFBB6B4D),
+  static const orange = CharacterStyle(
+    code: 'CORE_ORANGE',
+    name: '주황색 코어',
+    baseColor: Color(0xFFF57C00),
   );
 
-  static const salmon = CharacterStyle(
-    id: 'salmon',
-    name: 'Salmon',
-    baseColor: Color(0xFFE8936A),
-  );
-
-  static const sageGreen = CharacterStyle(
-    id: 'sage_green',
-    name: 'Sage Green',
-    baseColor: Color(0xFF8CB87A),
-  );
-
-  static const skyBlue = CharacterStyle(
-    id: 'sky_blue',
-    name: 'Sky Blue',
-    baseColor: Color(0xFF87B3D3),
+  static const red = CharacterStyle(
+    code: 'CORE_RED',
+    name: '빨간색 코어',
+    baseColor: Color(0xFFE53935),
   );
 
   static const yellow = CharacterStyle(
-    id: 'yellow',
-    name: 'Yellow',
-    baseColor: Color(0xFFE8C55A),
+    code: 'CORE_YELLOW',
+    name: '노란색 코어',
+    baseColor: Color(0xFFF9A825),
   );
 
-  static const lavender = CharacterStyle(
-    id: 'lavender',
-    name: 'Lavender',
-    baseColor: Color(0xFFB39BC8),
+  static const green = CharacterStyle(
+    code: 'CORE_GREEN',
+    name: '초록색 코어',
+    baseColor: Color(0xFF43A047),
   );
 
-  static const teal = CharacterStyle(
-    id: 'teal',
-    name: 'Teal',
-    baseColor: Color(0xFF6BB8A6),
+  static const blue = CharacterStyle(
+    code: 'CORE_BLUE',
+    name: '파란색 코어',
+    baseColor: Color(0xFF1E88E5),
   );
 
-  static const exclusive = CharacterStyle(
-    id: 'exclusive',
-    name: 'Exclusive',
-    baseColor: Color(0xFF888888),
-    isLocked: true,
+  static const navy = CharacterStyle(
+    code: 'CORE_NAVY',
+    name: '남색 코어',
+    baseColor: Color(0xFF283593),
+  );
+
+  static const purple = CharacterStyle(
+    code: 'CORE_PURPLE',
+    name: '보라색 코어',
+    baseColor: Color(0xFF8E24AA),
+  );
+
+  static const black = CharacterStyle(
+    code: 'CORE_BLACK',
+    name: '검은색 코어',
+    baseColor: Color(0xFF212121),
   );
 
   /// Ordered list for palette display.
   static const List<CharacterStyle> all = [
-    darkCoral,
-    salmon,
-    sageGreen,
-    skyBlue,
+    orange,
+    red,
     yellow,
-    lavender,
-    teal,
-    exclusive,
+    green,
+    blue,
+    navy,
+    purple,
+    black,
   ];
 
-  /// Default style applied on first launch.
-  static const CharacterStyle defaultStyle = darkCoral;
+  /// Default style — CORE_ORANGE (기본 지급).
+  static const CharacterStyle defaultStyle = orange;
 
-  /// Find preset by [id]. Returns [defaultStyle] if not found.
-  static CharacterStyle fromId(String id) {
+  /// Find preset by backend [code]. Returns [defaultStyle] if not found.
+  static CharacterStyle fromCode(String code) {
     return all.firstWhere(
-      (s) => s.id == id,
+      (s) => s.code == code,
       orElse: () => defaultStyle,
     );
   }

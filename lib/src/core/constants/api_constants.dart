@@ -27,4 +27,12 @@ abstract final class ApiConstants {
   // Endpoints — Spot
   static const spots = '/api/v1/spots';
   static const spotsNearby = '/api/v1/spots/nearby';
+
+  // Endpoints — MyRoom
+  static const myRoom = '/api/v1/myroom';
+  static const myCoreColor = '/api/v1/myroom/core-color';
+
+  // Endpoints — Shop
+  static const shopItems = '/api/v1/shop/items';
+  static const shopPurchase = '/api/v1/shop/purchases';
 }

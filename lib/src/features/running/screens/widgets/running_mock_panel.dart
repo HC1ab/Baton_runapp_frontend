@@ -15,7 +15,7 @@ class RunningMockPanel extends StatelessWidget {
     required this.isBusy,
     required this.onChangeStep,
     required this.onToggleAutoWalk,
-    required this.onNudgeNorth,
+    required this.onNudge,
   });
 
   final double stepMeters;
@@ -23,7 +23,7 @@ class RunningMockPanel extends StatelessWidget {
   final bool isBusy;
   final ValueChanged<double> onChangeStep;
   final VoidCallback onToggleAutoWalk;
-  final VoidCallback onNudgeNorth;
+  final VoidCallback onNudge;
 
   // pace label helper: stepMeters is m/s → pace = 60 / (m/s * 3.6)
   String _paceLabel(double ms) {
@@ -111,9 +111,9 @@ class RunningMockPanel extends StatelessWidget {
               ),
               SizedBox(width: AppSpacing.sm),
               IconButton.filledTonal(
-                onPressed: isBusy ? null : onNudgeNorth,
-                icon: Icon(Icons.north, size: 18.r),
-                tooltip: '북쪽으로 한 걸음',
+                onPressed: isBusy ? null : onNudge,
+                icon: Icon(Icons.navigation_rounded, size: 18.r),
+                tooltip: '현재 방향으로 한 걸음',
               ),
             ],
           ),

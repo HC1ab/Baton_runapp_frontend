@@ -66,7 +66,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   bool _mockAutoWalk = false;
   Timer? _mockTimer;
   Position? _mockPos;
-  int _mockStep = 0;
+  double _mockHeading = 0.0; // 0° = 북, 시계방향
 
   // Bottom panel expand
   bool _bottomExpanded = false;
@@ -250,27 +250,26 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       return;
     }
 
-    _mockStep = 0;
     _mockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
       _doMockStep();
-      _mockStep++;
     });
   }
 
   void _doMockStep() {
-    double east = 0, north = 0;
-    switch (_mockStep % 40) {
-      case >= 0 && < 10:
-        north = _mockStepMeters;
-      case >= 10 && < 20:
-        east = _mockStepMeters;
-      case >= 20 && < 30:
-        north = -_mockStepMeters;
-      default:
-        east = -_mockStepMeters;
-    }
-    _nudgeMock(eastMeters: east, northMeters: north);
+    final rad = _mockHeading * math.pi / 180;
+    _nudgeMock(
+      eastMeters: _mockStepMeters * math.sin(rad),
+      northMeters: _mockStepMeters * math.cos(rad),
+    );
+  }
+
+  void _turnLeft() {
+    setState(() => _mockHeading = (_mockHeading - 45 + 360) % 360);
+  }
+
+  void _turnRight() {
+    setState(() => _mockHeading = (_mockHeading + 45) % 360);
   }
 
   void _nudgeMock({required double eastMeters, required double northMeters}) {
@@ -286,11 +285,16 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     final dLng = eastMeters / (metersPerDegLng == 0 ? 1 : metersPerDegLng);
     final speed =
         math.sqrt(math.pow(eastMeters, 2) + math.pow(northMeters, 2));
+    // 이동 벡터로 heading 계산 (북: 0°, 동: 90°, 남: 180°, 서: 270°)
+    final heading = speed > 0
+        ? (math.atan2(eastMeters, northMeters) * 180 / math.pi + 360) % 360
+        : 0.0;
 
     final next = _makeMockPos(
       lat: cur.latitude + dLat,
       lng: cur.longitude + dLng,
       speed: speed,
+      heading: heading,
     );
     _mockPos = next;
     _myLatLng = LatLng(next.latitude, next.longitude);
@@ -316,6 +320,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
             target: LatLng(pos.latitude, pos.longitude),
             zoom: _defaultZoom,
             tilt: _defaultTilt,
+            bearing: pos.heading,
           ),
         ),
       );
@@ -417,6 +422,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     required double lat,
     required double lng,
     required double speed,
+    double heading = 0.0,
   }) {
     return Position(
       latitude: lat,
@@ -424,7 +430,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       timestamp: DateTime.now(),
       accuracy: 5.0,
       altitude: 0.0,
-      heading: 0.0,
+      heading: heading,
       speed: speed,
       speedAccuracy: 0.0,
       altitudeAccuracy: 0.0,
@@ -477,7 +483,10 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
               compassEnabled: false,
               zoomControlsEnabled: false,
               mapToolbarEnabled: false,
-              tiltGesturesEnabled: true,
+              scrollGesturesEnabled: false,
+              zoomGesturesEnabled: false,
+              rotateGesturesEnabled: false,
+              tiltGesturesEnabled: false,
               buildingsEnabled: true,
               fortyFiveDegreeImageryEnabled: true,
               markers: _cachedMarkers,
@@ -493,6 +502,34 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
               onTap: (_) => FocusManager.instance.primaryFocus?.unfocus(),
             ),
           ),
+
+          // ── Mock 방향 조작 버튼 (autoWalk 중에만 표시) ───────────────────
+          if (_mockAutoWalk && ref.read(useMockGpsProvider)) ...[
+            Positioned(
+              left: 16.w,
+              top: 0,
+              bottom: 0,
+              child: Align(
+                alignment: Alignment.center,
+                child: _TurnButton(
+                  icon: Icons.turn_left_rounded,
+                  onTap: _turnLeft,
+                ),
+              ),
+            ),
+            Positioned(
+              right: 16.w,
+              top: 0,
+              bottom: 0,
+              child: Align(
+                alignment: Alignment.center,
+                child: _TurnButton(
+                  icon: Icons.turn_right_rounded,
+                  onTap: _turnRight,
+                ),
+              ),
+            ),
+          ],
 
           // ── 체크인 결과 카드 ──────────────────────────────────────────────
           if (record.lastCheckIn != null)
@@ -524,8 +561,13 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
               },
               onChangeStep: (v) => setState(() => _mockStepMeters = v),
               onToggleAutoWalk: _toggleMockAutoWalk,
-              onNudgeNorth: () =>
-                  _nudgeMock(eastMeters: 0, northMeters: _mockStepMeters),
+              onNudge: () {
+                final rad = _mockHeading * math.pi / 180;
+                _nudgeMock(
+                  eastMeters: _mockStepMeters * math.sin(rad),
+                  northMeters: _mockStepMeters * math.cos(rad),
+                );
+              },
               onDismissError: () =>
                   ref.read(runningProvider.notifier).clearError(),
             ),
@@ -573,7 +615,7 @@ class _BottomPanel extends StatelessWidget {
     required this.onLocateMe,
     required this.onChangeStep,
     required this.onToggleAutoWalk,
-    required this.onNudgeNorth,
+    required this.onNudge,
     required this.onDismissError,
   });
 
@@ -588,7 +630,7 @@ class _BottomPanel extends StatelessWidget {
   final VoidCallback onLocateMe;
   final ValueChanged<double> onChangeStep;
   final VoidCallback onToggleAutoWalk;
-  final VoidCallback onNudgeNorth;
+  final VoidCallback onNudge;
   final VoidCallback onDismissError;
 
   @override
@@ -608,7 +650,7 @@ class _BottomPanel extends StatelessWidget {
               isBusy: false,
               onChangeStep: onChangeStep,
               onToggleAutoWalk: onToggleAutoWalk,
-              onNudgeNorth: onNudgeNorth,
+              onNudge: onNudge,
             ),
           ),
 
@@ -839,6 +881,32 @@ class _MetricBlock extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _TurnButton extends StatelessWidget {
+  const _TurnButton({required this.icon, required this.onTap});
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 52.r,
+        height: 52.r,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.45),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+        child: Icon(icon, color: Colors.white, size: 26.r),
+      ),
     );
   }
 }

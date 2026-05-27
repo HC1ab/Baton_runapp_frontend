@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "959115799517",
+    "project_id": "baton-29871",
+    "storage_bucket": "baton-29871.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:959115799517:android:7b94c77f9561aeed19a434",
+        "android_client_info": {
+          "package_name": "com.example.runapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBvEFbc1Uzv6yb5VHZemyi4_uzAuleNPps"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

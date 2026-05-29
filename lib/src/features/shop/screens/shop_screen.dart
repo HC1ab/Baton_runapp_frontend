@@ -8,7 +8,9 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/error/app_exception.dart';
 import '../../profile/services/my_room_service.dart';
+import '../../profile/services/title_service.dart';
 import '../services/shop_service.dart';
+import '../widgets/purchase_success_dialog.dart';
 import '../widgets/shop_item_card.dart';
 
 final _logger = Logger();
@@ -614,11 +616,30 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
 
       _logger.i('Purchased: ${item.name}, pts left: ${result.currentTotalPoints}');
 
+      // 칭호 아이템: titleCode → TitleInfo.id 조회
+      int? titleId;
+      if (item.isTitle) {
+        final titles = ref.read(allTitlesProvider);
+        titleId = titles
+            .cast<TitleInfo?>()
+            .firstWhere(
+              (t) => t?.titleCode == item.code,
+              orElse: () => null,
+            )
+            ?.id;
+        if (titleId == null) {
+          _logger.w('titleId not found for code: ${item.code}');
+        }
+      }
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('\'${item.name}\' 구매 완료! ${result.currentTotalPoints} pts 남음'),
-            backgroundColor: AppColors.success,
+        await showDialog<void>(
+          context: context,
+          barrierDismissible: true,
+          builder: (_) => PurchaseSuccessDialog(
+            item: item,
+            remainingPoints: result.currentTotalPoints,
+            titleId: titleId,
           ),
         );
       }

@@ -13,6 +13,7 @@ import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/error/app_exception.dart';
 import '../services/my_room_service.dart';
+import '../services/title_service.dart';
 
 final _logger = Logger();
 
@@ -26,6 +27,7 @@ class MyRoomScreen extends ConsumerStatefulWidget {
 class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
   int _selectedTab = 0;
   bool _isChangingColor = false;
+  bool _isEquippingTitle = false;
 
   static const List<String> _tabs = ['Core Colors', 'Aura', 'Titles'];
 
@@ -230,6 +232,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
   Widget _buildTabContent(CharacterStyle currentStyle) {
     return switch (_selectedTab) {
       0 => _buildCoreColorSection(currentStyle),
+      2 => _buildTitleSection(),
       _ => _buildComingSoon(),
     };
   }
@@ -373,6 +376,131 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Baton Shop에서 구매 후 사용할 수 있어요.')),
     );
+  }
+
+  // ── Titles Tab ───────────────────────────────────────────────────────────
+
+  Widget _buildTitleSection() {
+    final titles = ref.watch(allTitlesProvider);
+    return ref.watch(myRoomProvider).when(
+      loading: () => SizedBox(
+        height: 80.h,
+        child: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (_, __) => SizedBox(
+        height: 80.h,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '칭호 정보를 불러오지 못했어요.',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            TextButton(
+              onPressed: () => ref.invalidate(myRoomProvider),
+              child: const Text('다시 시도'),
+            ),
+          ],
+        ),
+      ),
+      data: (myRoom) => _buildTitleList(titles, myRoom.equippedTitle),
+    );
+  }
+
+  Widget _buildTitleList(List<TitleInfo> titles, String equippedTitle) {
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: titles.length,
+      separatorBuilder: (_, __) => Divider(height: 1, color: AppColors.divider),
+      itemBuilder: (context, index) {
+        final title = titles[index];
+        final isEquipped = title.name == equippedTitle;
+        return _buildTitleItem(title, isEquipped);
+      },
+    );
+  }
+
+  Widget _buildTitleItem(TitleInfo title, bool isEquipped) {
+    return GestureDetector(
+      onTap: _isEquippingTitle ? null : () => _onTitleTap(title),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 4.w),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+              decoration: BoxDecoration(
+                color: isEquipped
+                    ? AppColors.primary.withValues(alpha: 0.1)
+                    : AppColors.backgroundLight,
+                borderRadius:
+                    BorderRadius.circular(AppSpacing.radiusSm),
+                border: Border.all(
+                  color: isEquipped
+                      ? AppColors.primary.withValues(alpha: 0.35)
+                      : AppColors.divider,
+                ),
+              ),
+              child: Text(
+                title.name,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: isEquipped
+                      ? AppColors.primary
+                      : AppColors.textPrimary,
+                  fontWeight:
+                      isEquipped ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ),
+            const Spacer(),
+            if (_isEquippingTitle && isEquipped)
+              SizedBox(
+                width: 18.r,
+                height: 18.r,
+                child: const CircularProgressIndicator(strokeWidth: 2),
+              )
+            else if (isEquipped)
+              Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.primary,
+                size: 20.r,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onTitleTap(TitleInfo title) async {
+    if (_isEquippingTitle) return;
+    setState(() => _isEquippingTitle = true);
+    try {
+      await ref.read(titleServiceProvider).equipTitle(title.id);
+      ref.invalidate(myRoomProvider);
+      _logger.i('Equipped title: ${title.name}');
+    } on AppException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      _logger.e('equipTitle error', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('칭호 장착에 실패했어요. 다시 시도해주세요.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isEquippingTitle = false);
+    }
   }
 
   // ── Coming Soon ─────────────────────────────────────────────────────────

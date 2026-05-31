@@ -88,6 +88,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   // Set도 캐시: 클럭 틱마다 동일 참조 반환 → GoogleMap.didUpdateWidget에서 변경 없음 판정
   GroundOverlay? _cachedGroundOverlay;
   LatLng? _cachedGroundOverlayPos;
+  double? _cachedGroundOverlayBearing;
   Set<GroundOverlay> _cachedGroundOverlaySet = const {};
 
   // Marker/Circle/Polyline 캐시 — 소스 데이터 identity 변경 시만 재계산
@@ -458,18 +459,23 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
 
   // 위치 변경 시만 GroundOverlay 재생성 (BytesMapBitmap 네이티브 재전송 방지)
   // Set 자체도 캐시 → 위치 불변 시 동일 Set 참조 반환 → GoogleMap이 변경 없음으로 판정
-  Set<GroundOverlay> _buildGroundOverlays() {
+  Set<GroundOverlay> _buildGroundOverlays({double bearing = 0.0}) {
     final pos = _myLatLng;
     final bitmap = _iconCharacter;
     if (pos == null || bitmap == null) return const {};
 
-    if (_cachedGroundOverlayPos != pos) {
+    // 위치 또는 bearing 변경 시 재생성
+    final bearingChanged =
+        (_cachedGroundOverlayBearing ?? -1).toInt() != bearing.toInt();
+    if (_cachedGroundOverlayPos != pos || bearingChanged) {
       _cachedGroundOverlayPos = pos;
+      _cachedGroundOverlayBearing = bearing;
       _cachedGroundOverlay = GroundOverlay.fromPosition(
         groundOverlayId: const GroundOverlayId('my_character'),
         image: bitmap,
         position: pos,
         width: 16,
+        bearing: bearing,
         anchor: const Offset(0.5, 0.5),
         zIndex: 10,
       );
@@ -535,7 +541,9 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       _prevTrailColor = characterStyle.baseColor;
       _cachedPolylines = _buildPolylines(record, characterStyle.baseColor);
     }
-    final groundOverlays = _buildGroundOverlays();
+    final groundOverlays = _buildGroundOverlays(
+      bearing: _currentHeading ?? 0.0,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,

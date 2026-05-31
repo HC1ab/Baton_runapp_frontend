@@ -148,7 +148,7 @@ class ShopItemCard extends StatelessWidget {
 
   Widget _buildBadge() {
     if (item.isCoreColor) {
-      return _Badge(label: 'COLOR', color: const Color(0xFF00897B));
+      return _Badge(label: 'COLOR', color: AppColors.shopBadgeColor);
     }
     return _Badge(label: 'SPECIAL', color: AppColors.error);
   }

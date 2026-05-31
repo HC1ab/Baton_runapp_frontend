@@ -37,6 +37,9 @@ abstract final class AppColors {
   static const divider = Color(0xFFEDE8E3);
   static const cardShadow = Color(0x1AE8704A); // primary @ 10%
 
+  // --- Shop badges ---
+  static const shopBadgeColor = Color(0xFF00897B); // COLOR badge (teal)
+
   // --- Map overlays ---
   static const spotNeutral = Color(0xFF888888);
 }

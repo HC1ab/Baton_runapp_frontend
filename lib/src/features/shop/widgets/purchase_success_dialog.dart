@@ -228,9 +228,14 @@ class _PurchaseSuccessDialogState
     setState(() => _isEquipping = true);
 
     try {
+      // 서버 /myroom/core-color 는 CORE_* 코드를 기대함
+      // 상점 아이템은 CHAR_* 코드 → CORE_* 로 변환
+      final colorCode = widget.item.code.startsWith('CHAR_')
+          ? widget.item.code.replaceFirst('CHAR_', 'CORE_')
+          : widget.item.code;
       final confirmedCode = await ref
           .read(myRoomServiceProvider)
-          .changeCoreColor(widget.item.code);
+          .changeCoreColor(colorCode);
       await ref
           .read(selectedCharacterStyleProvider.notifier)
           .setStyle(CharacterStylePresets.fromCode(confirmedCode));

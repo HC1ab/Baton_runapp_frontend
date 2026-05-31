@@ -35,7 +35,8 @@ class ShopItem {
   final bool active;
 
   /// True for Sphere Color items.
-  bool get isCoreColor => code.startsWith('CORE_');
+  /// 백엔드가 CHAR_* 또는 CORE_* 코드를 혼용하므로 양쪽 모두 허용.
+  bool get isCoreColor => code.startsWith('CHAR_') || code.startsWith('CORE_');
 
   /// True for Title items.
   bool get isTitle => code.startsWith('TITLE_');

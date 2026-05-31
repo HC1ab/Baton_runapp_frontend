@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
+import '../../../core/character/character_style.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/constants/error_messages.dart';
 import '../../../core/error/app_exception.dart';
@@ -79,7 +80,8 @@ class AuthService implements AuthServiceBase {
       final access = (data['accessToken'] ?? '').toString();
       final refresh = (data['refreshToken'] ?? '').toString();
       final coreColorCode =
-          (data['coreColorCode'] ?? 'CORE_ORANGE').toString();
+          (data['coreColorCode'] ?? CharacterStylePresets.defaultStyle.code)
+              .toString();
       if (access.isEmpty) {
         throw const ServerException(ErrorMessages.invalidResponse);
       }

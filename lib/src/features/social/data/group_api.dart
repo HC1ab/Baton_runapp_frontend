@@ -72,10 +72,8 @@ class GroupApi {
       _dio,
       () => _dio.get('/api/v1/groups'),
       mapper: (json) {
-        if (json is! List) {
-          throw ApiException('그룹 목록 응답 형식이 올바르지 않습니다.');
-        }
-        return json
+        final list = _extractGroupList(json);
+        return list
             .whereType<Map>()
             .map(
               (e) => e.map(
@@ -85,6 +83,26 @@ class GroupApi {
             .toList();
       },
     );
+  }
+
+  List<dynamic> _extractGroupList(dynamic json) {
+    if (json is List) return json;
+
+    if (json is Map<String, dynamic>) {
+      for (final key in const [
+        'content',
+        'groups',
+        'items',
+        'list',
+        'results',
+        'groupList',
+      ]) {
+        final value = json[key];
+        if (value is List) return value;
+      }
+    }
+
+    throw ApiException('그룹 목록 응답 형식이 올바르지 않습니다.');
   }
 
   Future<void> leave({required int groupId}) async {

@@ -35,4 +35,10 @@ abstract final class ApiConstants {
   // Endpoints — Shop
   static const shopItems = '/api/v1/shop/items';
   static const shopPurchase = '/api/v1/shop/purchases';
+
+  // Endpoints — Title
+  static const titleAll = '/api/v1/title/all';
+
+  // Endpoints — Profile
+  static const profileEquip = '/api/v1/profile/equip';
 }

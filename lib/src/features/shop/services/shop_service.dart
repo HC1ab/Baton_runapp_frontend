@@ -37,6 +37,9 @@ class ShopItem {
   /// True for Sphere Color items.
   bool get isCoreColor => code.startsWith('CORE_');
 
+  /// True for Title items.
+  bool get isTitle => code.startsWith('TITLE_');
+
   factory ShopItem.fromJson(Map<String, dynamic> json) {
     return ShopItem(
       itemId: json['itemId'] as int,
@@ -143,9 +146,14 @@ class ShopService {
   AppException _mapDio(DioException e) {
     final status = e.response?.statusCode;
     final body = e.response?.data;
-    if (body is Map<String, dynamic> && body['success'] == false) {
-      final msg = (body['message'] ?? ErrorMessages.serverError).toString();
-      return ServerException(msg);
+    if (body is Map<String, dynamic>) {
+      final isFailure = body['success'] == false ||
+          body['status'] == 'fail' ||
+          body['status'] == 'error';
+      if (isFailure) {
+        final msg = (body['message'] ?? ErrorMessages.serverError).toString();
+        return ServerException(msg);
+      }
     }
     if (status == 401) return const AuthException();
     if (status != null && status >= 500) return const ServerException();

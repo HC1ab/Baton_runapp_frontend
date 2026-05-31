@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_compass/flutter_compass.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:logger/logger.dart';
@@ -15,6 +16,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../models/run_path_point_model.dart';
+import '../models/lap_record_model.dart';
 import '../models/run_record_model.dart';
 import '../models/spot_model.dart';
 import '../providers/running_provider.dart';
@@ -61,6 +63,8 @@ class RunningScreen extends ConsumerStatefulWidget {
 class _RunningScreenState extends ConsumerState<RunningScreen> {
   GoogleMapController? _mapCtrl;
   StreamSubscription<Position>? _gpsSub;
+  StreamSubscription<CompassEvent>? _compassSub;
+  double? _currentHeading; // 기기 나침반 heading (null = 미수신)
 
   // Mock state
   double _mockStepMeters = 3.33;
@@ -105,6 +109,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   @override
   void dispose() {
     _gpsSub?.cancel();
+    _compassSub?.cancel();
     _mockTimer?.cancel();
     _mapCtrl?.dispose();
     super.dispose();
@@ -256,6 +261,25 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
             _logger.e('GPS update error', error: e);
           }
         });
+
+        // 기기 나침반 — heading 실시간 갱신
+        // [iOS] NSMotionUsageDescription in Info.plist 필요
+        _compassSub = FlutterCompass.events?.listen((event) {
+          final heading = event.heading;
+          if (heading == null || !mounted) return;
+          _currentHeading = heading;
+          // 현재 위치 있으면 카메라 bearing 즉시 갱신 (이동 없어도 회전 반영)
+          final latLng = _myLatLng;
+          if (latLng != null) {
+            final pos = _makeMockPos(
+              lat: latLng.latitude,
+              lng: latLng.longitude,
+              speed: 0,
+              heading: heading,
+            );
+            unawaited(_updateCamera(pos));
+          }
+        });
       }
     } catch (e) {
       _logger.e('RunningScreen init error', error: e);
@@ -359,7 +383,8 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
             target: LatLng(pos.latitude, pos.longitude),
             zoom: _defaultZoom,
             tilt: _defaultTilt,
-            bearing: pos.heading,
+            // 나침반 값 우선, 미수신 시 GPS heading 폴백
+            bearing: _currentHeading ?? pos.heading,
           ),
         ),
       );
@@ -705,6 +730,17 @@ class _BottomPanel extends StatelessWidget {
 
         SizedBox(height: 6.h),
 
+        if (record.errorMessage != null)
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.screenHorizontal,
+            ).copyWith(bottom: AppSpacing.sm),
+            child: _ErrorBanner(
+              message: record.errorMessage!,
+              onDismiss: onDismissError,
+            ),
+          ),
+
         if (!record.isRunning)
           Center(child: _RunButton(isRunning: false, onTap: onStart))
         else
@@ -712,33 +748,26 @@ class _BottomPanel extends StatelessWidget {
             padding: EdgeInsets.symmetric(
               horizontal: AppSpacing.screenHorizontal,
             ),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.07),
-                    blurRadius: 20,
-                    offset: const Offset(0, -4),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.07),
+                        blurRadius: 20,
+                        offset: const Offset(0, -4),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                 children: [
                   SizedBox(height: AppSpacing.verticalMd),
-
-                  if (record.errorMessage != null)
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                      ).copyWith(bottom: AppSpacing.sm),
-                      child: _ErrorBanner(
-                        message: record.errorMessage!,
-                        onDismiss: onDismissError,
-                      ),
-                    ),
 
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -748,7 +777,7 @@ class _BottomPanel extends StatelessWidget {
                         _MetricBlock(
                           label: '거리 (KM)',
                           value: (record.distanceMeters / 1000)
-                              .toStringAsFixed(1),
+                              .toStringAsFixed(2),
                           labelColor: AppColors.primary,
                         ),
                         SizedBox(width: AppSpacing.lg),
@@ -793,15 +822,32 @@ class _BottomPanel extends StatelessWidget {
                             value: _formatDuration(record.duration),
                             valueFontSize: 28,
                           ),
-                          SizedBox(width: AppSpacing.lg),
-                          _MetricBlock(
-                            label: '평균 페이스',
-                            value: record.formattedAveragePace,
-                            valueFontSize: 28,
-                          ),
                         ],
                       ),
                     ),
+                    if (record.laps.isNotEmpty) ...[
+                      SizedBox(height: AppSpacing.verticalMd),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              '랩',
+                              style: AppTextStyles.labelSmall.copyWith(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            SizedBox(height: 6.h),
+                            ...record.laps.reversed.map(
+                              (lap) => _LapRow(lap: lap),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
 
                   if (record.spotPoints > 0) ...[
@@ -846,6 +892,8 @@ class _BottomPanel extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
       ],
     );
   }
@@ -992,6 +1040,58 @@ class _ErrorBanner extends StatelessWidget {
             onTap: onDismiss,
             child:
                 Icon(Icons.close, size: 16.r, color: AppColors.error),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LapRow extends StatelessWidget {
+  const _LapRow({required this.lap});
+  final LapRecord lap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 3.h),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 28.w,
+            child: Text(
+              '${lap.lapNumber}',
+              style: AppTextStyles.labelSmall.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Row(
+              children: [
+                Text(
+                  lap.formattedDuration,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(width: 4.w),
+                Text(
+                  '1km',
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            lap.formattedPace,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),

@@ -73,5 +73,7 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>NSMotionUsageDescription</key>
+	<string>나침반 방향 표시를 위해 기기 방향 센서를 사용합니다.</string>
 </dict>
 </plist>

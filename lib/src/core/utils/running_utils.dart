@@ -47,6 +47,6 @@ abstract final class RunningUtils {
   /// Returns 0.0 when speed is too slow (stopped).
   static double paceFromSpeed(double speedMs) {
     if (speedMs < 0.5) return 0.0; // below ~1.8 km/h → treat as stopped
-    return 60.0 / (speedMs * 3.6); // seconds/km
+    return 1000.0 / speedMs; // seconds/km: 1000m ÷ speed(m/s)
   }
 }

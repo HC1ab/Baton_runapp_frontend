@@ -14,12 +14,16 @@ class ShopItemCard extends StatelessWidget {
     required this.isOwned,
     required this.isPurchasing,
     required this.onBuy,
+    this.hexColor,
   });
 
   final ShopItem item;
   final bool isOwned;
   final bool isPurchasing;
   final VoidCallback onBuy;
+
+  /// Hex color string from API (e.g. "#C85A3E"). Overrides local preset.
+  final String? hexColor;
 
   @override
   Widget build(BuildContext context) {
@@ -232,11 +236,29 @@ class ShopItemCard extends StatelessWidget {
   // ── Helpers ─────────────────────────────────────────────────────────────
 
   Color _resolveColor() {
-    if (item.isCoreColor) {
-      return CharacterStylePresets.fromCode(item.code).baseColor;
+    // API hex 우선
+    if (hexColor != null) {
+      final c = _hexToColor(hexColor!);
+      if (c != null) return c;
     }
-    // Default warm gradient for non-color items
-    return AppColors.primary;
+    // CHAR_* → CORE_* 로 변환 후 프리셋 조회 (e.g. CHAR_RED → CORE_RED)
+    final presetCode = item.code.startsWith('CHAR_')
+        ? item.code.replaceFirst('CHAR_', 'CORE_')
+        : item.code;
+    return CharacterStylePresets.fromCode(presetCode).baseColor;
+  }
+
+  static Color? _hexToColor(String hex) {
+    try {
+      final cleaned = hex.replaceAll('#', '');
+      final value = int.parse(
+        cleaned.length == 6 ? 'FF$cleaned' : cleaned,
+        radix: 16,
+      );
+      return Color(value);
+    } catch (_) {
+      return null;
+    }
   }
 
   String _formatPrice(int price) {

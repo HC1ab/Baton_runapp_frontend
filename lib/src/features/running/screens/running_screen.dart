@@ -16,6 +16,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../models/run_path_point_model.dart';
+import '../models/lap_record_model.dart';
 import '../models/run_record_model.dart';
 import '../models/spot_model.dart';
 import '../providers/running_provider.dart';
@@ -729,6 +730,17 @@ class _BottomPanel extends StatelessWidget {
 
         SizedBox(height: 6.h),
 
+        if (record.errorMessage != null)
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.screenHorizontal,
+            ).copyWith(bottom: AppSpacing.sm),
+            child: _ErrorBanner(
+              message: record.errorMessage!,
+              onDismiss: onDismissError,
+            ),
+          ),
+
         if (!record.isRunning)
           Center(child: _RunButton(isRunning: false, onTap: onStart))
         else
@@ -753,17 +765,6 @@ class _BottomPanel extends StatelessWidget {
                 children: [
                   SizedBox(height: AppSpacing.verticalMd),
 
-                  if (record.errorMessage != null)
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                      ).copyWith(bottom: AppSpacing.sm),
-                      child: _ErrorBanner(
-                        message: record.errorMessage!,
-                        onDismiss: onDismissError,
-                      ),
-                    ),
-
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
                     child: Row(
@@ -772,7 +773,7 @@ class _BottomPanel extends StatelessWidget {
                         _MetricBlock(
                           label: '거리 (KM)',
                           value: (record.distanceMeters / 1000)
-                              .toStringAsFixed(1),
+                              .toStringAsFixed(2),
                           labelColor: AppColors.primary,
                         ),
                         SizedBox(width: AppSpacing.lg),
@@ -817,15 +818,32 @@ class _BottomPanel extends StatelessWidget {
                             value: _formatDuration(record.duration),
                             valueFontSize: 28,
                           ),
-                          SizedBox(width: AppSpacing.lg),
-                          _MetricBlock(
-                            label: '평균 페이스',
-                            value: record.formattedAveragePace,
-                            valueFontSize: 28,
-                          ),
                         ],
                       ),
                     ),
+                    if (record.laps.isNotEmpty) ...[
+                      SizedBox(height: AppSpacing.verticalMd),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              '랩',
+                              style: AppTextStyles.labelSmall.copyWith(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            SizedBox(height: 6.h),
+                            ...record.laps.reversed.map(
+                              (lap) => _LapRow(lap: lap),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
 
                   if (record.spotPoints > 0) ...[
@@ -1016,6 +1034,58 @@ class _ErrorBanner extends StatelessWidget {
             onTap: onDismiss,
             child:
                 Icon(Icons.close, size: 16.r, color: AppColors.error),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LapRow extends StatelessWidget {
+  const _LapRow({required this.lap});
+  final LapRecord lap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 3.h),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 28.w,
+            child: Text(
+              '${lap.lapNumber}',
+              style: AppTextStyles.labelSmall.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Row(
+              children: [
+                Text(
+                  lap.formattedDuration,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(width: 4.w),
+                Text(
+                  '1km',
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            lap.formattedPace,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),

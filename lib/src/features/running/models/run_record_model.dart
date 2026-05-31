@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../../core/utils/running_utils.dart';
 import '../../../core/utils/format_utils.dart';
 import '../services/spot_service.dart';
+import 'lap_record_model.dart';
 import 'run_path_point_model.dart';
 import 'spot_model.dart';
 
@@ -23,6 +24,7 @@ class RunRecordModel {
     required this.nearbySpots,
     required this.checkedInSpotIds,
     required this.spotPoints,
+    required this.laps,
     this.runId,
     this.startTime,
     this.errorMessage,
@@ -38,6 +40,7 @@ class RunRecordModel {
   final List<SpotSummary> nearbySpots;
   final Set<int> checkedInSpotIds;
   final int spotPoints;
+  final List<LapRecord> laps;
   final int? runId;
   final DateTime? startTime;
   final String? errorMessage;
@@ -66,6 +69,7 @@ class RunRecordModel {
         nearbySpots: [],
         checkedInSpotIds: {},
         spotPoints: 0,
+        laps: [],
       );
 
   RunRecordModel copyWith({
@@ -78,6 +82,7 @@ class RunRecordModel {
     List<SpotSummary>? nearbySpots,
     Set<int>? checkedInSpotIds,
     int? spotPoints,
+    List<LapRecord>? laps,
     int? runId,
     DateTime? startTime,
     String? errorMessage,
@@ -98,6 +103,7 @@ class RunRecordModel {
       nearbySpots: nearbySpots ?? this.nearbySpots,
       checkedInSpotIds: checkedInSpotIds ?? this.checkedInSpotIds,
       spotPoints: spotPoints ?? this.spotPoints,
+      laps: laps ?? this.laps,
       runId: clearRunId ? null : (runId ?? this.runId),
       startTime: startTime ?? this.startTime,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),

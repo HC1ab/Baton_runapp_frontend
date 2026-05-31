@@ -408,13 +408,13 @@
 
   <!-- ───────────────────────────────────────── -->
   <h2 style="margin-top:40px;">🏅 칭호 목록</h2>
-  <p>상점에서 포인트로 구매 후 마이룸 Titles 탭에서 장착할 수 있는 칭호입니다.<br>
-  백엔드 admin은 아래 순서대로 추가해야 DB id(1~8)와 프론트 하드코딩 id가 일치합니다.</p>
+  <p>마이룸 Titles 탭에 표시되는 전체 칭호입니다. 프론트 하드코딩 id와 DB id가 일치해야 합니다.<br>
+  id 1(새싹 러너)은 기존 DB 데이터. id 2~9는 상점 구매 칭호.</p>
 
   <table>
     <thead>
       <tr>
-        <th>id</th>
+        <th>id (DB)</th>
         <th>titleCode</th>
         <th>name</th>
         <th>rarity</th>
@@ -425,6 +425,14 @@
     <tbody>
       <tr>
         <td>1</td>
+        <td><code>TITLE_001_START</code></td>
+        <td>새싹 러너</td>
+        <td><span class="badge" style="background:#ffffff11;color:#aaa;border:1px solid #444;">NORMAL</span></td>
+        <td>기본 지급</td>
+        <td>새로운 출발과 함께 러닝이라는 재미를 느껴볼까? 당신의 열정이 너무 뜨거워!</td>
+      </tr>
+      <tr>
+        <td>2</td>
         <td><code>TITLE_001</code></td>
         <td>런린이</td>
         <td><span class="badge" style="background:#ffffff11;color:#aaa;border:1px solid #444;">NORMAL</span></td>
@@ -432,7 +440,7 @@
         <td>처음 러닝을 시작한 당신! 가장 중요한 첫걸음을 뗐어요.</td>
       </tr>
       <tr>
-        <td>2</td>
+        <td>3</td>
         <td><code>TITLE_002</code></td>
         <td>새벽 러너</td>
         <td><span class="badge" style="background:#ffffff11;color:#aaa;border:1px solid #444;">NORMAL</span></td>
@@ -440,7 +448,7 @@
         <td>해가 뜨기 전부터 달리는 당신. 새벽의 고요함을 가장 먼저 깨우는 러너.</td>
       </tr>
       <tr>
-        <td>3</td>
+        <td>4</td>
         <td><code>TITLE_003</code></td>
         <td>꾸준한 발걸음</td>
         <td><span class="badge" style="background:#1E88E522;color:#1E88E5;border:1px solid #1E88E555;">RARE</span></td>
@@ -448,7 +456,7 @@
         <td>꾸준함이 실력이 된다. 매일매일 포기하지 않고 달리는 당신에게 주어지는 칭호.</td>
       </tr>
       <tr>
-        <td>4</td>
+        <td>5</td>
         <td><code>TITLE_004</code></td>
         <td>트랙 탐험가</td>
         <td><span class="badge" style="background:#1E88E522;color:#1E88E5;border:1px solid #1E88E555;">RARE</span></td>
@@ -456,7 +464,7 @@
         <td>다양한 코스를 탐험하며 도시 구석구석을 달리는 모험가.</td>
       </tr>
       <tr>
-        <td>5</td>
+        <td>6</td>
         <td><code>TITLE_005</code></td>
         <td>마라토너</td>
         <td><span class="badge" style="background:#8E24AA22;color:#CE93D8;border:1px solid #8E24AA55;">EPIC</span></td>
@@ -464,7 +472,7 @@
         <td>긴 거리도 두렵지 않아! 마라톤에 도전할 준비가 된 진정한 러너.</td>
       </tr>
       <tr>
-        <td>6</td>
+        <td>7</td>
         <td><code>TITLE_006</code></td>
         <td>스피드 킹</td>
         <td><span class="badge" style="background:#8E24AA22;color:#CE93D8;border:1px solid #8E24AA55;">EPIC</span></td>
@@ -472,7 +480,7 @@
         <td>빠른 페이스가 인상적인 당신. 속도에서만큼은 따라올 자가 없어요.</td>
       </tr>
       <tr>
-        <td>7</td>
+        <td>8</td>
         <td><code>TITLE_007</code></td>
         <td>전설의 러너</td>
         <td><span class="badge" style="background:#F57C0022;color:#F57C00;border:1px solid #F57C0055;">LEGENDARY</span></td>
@@ -480,7 +488,7 @@
         <td>전설이 된 러너. 바통 앱에서 가장 빛나는 존재로 기억될 당신.</td>
       </tr>
       <tr>
-        <td>8</td>
+        <td>9</td>
         <td><code>TITLE_008</code></td>
         <td>바통 마스터</td>
         <td><span class="badge" style="background:#F57C0022;color:#F57C00;border:1px solid #F57C0055;">LEGENDARY</span></td>

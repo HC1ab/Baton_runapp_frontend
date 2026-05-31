@@ -12,6 +12,7 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/error/app_exception.dart';
+import '../constants/title_presets.dart';
 import '../services/my_room_service.dart';
 import '../services/title_service.dart';
 
@@ -411,63 +412,119 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
   }
 
   Widget _buildTitleList(List<TitleInfo> titles, String equippedTitle) {
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: titles.length,
-      separatorBuilder: (_, __) => Divider(height: 1, color: AppColors.divider),
-      itemBuilder: (context, index) {
-        final title = titles[index];
-        final isEquipped = title.name == equippedTitle;
-        return _buildTitleItem(title, isEquipped);
-      },
+    return Column(
+      children: [
+        for (final title in titles) ...[
+          _buildTitleItem(title, title.name == equippedTitle),
+          SizedBox(height: 10.h),
+        ],
+      ],
     );
   }
 
   Widget _buildTitleItem(TitleInfo title, bool isEquipped) {
+    final icon = TitlePresets.iconFor(title.titleCode);
+    final subtitle = TitlePresets.subtitleFor(title.titleCode);
+
     return GestureDetector(
       onTap: _isEquippingTitle ? null : () => _onTitleTap(title),
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 4.w),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
+        decoration: BoxDecoration(
+          color: isEquipped
+              ? AppColors.primary.withValues(alpha: 0.07)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          border: Border.all(
+            color: isEquipped
+                ? AppColors.primary.withValues(alpha: 0.22)
+                : AppColors.divider,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
         child: Row(
           children: [
+            // ── Icon ──────────────────────────────────────────────────
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+              width: 38.r,
+              height: 38.r,
               decoration: BoxDecoration(
                 color: isEquipped
-                    ? AppColors.primary.withValues(alpha: 0.1)
+                    ? AppColors.primary.withValues(alpha: 0.14)
                     : AppColors.backgroundLight,
-                borderRadius:
-                    BorderRadius.circular(AppSpacing.radiusSm),
-                border: Border.all(
-                  color: isEquipped
-                      ? AppColors.primary.withValues(alpha: 0.35)
-                      : AppColors.divider,
-                ),
+                shape: BoxShape.circle,
               ),
-              child: Text(
-                title.name,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: isEquipped
-                      ? AppColors.primary
-                      : AppColors.textPrimary,
-                  fontWeight:
-                      isEquipped ? FontWeight.w700 : FontWeight.w500,
-                ),
+              child: Icon(
+                icon,
+                size: 18.r,
+                color: isEquipped
+                    ? AppColors.primary
+                    : AppColors.textSecondary,
               ),
             ),
-            const Spacer(),
+            SizedBox(width: AppSpacing.sm),
+
+            // ── Name + subtitle ────────────────────────────────────────
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title.name,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: isEquipped
+                          ? AppColors.primary
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    subtitle,
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 11.sp,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Right badge ────────────────────────────────────────────
             if (_isEquippingTitle && isEquipped)
               SizedBox(
                 width: 18.r,
                 height: 18.r,
-                child: const CircularProgressIndicator(strokeWidth: 2),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primary,
+                ),
               )
             else if (isEquipped)
-              Icon(
-                Icons.check_circle_rounded,
-                color: AppColors.primary,
-                size: 20.r,
+              Container(
+                padding:
+                    EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius:
+                      BorderRadius.circular(AppSpacing.radiusFull),
+                ),
+                child: Text(
+                  'ACTIVE',
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 10.sp,
+                    letterSpacing: 0.6,
+                  ),
+                ),
               ),
           ],
         ),

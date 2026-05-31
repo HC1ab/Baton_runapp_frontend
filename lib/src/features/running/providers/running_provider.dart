@@ -7,6 +7,7 @@ import 'package:logger/logger.dart';
 import '../../../core/constants/error_messages.dart';
 import '../../../core/error/app_exception.dart';
 import '../../../core/utils/running_utils.dart';
+import '../models/lap_record_model.dart';
 import '../models/run_path_point_model.dart';
 import '../models/run_record_model.dart';
 import '../models/spot_model.dart';
@@ -35,6 +36,11 @@ class RunningNotifier extends Notifier<RunRecordModel> {
   double _filteredPace = 0.0; // Low-pass filtered pace value
   final Set<int> _checkingInSpotIds = {}; // API 호출 중인 스팟 (중복 방지)
   final Set<int> _blockedSpotIds = {};    // C003 수신 스팟 — 재시도 방지용 (checkedInSpotIds와 분리)
+
+  // 랩 추적 — 현재 랩 시작 시점의 누적 거리/시간
+  double _lapStartDistance = 0.0;
+  Duration _lapStartDuration = Duration.zero;
+  static const double _lapDistanceMeters = 1000.0;
 
   @override
   RunRecordModel build() {
@@ -96,12 +102,37 @@ class RunningNotifier extends Notifier<RunRecordModel> {
           ? [...state.path, RunPathPoint(lat: position.latitude, lng: position.longitude)]
           : state.path;
 
+      // 랩 감지 — 1km 통과 시 LapRecord 생성
+      final List<LapRecord> newLaps = [...state.laps];
+      double lapStartDist = _lapStartDistance;
+      Duration lapStartDur = _lapStartDuration;
+      double checkDist = state.distanceMeters + distanceDelta;
+
+      while (checkDist - lapStartDist >= _lapDistanceMeters) {
+        final lapDist = _lapDistanceMeters;
+        final lapDur = state.duration - lapStartDur;
+        final lapPace = lapDur.inSeconds > 0
+            ? lapDur.inSeconds / (lapDist / 1000.0)
+            : 0.0;
+        newLaps.add(LapRecord(
+          lapNumber: newLaps.length + 1,
+          distanceMeters: lapDist,
+          duration: lapDur,
+          paceSecondsPerKm: lapPace,
+        ));
+        lapStartDist += _lapDistanceMeters;
+        lapStartDur = state.duration;
+      }
+      _lapStartDistance = lapStartDist;
+      _lapStartDuration = lapStartDur;
+
       state = state.copyWith(
         distanceMeters: newDistance,
         path: newPath,
         currentPaceSecondsPerKm: _filteredPace,
         averagePaceSecondsPerKm:
             RunningUtils.averagePace(newDistance, state.duration),
+        laps: newLaps,
         clearError: true,
       );
 
@@ -128,6 +159,8 @@ class RunningNotifier extends Notifier<RunRecordModel> {
           );
 
       _filteredPace = 0.0;
+      _lapStartDistance = 0.0;
+      _lapStartDuration = Duration.zero;
       _startClock();
 
       state = RunRecordModel(
@@ -142,6 +175,7 @@ class RunningNotifier extends Notifier<RunRecordModel> {
         nearbySpots: state.nearbySpots,    // keep already-loaded spots
         checkedInSpotIds: {},
         spotPoints: 0,
+        laps: [],
         runId: runId,
         startTime: now,
       );
@@ -356,6 +390,8 @@ class RunningNotifier extends Notifier<RunRecordModel> {
     _spotsDebounce?.cancel();
     _lastPosition = null;
     _filteredPace = 0.0;
+    _lapStartDistance = 0.0;
+    _lapStartDuration = Duration.zero;
     _checkingInSpotIds.clear();
     _blockedSpotIds.clear();
   }

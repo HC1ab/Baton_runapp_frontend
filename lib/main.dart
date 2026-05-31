@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +7,7 @@ import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platf
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'firebase_options.dart';
 import 'src/app.dart';
 import 'src/core/storage/shared_prefs_provider.dart';
 
@@ -15,6 +17,7 @@ const _env = String.fromEnvironment('ENV', defaultValue: 'dev');
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Google Maps 플랫폼 뷰 설정
   // ① initializeWithRenderer(LATEST): Play Services가 지원하면 SurfaceView 렌더러 사용

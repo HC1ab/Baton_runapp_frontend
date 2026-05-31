@@ -17,6 +17,13 @@ if (localPropertiesFile.exists()) {
 }
 val mapsApiKey = localProperties.getProperty("MAPS_API_KEY") ?: ""
 
+// key.properties 읽기
+val keyProperties = Properties()
+val keyPropertiesFile = rootProject.file("key.properties")
+if (keyPropertiesFile.exists()) {
+    keyPropertiesFile.inputStream().use { keyProperties.load(it) }
+}
+
 android {
     namespace = "com.example.runapp"
     compileSdk = flutter.compileSdkVersion
@@ -40,9 +47,18 @@ android {
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
+    signingConfigs {
+        create("release") {
+            keyAlias = keyProperties.getProperty("keyAlias")
+            keyPassword = keyProperties.getProperty("keyPassword")
+            storeFile = file(keyProperties.getProperty("storeFile"))
+            storePassword = keyProperties.getProperty("storePassword")
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }

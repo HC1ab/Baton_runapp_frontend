@@ -106,3 +106,4 @@ Baton - RunApp.openapi.yaml
 app.*.symbols
 app.*.map.json
 api.json
+baton-api.openapi.json

@@ -748,20 +748,24 @@ class _BottomPanel extends StatelessWidget {
             padding: EdgeInsets.symmetric(
               horizontal: AppSpacing.screenHorizontal,
             ),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.07),
-                    blurRadius: 20,
-                    offset: const Offset(0, -4),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.07),
+                        blurRadius: 20,
+                        offset: const Offset(0, -4),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                 children: [
                   SizedBox(height: AppSpacing.verticalMd),
 
@@ -888,6 +892,8 @@ class _BottomPanel extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
       ],
     );
   }

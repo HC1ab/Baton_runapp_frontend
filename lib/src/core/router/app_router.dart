@@ -7,6 +7,7 @@ import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/signup_screen.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/home/home_screen.dart';
+import '../../features/profile/screens/history_screen.dart';
 import '../constants/app_routes.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -55,6 +56,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.home,
         builder: (_, __) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.history,
+        builder: (_, __) => const HistoryScreen(),
       ),
       // RunningScreen은 HomeScreen의 IndexedStack 안에 포함됨
       // GoRoute(path: AppRoutes.running, ...) 제거

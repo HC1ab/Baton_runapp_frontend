@@ -74,6 +74,7 @@ class GroupRunningItem {
     required this.startTime,
     required this.status,
     required this.createdAt,
+    this.isParticipating = false,
   });
 
   final int groupId;
@@ -84,6 +85,7 @@ class GroupRunningItem {
   final DateTime startTime;
   final String status;
   final DateTime createdAt;
+  final bool isParticipating;
 
   factory GroupRunningItem.fromJson(Map<String, dynamic> json) {
     final DateTime now = DateTime.now();
@@ -96,6 +98,7 @@ class GroupRunningItem {
       startTime: DateTime.tryParse(json['startTime'] as String? ?? '') ?? now,
       status: json['status'] as String? ?? '',
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? now,
+      isParticipating: json['isParticipating'] as bool? ?? false,
     );
   }
 }

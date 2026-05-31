@@ -6,6 +6,7 @@ abstract final class AppRoutes {
   static const signup = '/signup';
   static const home = '/home';
   static const running = '/running';
+  static const history = '/history';
 }
 
 /// Bottom navigation tab index constants.

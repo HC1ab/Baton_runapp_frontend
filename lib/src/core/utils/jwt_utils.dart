@@ -19,3 +19,35 @@ int? memberIdFromAccessToken(String? token) {
     return null;
   }
 }
+
+/// Reads `nickname` claim from a JWT access token payload (no signature verify).
+String? nicknameFromAccessToken(String? token) {
+  if (token == null || token.isEmpty) return null;
+  final parts = token.split('.');
+  if (parts.length < 2) return null;
+  try {
+    final normalized = base64Url.normalize(parts[1]);
+    final payload = utf8.decode(base64Url.decode(normalized));
+    final map = jsonDecode(payload);
+    if (map is! Map<String, dynamic>) return null;
+    return (map['nickname'] ?? map['realname'] ?? map['name'])?.toString();
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Reads `email` claim from a JWT access token payload (no signature verify).
+String? emailFromAccessToken(String? token) {
+  if (token == null || token.isEmpty) return null;
+  final parts = token.split('.');
+  if (parts.length < 2) return null;
+  try {
+    final normalized = base64Url.normalize(parts[1]);
+    final payload = utf8.decode(base64Url.decode(normalized));
+    final map = jsonDecode(payload);
+    if (map is! Map<String, dynamic>) return null;
+    return (map['email'] ?? map['sub'])?.toString();
+  } catch (_) {
+    return null;
+  }
+}

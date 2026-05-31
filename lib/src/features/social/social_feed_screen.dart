@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logger/logger.dart';
 
 import '../../core/network/api_client.dart';
+import '../../core/storage/token_storage.dart';
+import '../../core/utils/jwt_utils.dart';
 import '../group_running/screens/group_run_live_screen.dart';
 import 'create_room_screen.dart';
 import 'models/run_card_data.dart';
 import 'room_detail_screen.dart';
 import 'social_providers.dart';
 import 'widgets/group_run_card.dart';
+
+final _logger = Logger();
 
 class SocialFeedScreen extends ConsumerStatefulWidget {
   const SocialFeedScreen({super.key});
@@ -17,14 +22,70 @@ class SocialFeedScreen extends ConsumerStatefulWidget {
 }
 
 class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
-  late final List<RunCardData> _cards;
+  List<RunCardData> _cards = const [];
+  bool _isLoading = false;
+  String? _loadError;
+  int? _myMemberId;
 
   static const Color _pointOrange = Color(0xFFF7673B);
 
   @override
   void initState() {
     super.initState();
-    _cards = List<RunCardData>.from(_dummyCards);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadCards());
+  }
+
+  /// 서버에서 그룹 목록을 가져와 정렬한다.
+  /// 내가 만든 방 / 참여 중인 방 → 맨 위로 고정.
+  Future<void> _loadCards() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
+
+    try {
+      // 내 memberId — JWT에서 디코드. 없으면 null로 진행.
+      final pair = await ref.read(tokenStorageProvider).read();
+      final token = pair?.accessToken;
+      _myMemberId =
+          (token != null && token.isNotEmpty) ? memberIdFromAccessToken(token) : null;
+
+      final raw = await ref.read(groupApiProvider).list();
+      final cards = raw
+          .map((e) => RunCardData.fromServerJson(e, myMemberId: _myMemberId))
+          .toList();
+
+      // 정렬: host > participating > 일반.
+      cards.sort((a, b) {
+        int rank(RunCardData c) {
+          if (c.isHost) return 0;
+          if (c.isParticipating) return 1;
+          return 2;
+        }
+        return rank(a).compareTo(rank(b));
+      });
+
+      if (!mounted) return;
+      setState(() {
+        _cards = cards;
+        _isLoading = false;
+      });
+    } on ApiException catch (e) {
+      _logger.w('group list failed', error: e);
+      if (!mounted) return;
+      setState(() {
+        _loadError = formatApiErrorMessage(e);
+        _isLoading = false;
+      });
+    } catch (e) {
+      _logger.e('group list unexpected error', error: e);
+      if (!mounted) return;
+      setState(() {
+        _loadError = '목록을 불러오지 못했습니다.';
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _openCreateScreen() async {
@@ -33,10 +94,11 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
         builder: (_) => const CreateRoomScreen(),
       ),
     );
-    if (!mounted || created == null) return;
-    setState(() {
-      _cards.insert(0, created);
-    });
+    if (!mounted) return;
+    // 생성 후에는 항상 서버 목록을 다시 fetch (test1 만든 방을 test2 도 보게).
+    if (created != null) {
+      await _loadCards();
+    }
   }
 
   void _openLiveRun(RunCardData card) {
@@ -65,22 +127,18 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
     try {
       await ref.read(groupApiProvider).join(groupId: groupId);
       if (!mounted) return;
-      RunCardData updated = card.copyWith(
-        isParticipating: true,
-        currentMembers: (card.currentMembers + 1).clamp(0, card.maxMembers),
-      );
-      setState(() {
-        final idx = _cards.indexOf(card);
-        if (idx >= 0) {
-          _cards[idx] = updated;
-          updated = _cards[idx];
-        }
-      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('그룹 참여가 완료됐습니다.')),
       );
-      if (enterLiveAfter) {
-        _openLiveRun(updated);
+      // 서버 기준으로 정렬/하이라이트 다시 계산.
+      await _loadCards();
+      if (enterLiveAfter && mounted) {
+        // 갱신된 목록에서 동일 groupId 카드를 찾아 진입.
+        final fresh = _cards.firstWhere(
+          (c) => c.groupId == groupId,
+          orElse: () => card.copyWith(isParticipating: true),
+        );
+        _openLiveRun(fresh);
       }
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -96,18 +154,10 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
     try {
       await ref.read(groupApiProvider).leave(groupId: groupId);
       if (!mounted) return;
-      setState(() {
-        final idx = _cards.indexOf(card);
-        if (idx >= 0) {
-          _cards[idx] = _cards[idx].copyWith(
-            isParticipating: false,
-            currentMembers: (_cards[idx].currentMembers - 1).clamp(0, _cards[idx].maxMembers),
-          );
-        }
-      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('그룹에서 나갔습니다.')),
       );
+      await _loadCards();
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -140,13 +190,11 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
     try {
       await ref.read(groupApiProvider).delete(groupId: groupId);
       if (!mounted) return;
-      setState(() {
-        _cards.remove(card);
-      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('그룹이 삭제됐습니다.')),
       );
       Navigator.of(context).maybePop();
+      await _loadCards();
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -200,15 +248,10 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
             maxParticipants: value,
           );
       if (!mounted) return;
-      setState(() {
-        final idx = _cards.indexOf(card);
-        if (idx >= 0) {
-          _cards[idx] = _cards[idx].copyWith(maxMembers: value);
-        }
-      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('그룹 정보가 수정됐습니다.')),
       );
+      await _loadCards();
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -280,122 +323,145 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
               ),
               const SizedBox(height: 12),
               Expanded(
-                child: ListView.builder(
-                  itemCount: cards.length,
-                  itemBuilder: (context, index) {
-                    final card = cards[index];
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        top: index == 0 ? 0 : 14,
-                        bottom: index == cards.length - 1 ? 120 : 0,
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(24),
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) =>
-                                    RoomDetailScreen(
-                                      card: card,
-                                      onJoinPressed: () =>
-                                          _joinGroup(card, enterLiveAfter: true),
-                                      onEnterLivePressed: () => _openLiveRun(card),
-                                      onLeavePressed: () => _leaveGroup(card),
-                                      onUpdatePressed: () => _updateGroup(card),
-                                      onDeletePressed: () => _deleteGroup(card),
-                                    ),
-                              ),
-                            );
-                          },
-                          child: GroupRunCard(
-                            title: card.title,
-                            time: card.time,
-                            location: card.location,
-                            currentMembers: card.currentMembers,
-                            maxMembers: card.maxMembers,
-                            isHighlighted: index == 2,
-                            participantImageUrls: card.participantImageUrls,
-                            onJoinPressed: card.isHost || card.isParticipating
-                                ? null
-                                : () => _joinGroup(card),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+                child: RefreshIndicator(
+                  color: _pointOrange,
+                  onRefresh: _loadCards,
+                  child: _buildBody(cards),
                 ),
               ),
             ],
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openCreateScreen,
-        backgroundColor: _pointOrange,
-        foregroundColor: Colors.white,
-        elevation: 2,
-        icon: const Icon(Icons.edit),
-        label: const Text('+ 모집하기'),
-      ),
+      floatingActionButton: _isLoading && _cards.isEmpty
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: _openCreateScreen,
+              backgroundColor: _pointOrange,
+              foregroundColor: Colors.white,
+              elevation: 2,
+              icon: const Icon(Icons.edit),
+              label: const Text('+ 모집하기'),
+            ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+
+  /// 로딩 / 에러 / 빈 상태 / 정상 목록을 분기.
+  /// RefreshIndicator는 스크롤 가능한 자식이 필요하므로 모든 분기에서
+  /// AlwaysScrollableScrollPhysics를 가진 ListView/SingleChildScrollView를
+  /// 반환한다.
+  Widget _buildBody(List<RunCardData> cards) {
+    if (_isLoading && cards.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          SizedBox(height: 120),
+          Center(child: CircularProgressIndicator(color: _pointOrange)),
+        ],
+      );
+    }
+
+    if (_loadError != null && cards.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          const SizedBox(height: 80),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  const Icon(Icons.error_outline, size: 40, color: Colors.black38),
+                  const SizedBox(height: 12),
+                  Text(
+                    _loadError!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.black54),
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: _loadCards,
+                    child: const Text('다시 시도', style: TextStyle(color: _pointOrange)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (cards.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          SizedBox(height: 120),
+          Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  Icon(Icons.directions_run_rounded, size: 48, color: Colors.black26),
+                  SizedBox(height: 12),
+                  Text(
+                    '아직 모집 중인 그룹이 없어요.\n+ 모집하기 버튼으로 첫 방을 열어보세요!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.black54, height: 1.4),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
+      itemCount: cards.length,
+      itemBuilder: (context, index) {
+        final card = cards[index];
+        // 내가 만든 방 / 참여 중인 방은 강조 색상 적용.
+        final isMine = card.isHost || card.isParticipating;
+        return Padding(
+          padding: EdgeInsets.only(
+            top: index == 0 ? 0 : 14,
+            bottom: index == cards.length - 1 ? 120 : 0,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(24),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => RoomDetailScreen(
+                      card: card,
+                      onJoinPressed: () => _joinGroup(card, enterLiveAfter: true),
+                      onEnterLivePressed: () => _openLiveRun(card),
+                      onLeavePressed: () => _leaveGroup(card),
+                      onUpdatePressed: () => _updateGroup(card),
+                      onDeletePressed: () => _deleteGroup(card),
+                    ),
+                  ),
+                );
+              },
+              child: GroupRunCard(
+                title: card.title,
+                time: card.time,
+                location: card.location,
+                currentMembers: card.currentMembers,
+                maxMembers: card.maxMembers,
+                isHighlighted: isMine,
+                participantImageUrls: card.participantImageUrls,
+                onJoinPressed: isMine ? null : () => _joinGroup(card),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
 
-const List<RunCardData> _dummyCards = [
-  RunCardData(
-    groupId: 1,
-    isHost: true,
-    isParticipating: true,
-    title: '반포 한강공원 야간 러닝',
-    time: '오늘 오후 8:00',
-    location: '반포 한강공원 편의점 앞',
-    latitude: 35.1631,
-    longitude: 129.0536,
-    currentMembers: 4,
-    maxMembers: 8,
-    participantImageUrls: ['', '', ''],
-    endTimeLabel: '오늘 오후 9:30',
-    targetDistance: '5km',
-    placeName: '반포 한강공원',
-    detailAddress: '서울특별시 서초구 반포동 115-5 (반포한강공원 내)',
-    body:
-        '편하게 5km 정도 뛰어요.\n초보도 환영합니다. 페이스는 천천히 맞춰 갈게요.\n집결은 반포대교 쪽에서 합니다.',
-  ),
-  RunCardData(
-    groupId: 2,
-    isParticipating: true,
-    title: '올림픽공원 5km 편런',
-    time: '내일 오전 7:30',
-    location: '평화의광장 조형물 아래',
-    latitude: 35.1587,
-    longitude: 129.1604,
-    currentMembers: 2,
-    maxMembers: 5,
-    participantImageUrls: ['', ''],
-    endTimeLabel: '내일 오전 8:30',
-    targetDistance: '5km',
-    placeName: '올림픽공원 평화의광장',
-    detailAddress: '서울특별시 송파구 올림픽로 424 (평화의광장)',
-    body: '아침 공기 마시며 가볍게 달려요.\n스트레칭 10분 후 출발합니다.',
-  ),
-  RunCardData(
-    groupId: 3,
-    title: '초보자 환영! 동네 한바퀴',
-    time: '오늘 오후 6:00',
-    location: '성수역 3번 출구',
-    latitude: 35.1532,
-    longitude: 129.1186,
-    currentMembers: 7,
-    maxMembers: 8,
-    participantImageUrls: ['', '', ''],
-    endTimeLabel: '오늘 오후 7:00',
-    targetDistance: '3km',
-    placeName: '성수역 인근',
-    detailAddress: '서울특별시 성동구 성수동2가 (성수역 3번 출구 앞 집결)',
-    body:
-        '동네 한 바퀴만 돌아요. 대화하면서 천천히 뛰는 모임입니다.\n러닝화만 챙겨 오세요!',
-  ),
-];

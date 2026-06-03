@@ -48,7 +48,8 @@ class RoomDetailScreen extends StatelessWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _RealMiniMap(card: card),
+          if (card.latitude != null && card.longitude != null)
+            _RealMiniMap(card: card),
           Expanded(
             child: Transform.translate(
               offset: const Offset(0, -20),
@@ -249,7 +250,7 @@ class _RealMiniMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final target = LatLng(card.latitude, card.longitude);
+    final target = LatLng(card.latitude!, card.longitude!);
 
     return SizedBox(
       height: 250,

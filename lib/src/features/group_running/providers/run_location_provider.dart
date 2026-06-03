@@ -1,10 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
+import '../../../core/constants/error_messages.dart';
 import '../../../core/storage/token_storage.dart';
 import '../../../core/utils/jwt_utils.dart';
 import '../models/participant_location.dart';
 import '../services/run_location_websocket_service.dart';
+
+export '../services/run_location_websocket_service.dart'
+    show SessionEndedHandler;
 
 final _logger = Logger();
 
@@ -68,7 +72,8 @@ class RunLocationNotifier extends Notifier<RunLocationState> {
   }
 
   /// Join a group room: connect STOMP, subscribe, start GPS publish.
-  Future<void> joinRoom(int groupId) async {
+  /// [onSessionEnded] — 호스트가 그룹 러닝 종료 시 서버 브로드캐스트 수신 콜백.
+  Future<void> joinRoom(int groupId, {SessionEndedHandler? onSessionEnded}) async {
     if (state.connectionState == RunLocationConnectionState.connecting) return;
     if (state.groupId == groupId && state.isConnected) return;
 
@@ -83,12 +88,12 @@ class RunLocationNotifier extends Notifier<RunLocationState> {
       final pair = await ref.read(tokenStorageProvider).read();
       final token = pair?.accessToken;
       if (token == null || token.isEmpty) {
-        throw StateError('로그인이 필요합니다.');
+        throw StateError(ErrorMessages.unauthorized);
       }
 
       final memberId = memberIdFromAccessToken(token);
       if (memberId == null) {
-        throw StateError('회원 정보를 확인할 수 없습니다.');
+        throw StateError(ErrorMessages.wsMemberInfoUnavailable);
       }
 
       _service ??= RunLocationWebSocketService();
@@ -98,6 +103,7 @@ class RunLocationNotifier extends Notifier<RunLocationState> {
         memberId: memberId,
         accessToken: token,
         onLocation: _onRemoteLocation,
+        onSessionEnded: onSessionEnded,
       );
 
       state = state.copyWith(
@@ -138,13 +144,6 @@ class RunLocationNotifier extends Notifier<RunLocationState> {
     state = const RunLocationState();
   }
 }
-
-final runLocationWebSocketServiceProvider =
-    Provider<RunLocationWebSocketService>((ref) {
-  final service = RunLocationWebSocketService();
-  ref.onDispose(service.dispose);
-  return service;
-});
 
 final runLocationProvider =
     NotifierProvider<RunLocationNotifier, RunLocationState>(

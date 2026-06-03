@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/app_colors.dart';
+
 class GroupRunCard extends StatelessWidget {
   const GroupRunCard({
     super.key,
@@ -24,10 +26,10 @@ class GroupRunCard extends StatelessWidget {
   final String? roomImageUrl;
   final VoidCallback? onJoinPressed;
 
-  static const Color _highlightedBackground = Color(0xFFBA3B10);
-  static const Color _pointOrange = Color(0xFFF7673B);
-  static const Color _darkText = Color(0xFF1E1E1E);
-  static const Color _lightBadgeBackground = Color(0xFFF0F0F0);
+  static const Color _highlightedBackground = AppColors.cardHighlighted;
+  static const Color _pointOrange = AppColors.socialAccent;
+  static const Color _darkText = AppColors.textPrimary;
+  static const Color _lightBadgeBackground = AppColors.scaffoldGrey;
 
   @override
   Widget build(BuildContext context) {
@@ -159,7 +161,7 @@ class _RoomHeader extends StatelessWidget {
             imageUrl: roomImageUrl,
             fallbackColor: isHighlighted
                 ? Colors.white.withValues(alpha: 0.20)
-                : const Color(0xFFF7673B),
+                : AppColors.socialAccent,
             iconColor: Colors.white,
             iconSize: 20,
           ),

@@ -10,7 +10,11 @@ import '../models/participant_location.dart';
 
 final _logger = Logger();
 
+const _isDev =
+    String.fromEnvironment('ENV', defaultValue: 'dev') == 'dev';
+
 typedef LocationMessageHandler = void Function(ParticipantLocation location);
+typedef SessionEndedHandler = void Function();
 
 /// STOMP client for group run live location (connect / subscribe / publish).
 class RunLocationWebSocketService {
@@ -19,6 +23,7 @@ class RunLocationWebSocketService {
   int? _myMemberId;
   Timer? _publishTimer;
   LocationMessageHandler? _onLocation;
+  SessionEndedHandler? _onSessionEnded;
 
   bool get isConnected => _client?.connected ?? false;
   int? get activeGroupId => _activeGroupId;
@@ -29,6 +34,7 @@ class RunLocationWebSocketService {
     required int memberId,
     required String accessToken,
     required LocationMessageHandler onLocation,
+    SessionEndedHandler? onSessionEnded,
   }) async {
     if (_activeGroupId == groupId && isConnected) return;
 
@@ -37,6 +43,7 @@ class RunLocationWebSocketService {
     _activeGroupId = groupId;
     _myMemberId = memberId;
     _onLocation = onLocation;
+    _onSessionEnded = onSessionEnded;
 
     final completer = Completer<void>();
 
@@ -49,9 +56,9 @@ class RunLocationWebSocketService {
         stompConnectHeaders: {
           'Authorization': 'Bearer $accessToken',
         },
-        webSocketConnectHeaders: const {
-          'ngrok-skip-browser-warning': 'true',
-        },
+        webSocketConnectHeaders: _isDev
+            ? const {'ngrok-skip-browser-warning': 'true'}
+            : const {},
         onConnect: (frame) {
           _logger.i('STOMP connected (groupId=$groupId)');
           _subscribe(groupId);
@@ -113,6 +120,14 @@ class RunLocationWebSocketService {
   }
 
   void _handleLocationPayload(Map<String, dynamic> json) {
+    // SESSION_ENDED 브로드캐스트 감지
+    // 가정 메시지 포맷: { "type": "SESSION_ENDED", "groupId": 1 }
+    if (json['type'] == 'SESSION_ENDED') {
+      _logger.i('SESSION_ENDED received (groupId=${json['groupId']})');
+      _onSessionEnded?.call();
+      return;
+    }
+
     try {
       final location = ParticipantLocation.fromJson(json);
       if (location.memberId == _myMemberId) return;
@@ -174,6 +189,7 @@ class RunLocationWebSocketService {
     _publishTimer?.cancel();
     _publishTimer = null;
     _onLocation = null;
+    _onSessionEnded = null;
     _activeGroupId = null;
     _myMemberId = null;
 

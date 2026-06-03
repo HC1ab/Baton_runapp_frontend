@@ -5,6 +5,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import 'location_picker_screen.dart';
 import 'models/run_card_data.dart';
@@ -19,9 +20,9 @@ class CreateRoomScreen extends ConsumerStatefulWidget {
 }
 
 class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
-  static const Color _background = Color(0xFFF4F4F4);
-  static const Color _submitOrange = Color(0xFFF7673B);
-  static const Color _accentBrown = Color(0xFFB33010);
+  static const Color _background = AppColors.scaffoldGrey;
+  static const Color _submitOrange = AppColors.socialAccent;
+  static const Color _accentBrown = AppColors.inputAccent;
 
   static final List<String> _distanceOptions = [
     ...List<String>.generate(42, (i) => '${i + 1}km'),
@@ -218,8 +219,8 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           title: title,
           time: _formatFeedTime(startDateTime),
           location: placeName,
-          latitude: _selectedLatLng?.latitude ?? 35.1631,
-          longitude: _selectedLatLng?.longitude ?? 129.0536,
+          latitude: _selectedLatLng?.latitude,
+          longitude: _selectedLatLng?.longitude,
           currentMembers: 1,
           maxMembers: _memberCount,
           participantImageUrls: const [''],
@@ -422,13 +423,13 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF333333)),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: const Text(
           '새로운 러닝 모집',
           style: TextStyle(
-            color: Color(0xFF1F1F1F),
+            color: AppColors.textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.w800,
           ),

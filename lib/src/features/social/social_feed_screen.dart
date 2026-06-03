@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:logger/logger.dart';
 
+import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../core/storage/token_storage.dart';
 import '../../core/utils/jwt_utils.dart';
-import '../group_running/screens/group_run_live_screen.dart';
+import '../running/screens/running_screen.dart';
 import 'create_room_screen.dart';
 import 'models/run_card_data.dart';
 import 'room_detail_screen.dart';
@@ -27,7 +29,7 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
   String? _loadError;
   int? _myMemberId;
 
-  static const Color _pointOrange = Color(0xFFF7673B);
+  static const Color _pointOrange = AppColors.socialAccent;
 
   @override
   void initState() {
@@ -95,9 +97,12 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
       ),
     );
     if (!mounted) return;
-    // 생성 후에는 항상 서버 목록을 다시 fetch (test1 만든 방을 test2 도 보게).
     if (created != null) {
+      // 목록 갱신 후 생성한 방으로 바로 입장.
       await _loadCards();
+      if (!mounted) return;
+      // 생성 직후 isHost 보장
+      _openLiveRun(created.copyWith(isHost: true));
     }
   }
 
@@ -109,11 +114,23 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
       );
       return;
     }
+    // 호스트면 activeHostGroupIdProvider 저장 (로그아웃 시 방 삭제용)
+    if (card.isHost) {
+      ref.read(activeHostGroupIdProvider.notifier).set(groupId);
+    }
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => GroupRunLiveScreen(card: card),
+        builder: (_) => RunningScreen(
+          groupId: groupId,
+          isHost: card.isHost,
+        ),
       ),
-    );
+    ).then((_) {
+      // 화면 복귀 시 activeHostGroupIdProvider 초기화
+      if (card.isHost) {
+        ref.read(activeHostGroupIdProvider.notifier).set(null);
+      }
+    });
   }
 
   Future<void> _joinGroup(RunCardData card, {bool enterLiveAfter = false}) async {
@@ -265,30 +282,30 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
     final cards = _cards;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F4F4),
+      backgroundColor: AppColors.scaffoldGrey,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF4F4F4),
+        backgroundColor: AppColors.scaffoldGrey,
         elevation: 0,
         scrolledUnderElevation: 0,
         titleSpacing: 20,
-        title: const Text(
+        title: Text(
           '바통',
           style: TextStyle(
             color: _pointOrange,
-            fontSize: 34 / 2,
+            fontSize: 17.sp,
             fontWeight: FontWeight.w900,
           ),
         ),
         actions: [
           IconButton(
             onPressed: () {},
-            icon: const Icon(Icons.notifications_rounded, color: Color(0xFF555555)),
+            icon: const Icon(Icons.notifications_rounded, color: AppColors.iconNeutral),
           ),
           const Padding(
             padding: EdgeInsets.only(right: 16),
             child: CircleAvatar(
               radius: 16,
-              backgroundColor: Color(0xFF1F7E8A),
+              backgroundColor: AppColors.avatarTeal,
               child: Icon(Icons.person_rounded, color: Colors.white, size: 18),
             ),
           ),
@@ -302,21 +319,21 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'COMMUNITY FEED',
                 style: TextStyle(
-                  color: Color(0xFF8F2E1A),
-                  fontSize: 13,
+                  color: AppColors.sectionLabel,
+                  fontSize: 13.sp,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.8,
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 '소셜',
                 style: TextStyle(
-                  color: Color(0xFF1F1F1F),
-                  fontSize: 44,
+                  color: AppColors.textPrimary,
+                  fontSize: 44.sp,
                   fontWeight: FontWeight.w900,
                   height: 1.1,
                 ),

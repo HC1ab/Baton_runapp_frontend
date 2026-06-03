@@ -7,6 +7,7 @@ import 'package:logger/logger.dart';
 import '../../../core/constants/error_messages.dart';
 import '../../../core/error/app_exception.dart';
 import '../../../core/utils/running_utils.dart';
+import '../../group_running/services/group_run_api_service.dart';
 import '../models/lap_record_model.dart';
 import '../models/run_path_point_model.dart';
 import '../models/run_record_model.dart';
@@ -148,11 +149,17 @@ class RunningNotifier extends Notifier<RunRecordModel> {
   }
 
   /// Starts a new running session.
-  Future<void> startRun() async {
+  /// [groupId] 지정 시 그룹 러닝. [isHost] == true면 group/run/start API 추가 호출.
+  Future<void> startRun({int? groupId, bool isHost = false}) async {
     if (state.isRunning) return;
     state = state.copyWith(clearError: true);
 
     try {
+      // 호스트면 그룹 러닝 시작 API 먼저 호출
+      if (groupId != null && isHost) {
+        await ref.read(groupRunApiServiceProvider).runStart(groupId);
+      }
+
       final now = DateTime.now();
       final runId = await ref.read(runServiceProvider).startRun(
             startTimeIsoLocal: _isoLocal(now),
@@ -172,12 +179,14 @@ class RunningNotifier extends Notifier<RunRecordModel> {
         path: _lastPosition != null
             ? [RunPathPoint(lat: _lastPosition!.latitude, lng: _lastPosition!.longitude)]
             : [],
-        nearbySpots: state.nearbySpots,    // keep already-loaded spots
+        nearbySpots: state.nearbySpots,
         checkedInSpotIds: {},
         spotPoints: 0,
         laps: [],
         runId: runId,
         startTime: now,
+        groupId: groupId,
+        isHost: isHost,
       );
     } catch (e) {
       _logger.e('startRun error', error: e);
@@ -186,6 +195,7 @@ class RunningNotifier extends Notifier<RunRecordModel> {
   }
 
   /// Finishes the current running session.
+  /// 그룹 러닝 + 호스트면 group/run/finish API 추가 호출.
   Future<void> finishRun() async {
     final runId = state.runId;
     if (runId == null || !state.isRunning) return;
@@ -194,6 +204,12 @@ class RunningNotifier extends Notifier<RunRecordModel> {
     state = state.copyWith(clearError: true);
 
     try {
+      // 호스트면 그룹 러닝 종료 API 먼저 호출 (SESSION_ENDED 브로드캐스트 트리거)
+      final groupId = state.groupId;
+      if (groupId != null && state.isHost) {
+        await ref.read(groupRunApiServiceProvider).runFinish(groupId);
+      }
+
       await ref.read(runServiceProvider).finishRun(
             runId: runId,
             endTimeIsoLocal: _isoLocal(DateTime.now()),
@@ -204,10 +220,10 @@ class RunningNotifier extends Notifier<RunRecordModel> {
         status: RunStatus.finished,
         clearRunId: true,
         clearError: true,
+        clearGroup: true,
       );
     } catch (e) {
       _logger.e('finishRun error', error: e);
-      // Revert to running so user can retry
       state = state.copyWith(
         status: RunStatus.running,
         errorMessage: _toMessage(e),

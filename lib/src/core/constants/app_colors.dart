@@ -42,4 +42,17 @@ abstract final class AppColors {
 
   // --- Map overlays ---
   static const spotNeutral = Color(0xFF888888);
+
+  // --- Social ---
+  static const socialAccent = Color(0xFFF7673B);    // point orange (social feed / FAB)
+  static const scaffoldGrey = Color(0xFFF4F4F4);    // light grey scaffold bg
+  static const cardHighlighted = Color(0xFFBA3B10); // highlighted group run card bg
+  static const sectionLabel = Color(0xFF8F2E1A);    // section label text
+  static const iconNeutral = Color(0xFF555555);     // muted icon
+  static const avatarTeal = Color(0xFF1F7E8A);      // avatar bg
+  static const errorBannerBg = Color(0xFFFFEBEE);   // error banner background
+  static const errorBannerFg = Color(0xFFC62828);   // error banner foreground
+  static const connecting = Color(0xFFFF9800);      // connecting state indicator
+  static const textMuted = Color(0xFF444444);       // muted body text
+  static const inputAccent = Color(0xFFB33010);     // input field suffix icon accent
 }

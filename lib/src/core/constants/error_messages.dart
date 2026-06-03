@@ -23,6 +23,10 @@ abstract final class ErrorMessages {
   static const locationDisabled = '위치 서비스가 꺼져 있어요.';
   static const locationPermissionDenied = '위치 권한이 필요해요.';
 
+  // --- WebSocket / Group Run ---
+  static const wsConnectionFailed = '웹소켓 연결에 실패했어요.';
+  static const wsMemberInfoUnavailable = '회원 정보를 확인할 수 없어요.';
+
   // --- Spot ---
   static const spotRunNotFound = '존재하지 않는 러닝 기록이에요.';
   static const spotRunNotOwned = '본인의 러닝 기록이 아니에요.';

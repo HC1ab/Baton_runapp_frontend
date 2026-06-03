@@ -15,6 +15,9 @@ import '../../../core/character/character_style.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../group_running/providers/run_location_provider.dart';
+import '../../group_running/services/group_run_api_service.dart';
+import '../../group_running/widgets/participant_marker_builder.dart';
 import '../models/run_path_point_model.dart';
 import '../models/lap_record_model.dart';
 import '../models/run_record_model.dart';
@@ -54,7 +57,15 @@ const _whiteMapStyle = '''
 ''';
 
 class RunningScreen extends ConsumerStatefulWidget {
-  const RunningScreen({super.key});
+  const RunningScreen({
+    super.key,
+    this.groupId,
+    this.isHost = false,
+  });
+
+  /// null = solo run, non-null = group run mode
+  final int? groupId;
+  final bool isHost;
 
   @override
   ConsumerState<RunningScreen> createState() => _RunningScreenState();
@@ -83,6 +94,13 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
 
   // 현재 위치 (mock + 실 GPS 공통)
   LatLng? _myLatLng;
+
+  // 그룹 참가자 마커 캐시
+  final Map<int, Marker> _participantMarkers = {};
+  final Map<int, BytesMapBitmap?> _participantBitmapCache = {};
+
+  // AppLifecycle — 호스트 방 삭제용
+  AppLifecycleListener? _lifecycleListener;
 
   // GroundOverlay 캐시 — 위치 변경 시만 재생성
   // Set도 캐시: 클럭 틱마다 동일 참조 반환 → GoogleMap.didUpdateWidget에서 변경 없음 판정
@@ -113,6 +131,11 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     _compassSub?.cancel();
     _mockTimer?.cancel();
     _mapCtrl?.dispose();
+    _lifecycleListener?.dispose();
+    // 그룹 러닝 STOMP 연결 해제
+    if (widget.groupId != null) {
+      unawaited(ref.read(runLocationProvider.notifier).leaveRoom());
+    }
     super.dispose();
   }
 
@@ -223,6 +246,69 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     }
   }
 
+  // -------------------------------------------------------------------------
+  // Group run helpers
+  // -------------------------------------------------------------------------
+
+  void _registerLifecycleListener(int groupId) {
+    if (!widget.isHost) return;
+    _lifecycleListener = AppLifecycleListener(
+      onPause: () => _bestEffortDeleteGroup(groupId),
+      onDetach: () => _bestEffortDeleteGroup(groupId),
+    );
+  }
+
+  void _bestEffortDeleteGroup(int groupId) {
+    // 러닝 중일 때만 — 정상 종료 후에는 방이 이미 없음
+    if (!ref.read(runningProvider).isRunning) return;
+    ref.read(groupRunApiServiceProvider).deleteGroup(groupId);
+  }
+
+  /// SESSION_ENDED 수신 (호스트 종료 브로드캐스트) → 참가자 자동 종료
+  void _onSessionEnded() {
+    if (!mounted) return;
+    _logger.i('SESSION_ENDED → auto finishRun');
+    ref.read(runningProvider.notifier).finishRun();
+  }
+
+  /// 그룹 참가자 마커 빌드 — 위치 변경 시 호출
+  Future<void> _updateParticipantMarkers(RunLocationState locState) async {
+    final newMarkers = <int, Marker>{};
+
+    for (final entry in locState.participants.entries) {
+      final p = entry.value;
+      final markerId = entry.key;
+
+      // 비트맵 캐시 미스 시 생성
+      if (!_participantBitmapCache.containsKey(markerId)) {
+        _participantBitmapCache[markerId] = await buildParticipantMarkerBitmap(
+          nickname: p.nickname,
+          titleName: null, // API에 칭호 없음 — 추후 확장
+        );
+      }
+
+      final bitmap = _participantBitmapCache[markerId];
+      newMarkers[markerId] = Marker(
+        markerId: MarkerId('participant_$markerId'),
+        position: LatLng(p.latitude, p.longitude),
+        icon: bitmap ??
+            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan),
+        anchor: const Offset(0.5, 1.0),
+        infoWindow: InfoWindow(
+          title: p.nickname ?? '러너 $markerId',
+        ),
+        zIndexInt: 5,
+      );
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _participantMarkers
+        ..clear()
+        ..addAll(newMarkers);
+    });
+  }
+
   void _rebuildCharacterMarker(CharacterStyle style) {
     _buildCharacterSphereBitmap(style.baseColor).then((bitmap) {
       if (!mounted) return;
@@ -231,6 +317,16 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   }
 
   Future<void> _init() async {
+    // 그룹 러닝 — STOMP 연결 + AppLifecycleListener 등록
+    final groupId = widget.groupId;
+    if (groupId != null) {
+      await ref.read(runLocationProvider.notifier).joinRoom(
+            groupId,
+            onSessionEnded: _onSessionEnded,
+          );
+      _registerLifecycleListener(groupId);
+    }
+
     // 이미지 로딩 실패해도 GPS 초기화는 반드시 실행
     await _loadMarkerIcons();
 
@@ -526,6 +622,15 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       }
     });
 
+    // 그룹 러닝 — 참가자 위치 변경 시 마커 갱신
+    if (widget.groupId != null) {
+      ref.listen<RunLocationState>(runLocationProvider, (prev, next) {
+        if (prev?.participants != next.participants) {
+          unawaited(_updateParticipantMarkers(next));
+        }
+      });
+    }
+
     // identical() 체크 — 소스 ref 바뀔 때만 재계산
     // copyWith(duration:...) 는 nearbySpots/checkedInSpotIds/path ref 유지 → 클럭 틱에서 재계산 없음
     if (!identical(_prevNearbySpots, record.nearbySpots) ||
@@ -571,7 +676,10 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
               tiltGesturesEnabled: false,
               buildingsEnabled: true,
               fortyFiveDegreeImageryEnabled: true,
-              markers: _cachedMarkers,
+              markers: {
+                ..._cachedMarkers,
+                ..._participantMarkers.values,
+              },
               circles: _cachedCircles,
               polylines: _cachedPolylines,
               groundOverlays: groundOverlays,
@@ -635,7 +743,10 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
               bottomExpanded: _bottomExpanded,
               onToggleExpand: () =>
                   setState(() => _bottomExpanded = !_bottomExpanded),
-              onStart: () => ref.read(runningProvider.notifier).startRun(),
+              onStart: () => ref.read(runningProvider.notifier).startRun(
+                    groupId: widget.groupId,
+                    isHost: widget.isHost,
+                  ),
               onFinish: () => ref.read(runningProvider.notifier).finishRun(),
               onLocateMe: () async {
                 final pos = _mockPos;

@@ -9,8 +9,8 @@ class RunCardData {
     required this.title,
     required this.time,
     required this.location,
-    required this.latitude,
-    required this.longitude,
+    this.latitude,
+    this.longitude,
     required this.currentMembers,
     required this.maxMembers,
     required this.participantImageUrls,
@@ -28,8 +28,8 @@ class RunCardData {
   final String title;
   final String time;
   final String location;
-  final double latitude;
-  final double longitude;
+  final double? latitude;
+  final double? longitude;
   final int currentMembers;
   final int maxMembers;
   final List<String> participantImageUrls;
@@ -56,11 +56,9 @@ class RunCardData {
 
   String get effectiveEndTime => endTimeLabel ?? '—';
 
-  String get effectiveTargetDistance => targetDistance ?? '5km';
+  String get effectiveTargetDistance => targetDistance ?? '-';
 
-  String get effectiveBody =>
-      body ??
-      '모집 내용이 준비 중입니다.\n함께 달릴 분을 기다리고 있어요.';
+  String get effectiveBody => body ?? '';
 
   /// 서버 `GET /api/v1/groups` 항목을 카드로 변환.
   ///
@@ -159,9 +157,8 @@ class RunCardData {
     }
     if (isHost) isParticipating = true;
 
-    final lat = _readDouble(json['latitude'] ?? json['lat']) ?? 35.1631;
-    final lng = _readDouble(json['longitude'] ?? json['lng'] ?? json['lon']) ??
-        129.0536;
+    final lat = _readDouble(json['latitude'] ?? json['lat']);
+    final lng = _readDouble(json['longitude'] ?? json['lng'] ?? json['lon']);
 
     final startTime = _parseDate(json['startTime'] ?? json['startAt']);
     final endTime = _parseDate(json['endTime'] ?? json['endAt']);

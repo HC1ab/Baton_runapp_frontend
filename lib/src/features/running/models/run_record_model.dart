@@ -28,7 +28,9 @@ class RunRecordModel {
     this.runId,
     this.startTime,
     this.errorMessage,
-    this.lastCheckIn,  // 최근 체크인 결과 (카드 표시용)
+    this.lastCheckIn,
+    this.groupId,
+    this.isHost = false,
   });
 
   final RunStatus status;
@@ -46,8 +48,13 @@ class RunRecordModel {
   final String? errorMessage;
   final CheckInResult? lastCheckIn;
 
+  /// null = solo run, non-null = group run
+  final int? groupId;
+  final bool isHost;
+
   bool get isRunning => status == RunStatus.running;
   bool get isIdle => status == RunStatus.idle;
+  bool get isGroupRun => groupId != null;
 
   // --- Convenience display getters (use util classes) ---
   String get formattedDistance => FormatUtils.formatDistance(distanceMeters);
@@ -90,6 +97,9 @@ class RunRecordModel {
     bool clearRunId = false,
     bool clearCheckIn = false,
     CheckInResult? lastCheckIn,
+    int? groupId,
+    bool? isHost,
+    bool clearGroup = false,
   }) {
     return RunRecordModel(
       status: status ?? this.status,
@@ -108,6 +118,8 @@ class RunRecordModel {
       startTime: startTime ?? this.startTime,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       lastCheckIn: clearCheckIn ? null : (lastCheckIn ?? this.lastCheckIn),
+      groupId: clearGroup ? null : (groupId ?? this.groupId),
+      isHost: isHost ?? this.isHost,
     );
   }
 }

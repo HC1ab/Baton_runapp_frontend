@@ -4,6 +4,8 @@ import 'package:logger/logger.dart';
 import '../../../core/constants/storage_keys.dart';
 import '../../../core/storage/shared_prefs_provider.dart';
 import '../../../core/storage/token_storage.dart';
+import '../../group_running/services/group_run_api_service.dart';
+import '../../social/social_providers.dart';
 import '../services/auth_service.dart';
 
 final _logger = Logger();
@@ -83,10 +85,16 @@ class AuthNotifier extends Notifier<AuthState> {
 
   /// Clears token and returns to unauthenticated state.
   Future<void> logout() async {
+    // 호스트 방이 열려있으면 best-effort 삭제
+    final hostGroupId = ref.read(activeHostGroupIdProvider);
+    if (hostGroupId != null) {
+      await ref.read(groupRunApiServiceProvider).deleteGroup(hostGroupId);
+      ref.read(activeHostGroupIdProvider.notifier).set(null);
+    }
+
     try {
       await ref.read(authServiceProvider).logout();
     } catch (e) {
-      // Ignore logout API errors — clear locally regardless.
       _logger.w('Logout API call failed', error: e);
     } finally {
       await ref.read(tokenStorageProvider).clear();

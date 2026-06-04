@@ -4,10 +4,15 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:logger/logger.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_routes.dart';
+import '../../core/constants/storage_keys.dart';
 import '../../core/network/api_client.dart';
+import '../../core/shell/tab_providers.dart';
+import '../../core/storage/shared_prefs_provider.dart';
 import '../../core/storage/token_storage.dart';
 import '../../core/utils/jwt_utils.dart';
-import '../running/screens/running_screen.dart';
+import '../group_running/providers/run_location_provider.dart';
+import 'active_room_screen.dart';
 import 'create_room_screen.dart';
 import 'models/run_card_data.dart';
 import 'room_detail_screen.dart';
@@ -53,10 +58,15 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
       _myMemberId =
           (token != null && token.isNotEmpty) ? memberIdFromAccessToken(token) : null;
 
+      final prefs = ref.read(sharedPreferencesProvider);
+      final myNickname = prefs.getString(StorageKeys.myNickname);
+      _logger.i('[SocialFeed] _loadCards() start — myMemberId=$_myMemberId myNickname=$myNickname');
       final raw = await ref.read(groupApiProvider).list();
+      _logger.i('[SocialFeed] raw group list (${raw.length}): $raw');
       final cards = raw
-          .map((e) => RunCardData.fromServerJson(e, myMemberId: _myMemberId))
+          .map((e) => RunCardData.fromServerJson(e, myMemberId: _myMemberId, myNickname: myNickname))
           .toList();
+      _logger.i('[SocialFeed] parsed cards: ${cards.map((c) => 'id=${c.groupId} isHost=${c.isHost} isParticipating=${c.isParticipating}').toList()}');
 
       // 정렬: host > participating > 일반.
       cards.sort((a, b) {
@@ -118,19 +128,11 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
     if (card.isHost) {
       ref.read(activeHostGroupIdProvider.notifier).set(groupId);
     }
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => RunningScreen(
-          groupId: groupId,
-          isHost: card.isHost,
-        ),
-      ),
-    ).then((_) {
-      // 화면 복귀 시 activeHostGroupIdProvider 초기화
-      if (card.isHost) {
-        ref.read(activeHostGroupIdProvider.notifier).set(null);
-      }
-    });
+    // RunningScreen(Tab 0)에 그룹 진입 요청 후 탭 전환
+    ref.read(pendingGroupJoinProvider.notifier).request(
+          (groupId: groupId, isHost: card.isHost),
+        );
+    ref.read(currentTabProvider.notifier).switchTo(AppTabs.running);
   }
 
   Future<void> _joinGroup(RunCardData card, {bool enterLiveAfter = false}) async {
@@ -279,6 +281,28 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 활성 그룹 러닝 세션 — 피드 대신 전용 화면 표시
+    final locState = ref.watch(runLocationProvider);
+    if (locState.isConnected && locState.groupId != null) {
+      final activeGroupId = locState.groupId!;
+      final card = _cards.where((c) => c.groupId == activeGroupId).firstOrNull;
+
+      if (card == null) {
+        // 카드 아직 로딩 중
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        );
+      }
+
+      return ActiveRoomScreen(
+        card: card,
+        onUpdatePressed: () => _updateGroup(card),
+        onDeletePressed: () => _deleteGroup(card),
+        onLeavePressed: () => _leaveGroup(card),
+      );
+    }
+
+    // 일반 피드
     final cards = _cards;
 
     return Scaffold(
@@ -462,7 +486,7 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
                       onDeletePressed: () => _deleteGroup(card),
                     ),
                   ),
-                );
+                ).then((_) => _loadCards());
               },
               child: GroupRunCard(
                 title: card.title,

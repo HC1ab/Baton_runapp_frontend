@@ -15,6 +15,8 @@ import '../../../core/character/character_style.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/shell/tab_providers.dart' show GroupJoinRequest, pendingGroupJoinProvider;
+import '../services/glb_sphere_renderer.dart';
 import '../../group_running/providers/run_location_provider.dart';
 import '../../group_running/services/group_run_api_service.dart';
 import '../../group_running/widgets/participant_marker_builder.dart';
@@ -132,8 +134,10 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     _mockTimer?.cancel();
     _mapCtrl?.dispose();
     _lifecycleListener?.dispose();
-    // 그룹 러닝 STOMP 연결 해제
-    if (widget.groupId != null) {
+    // 그룹 러닝 STOMP 연결 해제 (widget param 또는 provider 경유 진입 모두 대응)
+    final hasGroup = widget.groupId != null ||
+        ref.read(runLocationProvider).groupId != null;
+    if (hasGroup) {
       unawaited(ref.read(runLocationProvider.notifier).leaveRoom());
     }
     super.dispose();
@@ -161,85 +165,18 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     _iconCharacter = await _buildCharacterSphereBitmap(style.baseColor);
   }
 
-  /// 맵 마커용 구체 비트맵 — Canvas로 직접 그림 (SVG 레이어와 동일한 시각 효과)
-  /// style.baseColor 변경 시 재호출하여 마커 교체.
+  /// GLB 구체 메시를 baseColor로 flat 렌더링한 비트맵.
   Future<BytesMapBitmap?> _buildCharacterSphereBitmap(Color baseColor) async {
     try {
       final dpr =
           WidgetsBinding.instance.platformDispatcher.views.first.devicePixelRatio;
-      const logicalSize = 96.0;
-      final px = (logicalSize * dpr).round();
-      final r = px / 2.0;
-      final center = Offset(r, r);
-
-      final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder);
-
-      // 1. Base — baseColor 원
-      canvas.drawCircle(center, r - 1, Paint()..color = baseColor);
-
-      // 2. Shadow — 검정 radialGradient (좌상단 투명 → 우하단 어둡게)
-      canvas.drawCircle(
-        center,
-        r - 1,
-        Paint()
-          ..shader = ui.Gradient.radial(
-            Offset(r * 0.8, r * 0.8),
-            r * 1.3,
-            [
-              Colors.black.withValues(alpha: 0),
-              Colors.black.withValues(alpha: 0.2),
-              Colors.black.withValues(alpha: 0.5),
-            ],
-            [0.0, 0.7, 1.0],
-          ),
+      final bytes = await GlbSphereRenderer.render(
+        baseColor: baseColor,
+        logicalSize: 96.0,
+        devicePixelRatio: dpr,
       );
-
-      // 3. Highlight — 흰색 specular ellipse (좌상단)
-      canvas.drawOval(
-        Rect.fromCenter(
-          center: Offset(r * 0.72, r * 0.70),
-          width: r * 0.9,
-          height: r * 0.72,
-        ),
-        Paint()
-          ..shader = ui.Gradient.radial(
-            Offset(r * 0.72, r * 0.70),
-            r * 0.45,
-            [
-              Colors.white.withValues(alpha: 0.85),
-              Colors.white.withValues(alpha: 0.3),
-              Colors.white.withValues(alpha: 0),
-            ],
-            [0.0, 0.5, 1.0],
-          ),
-      );
-
-      // 4. Outline — baseColor보다 명도 25% 낮춘 어두운 외곽선
-      // stroke를 circle 안쪽에 완전히 위치시켜 shadow edge와 겹쳐도 명확히 보이도록 함
-      final hsl = HSLColor.fromColor(baseColor);
-      final outlineColor = hsl
-          .withLightness((hsl.lightness - 0.25).clamp(0.0, 1.0))
-          .toColor();
-      const strokeW = 3.5;
-      canvas.drawCircle(
-        center,
-        r - 1 - (strokeW * dpr / 2), // stroke 전체가 circle fill 안쪽에 위치
-        Paint()
-          ..color = outlineColor
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = strokeW * dpr,
-      );
-
-      final picture = recorder.endRecording();
-      final img = await picture.toImage(px, px);
-      final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
       if (bytes == null) return null;
-
-      return BytesMapBitmap(
-        bytes.buffer.asUint8List(),
-        bitmapScaling: MapBitmapScaling.none,
-      );
+      return BytesMapBitmap(bytes, bitmapScaling: MapBitmapScaling.none);
     } catch (e) {
       _logger.w('Character sphere bitmap build failed', error: e);
       return null;
@@ -250,8 +187,9 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   // Group run helpers
   // -------------------------------------------------------------------------
 
-  void _registerLifecycleListener(int groupId) {
-    if (!widget.isHost) return;
+  void _registerLifecycleListener(int groupId, {required bool isHost}) {
+    if (!isHost) return;
+    _lifecycleListener?.dispose();
     _lifecycleListener = AppLifecycleListener(
       onPause: () => _bestEffortDeleteGroup(groupId),
       onDetach: () => _bestEffortDeleteGroup(groupId),
@@ -316,15 +254,24 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     });
   }
 
+  /// 소셜 탭에서 pendingGroupJoinProvider를 통해 진입할 때 호출.
+  Future<void> _joinGroupFromPending(int groupId, {required bool isHost}) async {
+    await ref.read(runLocationProvider.notifier).joinRoom(
+          groupId,
+          onSessionEnded: _onSessionEnded,
+        );
+    _registerLifecycleListener(groupId, isHost: isHost);
+  }
+
   Future<void> _init() async {
-    // 그룹 러닝 — STOMP 연결 + AppLifecycleListener 등록
+    // 그룹 러닝 — widget param 경유 진입 (레거시 push 경로)
     final groupId = widget.groupId;
     if (groupId != null) {
       await ref.read(runLocationProvider.notifier).joinRoom(
             groupId,
             onSessionEnded: _onSessionEnded,
           );
-      _registerLifecycleListener(groupId);
+      _registerLifecycleListener(groupId, isHost: widget.isHost);
     }
 
     // 이미지 로딩 실패해도 GPS 초기화는 반드시 실행
@@ -622,8 +569,20 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       }
     });
 
+    // 소셜 탭에서 pendingGroupJoinProvider로 진입 시 그룹 연결 시작
+    ref.listen<GroupJoinRequest?>(
+      pendingGroupJoinProvider,
+      (_, next) {
+        if (next == null) return;
+        ref.read(pendingGroupJoinProvider.notifier).clear();
+        unawaited(_joinGroupFromPending(next.groupId, isHost: next.isHost));
+      },
+    );
+
     // 그룹 러닝 — 참가자 위치 변경 시 마커 갱신
-    if (widget.groupId != null) {
+    final activeGroupId =
+        widget.groupId ?? ref.watch(runLocationProvider).groupId;
+    if (activeGroupId != null) {
       ref.listen<RunLocationState>(runLocationProvider, (prev, next) {
         if (prev?.participants != next.participants) {
           unawaited(_updateParticipantMarkers(next));

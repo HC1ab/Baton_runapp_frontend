@@ -67,6 +67,9 @@ class RunCardData {
   factory RunCardData.fromServerJson(
     Map<String, dynamic> json, {
     int? myMemberId,
+    // TODO: 서버 응답에 hostMemberId 추가되면 myNickname 비교 제거하고
+    //       myMemberId == hostMemberId 직접 비교로 교체할 것.
+    String? myNickname,
   }) {
     final groupId = _readInt(json['groupId'] ?? json['id']);
 
@@ -130,8 +133,14 @@ class RunCardData {
           json['mine'] ??
           json['myGroup'],
     );
-    final isHost =
-        serverIsHost ?? (myMemberId != null && hostId != null && myMemberId == hostId);
+    final serverHostNickname =
+        (json['hostNickname'] ?? json['ownerNickname'])?.toString();
+    final isHost = serverIsHost ??
+        (myMemberId != null && hostId != null && myMemberId == hostId) ||
+        (myNickname != null &&
+            myNickname.isNotEmpty &&
+            serverHostNickname != null &&
+            serverHostNickname == myNickname);
 
     final serverJoined = _readBool(
       json['isParticipating'] ??

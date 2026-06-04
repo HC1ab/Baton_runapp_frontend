@@ -4,7 +4,9 @@ import 'package:logger/logger.dart';
 import '../../../core/constants/storage_keys.dart';
 import '../../../core/storage/shared_prefs_provider.dart';
 import '../../../core/storage/token_storage.dart';
+import '../../group_running/providers/run_location_provider.dart';
 import '../../group_running/services/group_run_api_service.dart';
+import '../../running/providers/running_provider.dart';
 import '../../social/social_providers.dart';
 import '../services/auth_service.dart';
 
@@ -76,19 +78,50 @@ class AuthNotifier extends Notifier<AuthState> {
     await ref.read(tokenStorageProvider).write(result.tokenPair);
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(StorageKeys.coreColorCode, result.coreColorCode);
+    if (result.nickname.isNotEmpty) {
+      await prefs.setString(StorageKeys.myNickname, result.nickname);
+    }
     _logger.i(
       'Login saved — access: ${result.tokenPair.accessToken.substring(0, 20)}... '
-      'coreColor: ${result.coreColorCode}',
+      'coreColor: ${result.coreColorCode} nickname: ${result.nickname}',
     );
     state = const AuthStateAuthenticated();
   }
 
   /// Clears token and returns to unauthenticated state.
   Future<void> logout() async {
-    // 호스트 방이 열려있으면 best-effort 삭제
-    final hostGroupId = ref.read(activeHostGroupIdProvider);
-    if (hostGroupId != null) {
-      await ref.read(groupRunApiServiceProvider).deleteGroup(hostGroupId);
+    // ── 활성 그룹 러닝 정리 ──────────────────────────────────────────────────
+    // runLocationProvider(WebSocket) 기준으로 groupId + isHost 확인.
+    // activeHostGroupIdProvider는 fallback (push 경로 호환).
+    final locState = ref.read(runLocationProvider);
+    final runState = ref.read(runningProvider);
+    final activeGroupId = locState.groupId ?? ref.read(activeHostGroupIdProvider);
+
+    if (activeGroupId != null) {
+      final isHost = runState.isHost ||
+          (ref.read(activeHostGroupIdProvider) == activeGroupId);
+
+      if (isHost) {
+        // 호스트 → 방 삭제 (best-effort)
+        _logger.i('logout: host → deleteGroup($activeGroupId)');
+        await ref
+            .read(groupRunApiServiceProvider)
+            .deleteGroup(activeGroupId);
+      } else {
+        // 참가자 → 방 나가기 (best-effort)
+        _logger.i('logout: participant → leave($activeGroupId)');
+        try {
+          await ref
+              .read(groupApiProvider)
+              .leave(groupId: activeGroupId);
+        } catch (e) {
+          _logger.w('logout leave failed (best-effort)', error: e);
+        }
+      }
+
+      // WebSocket 해제 + 상태 초기화
+      await ref.read(runLocationProvider.notifier).leaveRoom();
+      ref.read(runningProvider.notifier).resetToIdle();
       ref.read(activeHostGroupIdProvider.notifier).set(null);
     }
 

@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../common/widgets/app_bottom_nav_bar.dart';
+import '../../common/widgets/group_connection_badge.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_routes.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/shell/shell_providers.dart';
+import '../../core/shell/tab_providers.dart';
+import '../group_running/providers/run_location_provider.dart';
 
 /// Root shell: owns the bottom nav + IndexedStack.
 /// Does NOT import any feature directly — tabs are registered via [TabRegistry].
@@ -19,28 +21,45 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  int _currentTab = AppTabs.running;
-
   void _onTabTap(int index) {
-    setState(() => _currentTab = index);
+    ref.read(currentTabProvider.notifier).switchTo(index);
   }
 
   @override
   Widget build(BuildContext context) {
     final tabs = ref.watch(tabRegistryProvider);
+    final currentTab = ref.watch(currentTabProvider);
+    final connState = ref.watch(
+      runLocationProvider.select((s) => s.connectionState),
+    );
+    final showBadge = connState != RunLocationConnectionState.idle;
+    final topPadding = MediaQuery.of(context).padding.top;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
-      body: SafeArea(
-        // bottom: false — nav bar 자체가 SafeArea를 처리함
-        bottom: false,
-        child: IndexedStack(
-          index: _currentTab,
-          children: tabs.map((t) => t.builder(context)).toList(),
-        ),
+      body: Stack(
+        children: [
+          SafeArea(
+            // bottom: false — nav bar 자체가 SafeArea를 처리함
+            bottom: false,
+            child: IndexedStack(
+              index: currentTab,
+              children: tabs.map((t) => t.builder(context)).toList(),
+            ),
+          ),
+          if (showBadge)
+            Positioned(
+              top: topPadding + 12,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: GroupConnectionBadge(connectionState: connState),
+              ),
+            ),
+        ],
       ),
       bottomNavigationBar: AppBottomNavBar(
-        currentIndex: _currentTab,
+        currentIndex: currentTab,
         onTap: _onTabTap,
       ),
     );

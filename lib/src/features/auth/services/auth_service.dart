@@ -14,17 +14,20 @@ import '../models/user_model.dart';
 // Login Result
 // ---------------------------------------------------------------------------
 
-/// Full login response — token pair + initial core color.
+/// Full login response — token pair + initial core color + nickname.
 class LoginResult {
   const LoginResult({
     required this.tokenPair,
     required this.coreColorCode,
+    required this.nickname,
   });
 
   final TokenPair tokenPair;
 
   /// Backend CORE_* code (e.g. CORE_ORANGE) received from LoginResponse.
   final String coreColorCode;
+
+  final String nickname;
 }
 
 final _logger = Logger();
@@ -82,12 +85,14 @@ class AuthService implements AuthServiceBase {
       final coreColorCode =
           (data['coreColorCode'] ?? CharacterStylePresets.defaultStyle.code)
               .toString();
+      final nickname = (data['nickname'] ?? '').toString();
       if (access.isEmpty) {
         throw const ServerException(ErrorMessages.invalidResponse);
       }
       return LoginResult(
         tokenPair: TokenPair(accessToken: access, refreshToken: refresh),
         coreColorCode: coreColorCode,
+        nickname: nickname,
       );
     } on AppException {
       rethrow;

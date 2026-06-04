@@ -77,3 +77,4 @@ flutter:
     - assets/images/spot_checked.png
     - assets/images/test_charactor.png
     - assets/character/
+    - assets/models/

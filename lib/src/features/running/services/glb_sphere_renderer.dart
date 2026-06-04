@@ -232,59 +232,12 @@ class GlbSphereRenderer {
     required int size,
     required ui.Color color,
   }) async {
+    // Sphere mesh rendering removed — character replaced by screen-space shadow overlay.
+    // Return transparent 1×1 bitmap so GroundOverlay has no visual.
     final recorder = ui.PictureRecorder();
-    final canvas = ui.Canvas(recorder);
-    final half = size / 2.0;
-
-    // Base RGB components
-    final r = color.r;
-    final g = color.g;
-    final b = color.b;
-    final a = color.a;
-
-    // Orthographic projection: model coords ∈ [-1,1]; map to [0,size]
-    // X-right, Y-up in model → X-right, Y-down on canvas (flip Y)
-    ui.Offset project(_Vec3 v) =>
-        ui.Offset(half + v.x * half, half - v.y * half);
-
-    const ambient = 0.30;  // minimum brightness
-    const diffuse = 0.70;  // max diffuse contribution
-
-    final paint = ui.Paint()
-      ..style = ui.PaintingStyle.fill
-      ..isAntiAlias = true;
-
-    // Clip to circle so edges look smooth
-    final clipPath = ui.Path()
-      ..addOval(ui.Rect.fromCircle(
-          center: ui.Offset(half, half), radius: half - 0.5));
-    canvas.clipPath(clipPath);
-
-    for (final tri in triangles) {
-      final pa = project(tri.a);
-      final pb = project(tri.b);
-      final pc = project(tri.c);
-
-      // tri.faceNormal.x holds the diffuse dot factor (stored in x=y=z)
-      final factor = (ambient + diffuse * tri.faceNormal.x).clamp(0.0, 1.0);
-
-      paint.color = ui.Color.from(
-        alpha: a,
-        red: (r * factor).clamp(0.0, 1.0),
-        green: (g * factor).clamp(0.0, 1.0),
-        blue: (b * factor).clamp(0.0, 1.0),
-      );
-
-      final path = ui.Path()
-        ..moveTo(pa.dx, pa.dy)
-        ..lineTo(pb.dx, pb.dy)
-        ..lineTo(pc.dx, pc.dy)
-        ..close();
-      canvas.drawPath(path, paint);
-    }
-
+    ui.Canvas(recorder); // empty
     final picture = recorder.endRecording();
-    final img = await picture.toImage(size, size);
+    final img = await picture.toImage(1, 1);
     final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
     return byteData?.buffer.asUint8List();
   }

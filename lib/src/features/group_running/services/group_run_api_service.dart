@@ -12,10 +12,14 @@ class GroupRunApiService {
 
   /// POST /api/v1/groups/{groupId}/run/start — 호스트 전용
   Future<void> runStart(int groupId) async {
+    _logger.d('runStart called — groupId=$groupId');
     try {
       await _dio.post('/api/v1/groups/$groupId/run/start');
-    } catch (e) {
-      _logger.e('groupRunStart failed', error: e);
+    } on DioException catch (e) {
+      _logger.e(
+        'groupRunStart failed — status=${e.response?.statusCode} body=${e.response?.data}',
+        error: e,
+      );
       rethrow;
     }
   }

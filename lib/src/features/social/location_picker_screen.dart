@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 /// 지도에서 한 지점을 탭해 좌표를 선택하는 전체 화면.
@@ -22,6 +23,34 @@ class LocationPickerScreen extends StatefulWidget {
 class _LocationPickerScreenState extends State<LocationPickerScreen> {
   Marker? _marker;
   LatLng? _selectedLatLng;
+  GoogleMapController? _mapCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    // initialLatLng 없을 때만 현재 GPS 위치로 이동
+    if (widget.initialLatLng == null) {
+      _moveToCurrentLocation();
+    }
+  }
+
+  Future<void> _moveToCurrentLocation() async {
+    try {
+      // 빠른 캐시 우선, 없으면 실시간 조회
+      Position? pos = await Geolocator.getLastKnownPosition();
+      pos ??= await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.low,
+          timeLimit: Duration(seconds: 5),
+        ),
+      );
+      if (!mounted) return;
+      final target = LatLng(pos.latitude, pos.longitude);
+      _mapCtrl?.animateCamera(CameraUpdate.newLatLngZoom(target, 16));
+    } catch (_) {
+      // 권한 없거나 타임아웃 → fallback(하드코딩) 그대로 유지
+    }
+  }
 
   Future<void> _onMapTapped(LatLng latLng) async {
     setState(() {
@@ -60,6 +89,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             myLocationButtonEnabled: false,
             markers: _marker != null ? {_marker!} : {},
             onMapCreated: (ctrl) {
+              _mapCtrl = ctrl;
               // 초기 위치가 있으면 마커 표시
               final initial = widget.initialLatLng;
               if (initial != null) _onMapTapped(initial);

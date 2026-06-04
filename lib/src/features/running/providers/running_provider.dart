@@ -155,15 +155,15 @@ class RunningNotifier extends Notifier<RunRecordModel> {
     state = state.copyWith(clearError: true);
 
     try {
-      // 호스트면 그룹 러닝 시작 API 먼저 호출
-      if (groupId != null && isHost) {
-        await ref.read(groupRunApiServiceProvider).runStart(groupId);
-      }
-
       final now = DateTime.now();
       final runId = await ref.read(runServiceProvider).startRun(
             startTimeIsoLocal: _isoLocal(now),
           );
+
+      // 개별 run 생성 후 그룹 러닝 시작 API 호출
+      if (groupId != null && isHost) {
+        await ref.read(groupRunApiServiceProvider).runStart(groupId);
+      }
 
       _filteredPace = 0.0;
       _lapStartDistance = 0.0;

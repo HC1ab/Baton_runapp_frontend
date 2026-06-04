@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 
@@ -85,9 +86,27 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
 
   /// 지도에서 좌표를 고른 뒤 역지오코딩으로 주소를 채웁니다.
   Future<void> _openMapPicker() async {
+    // 이전 선택 좌표 없으면 현재 GPS 위치를 초기 좌표로 사용
+    LatLng? startLatLng = _selectedLatLng;
+    if (startLatLng == null) {
+      try {
+        Position? pos = await Geolocator.getLastKnownPosition();
+        pos ??= await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.low,
+            timeLimit: Duration(seconds: 5),
+          ),
+        );
+        startLatLng = LatLng(pos.latitude, pos.longitude);
+      } catch (_) {
+        // 권한 없거나 실패 → LocationPickerScreen 자체 fallback 사용
+      }
+    }
+
+    if (!mounted) return;
     final selected = await Navigator.of(context).push<LatLng>(
       MaterialPageRoute<LatLng>(
-        builder: (_) => LocationPickerScreen(initialLatLng: _selectedLatLng),
+        builder: (_) => LocationPickerScreen(initialLatLng: startLatLng),
       ),
     );
     if (!mounted || selected == null) return;

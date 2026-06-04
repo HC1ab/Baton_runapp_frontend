@@ -25,6 +25,9 @@ import '../models/lap_record_model.dart';
 import '../models/run_record_model.dart';
 import '../models/spot_model.dart';
 import '../providers/running_provider.dart';
+import '../widgets/character_shadow_overlay.dart';
+import '../widgets/character_sphere_overlay.dart';
+import '../widgets/countdown_overlay.dart';
 import 'widgets/run_finish_card.dart';
 import 'widgets/running_mock_panel.dart';
 import 'widgets/check_in_result_card.dart';
@@ -88,6 +91,13 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
 
   // Bottom panel expand
   bool _bottomExpanded = false;
+
+  // 카운트다운
+  bool _isCountingDown = false;
+
+  // 활성 그룹 런 정보 — widget param(push) 또는 pendingGroupJoin(탭) 경유 모두 저장
+  int? _activeGroupId;
+  bool _activeIsHost = false;
 
   // 마커 아이콘 캐시 — initState에서 한 번만 생성
   BitmapDescriptor? _iconDefault;
@@ -223,6 +233,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
           nickname: p.nickname,
           titleName: null, // API에 칭호 없음 — 추후 확장
         );
+        if (!mounted) return;
       }
 
       final bitmap = _participantBitmapCache[markerId];
@@ -256,6 +267,8 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
 
   /// 소셜 탭에서 pendingGroupJoinProvider를 통해 진입할 때 호출.
   Future<void> _joinGroupFromPending(int groupId, {required bool isHost}) async {
+    _activeGroupId = groupId;
+    _activeIsHost = isHost;
     await ref.read(runLocationProvider.notifier).joinRoom(
           groupId,
           onSessionEnded: _onSessionEnded,
@@ -267,6 +280,8 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     // 그룹 러닝 — widget param 경유 진입 (레거시 push 경로)
     final groupId = widget.groupId;
     if (groupId != null) {
+      _activeGroupId = groupId;
+      _activeIsHost = widget.isHost;
       await ref.read(runLocationProvider.notifier).joinRoom(
             groupId,
             onSessionEnded: _onSessionEnded,
@@ -311,7 +326,8 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
         _compassSub = FlutterCompass.events?.listen((event) {
           final heading = event.heading;
           if (heading == null || !mounted) return;
-          _currentHeading = heading;
+          // setState로 _currentHeading 갱신 → build() 재실행 → GroundOverlay bearing 즉시 반영
+          setState(() => _currentHeading = heading);
           // 현재 위치 있으면 카메라 bearing 즉시 갱신 (이동 없어도 회전 반영)
           final latLng = _myLatLng;
           if (latLng != null) {
@@ -652,6 +668,21 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
             ),
           ),
 
+          // ── 그림자 오버레이 (화면 좌표계 — bearing/tilt 무관) ─────────────
+          if (_mapCtrl != null && _myLatLng != null)
+            CharacterShadowOverlay(
+              latLng: _myLatLng,
+              mapController: _mapCtrl!,
+            ),
+
+          // ── 구체 오버레이 (그림자 기준점 위) ─────────────────────────────
+          if (_mapCtrl != null && _myLatLng != null)
+            CharacterSphereOverlay(
+              latLng: _myLatLng,
+              mapController: _mapCtrl!,
+              characterStyle: characterStyle,
+            ),
+
           // ── Mock 방향 조작 버튼 (autoWalk 중에만 표시) ───────────────────
           if (_mockAutoWalk && ref.read(useMockGpsProvider)) ...[
             Positioned(
@@ -702,10 +733,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
               bottomExpanded: _bottomExpanded,
               onToggleExpand: () =>
                   setState(() => _bottomExpanded = !_bottomExpanded),
-              onStart: () => ref.read(runningProvider.notifier).startRun(
-                    groupId: widget.groupId,
-                    isHost: widget.isHost,
-                  ),
+              onStart: () => setState(() => _isCountingDown = true),
               onFinish: () => ref.read(runningProvider.notifier).finishRun(),
               onLocateMe: () async {
                 final pos = _mockPos;
@@ -724,6 +752,18 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
                   ref.read(runningProvider.notifier).clearError(),
             ),
           ),
+
+          // ── 카운트다운 오버레이 ────────────────────────────────────────────
+          if (_isCountingDown)
+            CountdownOverlay(
+              onComplete: () {
+                setState(() => _isCountingDown = false);
+                ref.read(runningProvider.notifier).startRun(
+                      groupId: _activeGroupId,
+                      isHost: _activeIsHost,
+                    );
+              },
+            ),
 
           // ── 러닝 종료 결과 카드 (최상위 — BottomPanel 위) ─────────────────
           if (record.status == RunStatus.finished)

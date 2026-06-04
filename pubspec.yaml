@@ -53,6 +53,8 @@ dependencies:
   intl: ^0.20.2                   # ✅ iOS 지원 확인됨
   blurhash_dart: ^1.2.1           # ✅ iOS 지원 확인됨
   stomp_dart_client: ^3.0.1
+  model_viewer_plus: 1.10.0          # ✅ Android/iOS — GLB 3D 렌더 (WebView)
+  webview_flutter: ^4.10.0           # model_viewer_plus WebViewController 직접 참조용
 
   #firebase 배포
   firebase_core: ^2.10.0         # ✅ iOS 지원 확인됨

@@ -21,7 +21,7 @@ class AppBottomNavBar extends StatelessWidget {
     _NavItem(icon: Icons.directions_run_rounded, label: '러닝'),
     _NavItem(icon: Icons.location_on_rounded, label: '스팟'),
     _NavItem(icon: Icons.people_alt_rounded, label: '소셜'),
-    _NavItem(icon: Icons.home_outlined, label: 'My Room'),
+    _NavItem(icon: Icons.home_rounded, label: '마이 룸'),
     _NavItem(icon: Icons.person_rounded, label: '프로필'),
   ];
 
@@ -43,7 +43,9 @@ class AppBottomNavBar extends StatelessWidget {
       ),
       child: SafeArea(
         top: false,
-        child: SizedBox(
+        child: Padding(
+          padding: EdgeInsets.only(bottom: 10.h),
+          child: SizedBox(
           height: 60.h,
           child: Row(
             children: List.generate(_items.length, (index) {
@@ -59,6 +61,7 @@ class AppBottomNavBar extends StatelessWidget {
               );
             }),
           ),
+        ),
         ),
       ),
     );

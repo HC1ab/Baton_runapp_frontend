@@ -15,4 +15,7 @@ abstract final class StorageKeys {
   // TODO: 서버 GET /api/v1/groups 응답에 hostMemberId 추가되면 이 workaround 제거하고
   //       memberId 직접 비교로 교체할 것.
   static const myNickname = 'auth.myNickname';
+
+  /// Equipped title code (e.g. TITLE_001_GOLD). Set on login.
+  static const equippedTitleCode = 'character.equippedTitleCode';
 }

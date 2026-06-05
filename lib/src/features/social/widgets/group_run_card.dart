@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_spacing.dart';
 
 class GroupRunCard extends StatelessWidget {
   const GroupRunCard({
@@ -46,10 +48,10 @@ class GroupRunCard extends StatelessWidget {
     final joinButtonTextColor = Colors.white;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md * 0.7),
       decoration: BoxDecoration(
         color: cardBackground,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(24.r),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -65,7 +67,7 @@ class GroupRunCard extends StatelessWidget {
                 roomImageUrl: roomImageUrl,
                 isHighlighted: isHighlighted,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               _MemberBadge(
                 currentMembers: currentMembers,
                 maxMembers: maxMembers,
@@ -74,18 +76,18 @@ class GroupRunCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 7.h),
           Row(
             children: [
-              Icon(Icons.location_on_rounded, size: 16, color: secondaryTextColor),
-              const SizedBox(width: 4),
+              Icon(Icons.location_on_rounded, size: 16.r, color: secondaryTextColor),
+              SizedBox(width: 4.w),
               Expanded(
                 child: Text(
                   location,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
                     color: secondaryTextColor,
                   ),
@@ -93,9 +95,9 @@ class GroupRunCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 10.h),
           Divider(height: 1, thickness: 1, color: dividerColor),
-          const SizedBox(height: 14),
+          SizedBox(height: 10.h),
           Row(
             children: [
               Expanded(
@@ -105,7 +107,7 @@ class GroupRunCard extends StatelessWidget {
                 ),
               ),
               SizedBox(
-                height: 36,
+                height: 26.h,
                 child: FilledButton(
                   onPressed: onJoinPressed,
                   style: FilledButton.styleFrom(
@@ -114,11 +116,11 @@ class GroupRunCard extends StatelessWidget {
                     disabledBackgroundColor: joinButtonColor.withValues(alpha: 0.5),
                     disabledForegroundColor: joinButtonTextColor.withValues(alpha: 0.8),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    textStyle: const TextStyle(
-                      fontSize: 14,
+                    padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
+                    textStyle: TextStyle(
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -157,15 +159,15 @@ class _RoomHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _CircularImage(
-            size: 48,
+            size: 34.r,
             imageUrl: roomImageUrl,
             fallbackColor: isHighlighted
                 ? Colors.white.withValues(alpha: 0.20)
                 : AppColors.socialAccent,
             iconColor: Colors.white,
-            iconSize: 20,
+            iconSize: 14.r,
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,23 +178,23 @@ class _RoomHeader extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: titleColor,
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w800,
                     height: 1.35,
                   ),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: 4.h),
                 Row(
                   children: [
-                    Icon(Icons.access_time_filled_rounded, size: 14, color: subtitleColor),
-                    const SizedBox(width: 4),
+                    Icon(Icons.access_time_filled_rounded, size: 14.r, color: subtitleColor),
+                    SizedBox(width: 4.w),
                     Expanded(
                       child: Text(
                         time,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 15.sp,
                           fontWeight: FontWeight.w500,
                           color: subtitleColor,
                         ),
@@ -225,16 +227,16 @@ class _MemberBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
       ),
       child: Text(
         '$currentMembers/$maxMembers명',
         style: TextStyle(
           color: textColor,
-          fontSize: 13,
+          fontSize: 13.sp,
           fontWeight: FontWeight.w800,
         ),
       ),
@@ -255,22 +257,22 @@ class _ParticipantStack extends StatelessWidget {
   Widget build(BuildContext context) {
     final visibleCount = imageUrls.length.clamp(0, 3);
     if (visibleCount == 0) {
-      return const SizedBox(height: 32);
+      return SizedBox(height: 22.h);
     }
 
     return SizedBox(
-      height: 32,
-      width: 32 + ((visibleCount - 1) * 18),
+      height: 22.r,
+      width: 22.r + ((visibleCount - 1) * 13.r),
       child: Stack(
         children: List.generate(visibleCount, (index) {
           return Positioned(
-            left: index * 18,
+            left: index * 13.r,
             child: _CircularImage(
-              size: 32,
+              size: 22.r,
               imageUrl: imageUrls[index],
-              fallbackColor: Colors.grey.shade300,
-              iconColor: Colors.grey.shade700,
-              iconSize: 16,
+              fallbackColor: AppColors.scaffoldGrey,
+              iconColor: AppColors.iconNeutral,
+              iconSize: 11.r,
               borderColor: borderColor,
             ),
           );

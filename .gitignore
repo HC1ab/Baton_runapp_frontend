@@ -55,7 +55,7 @@ key.properties
 **/ios/**/profile
 **/ios/**/xcuserdata
 **/ios/.generated/
-**/ios/Flutter/.last_build_id
+**/ios/Flutter/.last_build_idq
 **/ios/Flutter/App.framework
 **/ios/Flutter/Flutter.framework
 **/ios/Flutter/Flutter.podspec
@@ -107,3 +107,4 @@ app.*.symbols
 app.*.map.json
 api.json
 baton-api.openapi.json
+except.md

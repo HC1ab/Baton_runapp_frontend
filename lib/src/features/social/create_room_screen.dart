@@ -1,12 +1,15 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_spacing.dart';
+import '../../core/constants/error_messages.dart';
 import '../../core/network/api_client.dart';
 import 'location_picker_screen.dart';
 import 'models/run_card_data.dart';
@@ -258,7 +261,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('요청 처리 중 오류가 발생했습니다.')),
+        SnackBar(content: Text(ErrorMessages.unknownError)),
       );
     } finally {
       if (mounted) {
@@ -298,14 +301,14 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg)),
       ),
       builder: (ctx) {
         return SafeArea(
           top: false,
           child: SizedBox(
-            height: 280,
+            height: 280.h,
             child: Column(
               children: [
                 const SizedBox(height: 8),
@@ -320,7 +323,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                     scrollController: FixedExtentScrollController(
                       initialItem: temp - 1,
                     ),
-                    itemExtent: 40,
+                    itemExtent: 40.h,
                     onSelectedItemChanged: (i) {
                       temp = i + 1;
                     },
@@ -329,14 +332,14 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                       (i) => Center(
                         child: Text(
                           '${i + 1}명',
-                          style: const TextStyle(fontSize: 20),
+                          style: TextStyle(fontSize: 20.sp),
                         ),
                       ),
                     ),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
                   child: SizedBox(
                     width: double.infinity,
                     child: FilledButton(
@@ -368,14 +371,14 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg)),
       ),
       builder: (ctx) {
         return SafeArea(
           top: false,
           child: SizedBox(
-            height: 280,
+            height: 280.h,
             child: Column(
               children: [
                 const SizedBox(height: 8),
@@ -390,14 +393,14 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                     scrollController: FixedExtentScrollController(
                       initialItem: temp,
                     ),
-                    itemExtent: 40,
+                    itemExtent: 40.h,
                     onSelectedItemChanged: (i) => temp = i,
                     children: _distanceOptions
                         .map(
                           (e) => Center(
                             child: Text(
                               e,
-                              style: const TextStyle(fontSize: 20),
+                              style: TextStyle(fontSize: 20.sp),
                             ),
                           ),
                         )
@@ -405,7 +408,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
                   child: SizedBox(
                     width: double.infinity,
                     child: FilledButton(
@@ -445,11 +448,11 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        title: const Text(
+        title: Text(
           '새로운 러닝 모집',
           style: TextStyle(
             color: AppColors.textPrimary,
-            fontSize: 18,
+            fontSize: 18.sp,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -459,13 +462,13 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         children: [
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              padding: EdgeInsets.fromLTRB(AppSpacing.screenHorizontal, 8.h, AppSpacing.screenHorizontal, 24.h),
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(24.r),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -519,7 +522,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        SizedBox(width: 14.w),
                         Expanded(
                           child: CustomInputField(
                             label: '종료 시간',
@@ -550,7 +553,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        SizedBox(width: 14.w),
                         Expanded(
                           child: CustomInputField(
                             label: '목표 거리',
@@ -573,20 +576,20 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           SafeArea(
             top: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              padding: EdgeInsets.fromLTRB(AppSpacing.screenHorizontal, 8.h, AppSpacing.screenHorizontal, 16.h),
               child: SizedBox(
                 width: double.infinity,
-                height: 56,
+                height: 56.h,
                 child: FilledButton(
                   onPressed: _submitRoom,
                   style: FilledButton.styleFrom(
                     backgroundColor: _submitOrange,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(16.r),
                     ),
-                    textStyle: const TextStyle(
-                      fontSize: 17,
+                    textStyle: TextStyle(
+                      fontSize: 17.sp,
                       fontWeight: FontWeight.w800,
                     ),
                   ),

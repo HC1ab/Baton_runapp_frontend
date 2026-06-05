@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../../common/widgets/character_sphere_widget.dart';
@@ -18,6 +19,7 @@ class CharacterSphereOverlay extends StatefulWidget {
     required this.mapController,
     required this.characterStyle,
     this.size = 48.0,
+    this.titleName,
   });
 
   final LatLng? latLng;
@@ -26,6 +28,9 @@ class CharacterSphereOverlay extends StatefulWidget {
 
   /// 구체 지름 (논리 픽셀).
   final double size;
+
+  /// 장착 칭호 표시 이름. null이면 배지 숨김.
+  final String? titleName;
 
   @override
   State<CharacterSphereOverlay> createState() => _CharacterSphereOverlayState();
@@ -64,6 +69,7 @@ class _CharacterSphereOverlayState extends State<CharacterSphereOverlay> {
     final coord = _screenCoord;
     final dpr = MediaQuery.devicePixelRatioOf(context);
     final s = widget.size;
+    final title = widget.titleName;
 
     // 기준점(LatLng)에서 구 반지름만큼 위로 올림
     final cx = coord != null ? coord.x / dpr : -500.0;
@@ -75,9 +81,44 @@ class _CharacterSphereOverlayState extends State<CharacterSphereOverlay> {
       width: s,
       height: s,
       child: IgnorePointer(
-        child: CharacterSphereWidget(
-          style: widget.characterStyle,
-          size: s,
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.center,
+          children: [
+            // 구체 — 항상 고정 위치
+            CharacterSphereWidget(
+              style: widget.characterStyle,
+              size: s,
+            ),
+            // 칭호 배지 — 구체 위에 overflow 배치, null이면 숨김
+            if (title != null)
+              Positioned(
+                bottom: s + 2.h,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.55),
+                      borderRadius: BorderRadius.circular(999.r),
+                    ),
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9.sp,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

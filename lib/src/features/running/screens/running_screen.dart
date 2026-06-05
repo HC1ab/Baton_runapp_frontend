@@ -577,6 +577,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     final record = ref.watch(runningProvider);
     final characterStyle = ref.watch(selectedCharacterStyleProvider);
     final topPadding = MediaQuery.of(context).padding.top;
+    final mapHeight = MediaQuery.of(context).size.height;
 
     // 스타일 변경 시 맵 마커 재생성 (async)
     ref.listen(selectedCharacterStyleProvider, (prev, next) {
@@ -645,6 +646,11 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
               compassEnabled: false,
               zoomControlsEnabled: false,
               mapToolbarEnabled: false,
+              // 맵 영역 기준 10% 패딩 → 카메라 중심 위로 이동 → 캐릭터 하단 10% 위치
+              // 구글 로고도 함께 위로 이동해 BottomPanel 뒤로 자연스럽게 숨겨짐
+              // top 패딩 → 카메라 중심 아래로 이동 → 캐릭터 하단 10% 위치
+              // 구글 로고는 bottom 기준 유지되므로 BottomPanel과 함께 자연스럽게 가려짐
+              padding: EdgeInsets.only(top: mapHeight * 0.3),
               scrollGesturesEnabled: false,
               zoomGesturesEnabled: false,
               rotateGesturesEnabled: false,
@@ -681,6 +687,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
               latLng: _myLatLng,
               mapController: _mapCtrl!,
               characterStyle: characterStyle,
+              titleName: ref.watch(myEquippedTitleNameProvider),
             ),
 
           // ── Mock 방향 조작 버튼 (autoWalk 중에만 표시) ───────────────────
@@ -718,6 +725,28 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
               left: 0,
               right: 0,
               child: CheckInResultCard(result: record.lastCheckIn!),
+            ),
+
+          // ── Mock 패널 (개발자용 — 상단 고정) ──────────────────────────────
+          if (ref.read(useMockGpsProvider))
+            Positioned(
+              top: topPadding + 8.h,
+              left: AppSpacing.screenHorizontal,
+              right: AppSpacing.screenHorizontal,
+              child: RunningMockPanel(
+                stepMeters: _mockStepMeters,
+                isAutoWalk: _mockAutoWalk,
+                isBusy: false,
+                onChangeStep: (v) => setState(() => _mockStepMeters = v),
+                onToggleAutoWalk: _toggleMockAutoWalk,
+                onNudge: () {
+                  final rad = _mockHeading * math.pi / 180;
+                  _nudgeMock(
+                    eastMeters: _mockStepMeters * math.sin(rad),
+                    northMeters: _mockStepMeters * math.cos(rad),
+                  );
+                },
+              ),
             ),
 
           // ── Bottom panel ──────────────────────────────────────────────────
@@ -831,23 +860,6 @@ class _BottomPanel extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (isDev)
-          Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenHorizontal,
-            ),
-            child: RunningMockPanel(
-              stepMeters: mockStepMeters,
-              isAutoWalk: mockAutoWalk,
-              isBusy: false,
-              onChangeStep: onChangeStep,
-              onToggleAutoWalk: onToggleAutoWalk,
-              onNudge: onNudge,
-            ),
-          ),
-
-        SizedBox(height: 6.h),
-
         if (record.errorMessage != null)
           Padding(
             padding: EdgeInsets.symmetric(

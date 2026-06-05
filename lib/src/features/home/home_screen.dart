@@ -37,6 +37,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
+      extendBody: true,
       body: Stack(
         children: [
           SafeArea(
@@ -76,29 +77,63 @@ class PlaceholderTab extends StatelessWidget {
     super.key,
     required this.icon,
     required this.label,
+    this.englishLabel,
     this.trailing,
   });
 
   final IconData icon;
   final String label;
+  final String? englishLabel;
   final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
+    final topPadding = MediaQuery.of(context).padding.top;
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppBar(
-          backgroundColor: AppColors.backgroundLight,
-          title: Text(
-            label,
-            style: AppTextStyles.headlineSmall.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.bold,
-            ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.screenHorizontal,
+            topPadding + AppSpacing.verticalSm,
+            AppSpacing.screenHorizontal,
+            0,
           ),
-          actions: [if (trailing != null) trailing!],
-          automaticallyImplyLeading: false,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (englishLabel != null)
+                      Text(
+                        englishLabel!,
+                        style: TextStyle(
+                          color: AppColors.sectionLabel,
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.8,
+                        ),
+                      ),
+                    if (englishLabel != null) const SizedBox(height: 4),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 22.sp,
+                        fontWeight: FontWeight.w900,
+                        height: 1.1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (trailing != null) trailing!,
+            ],
+          ),
         ),
+        const SizedBox(height: 12),
         Expanded(
           child: Center(
             child: Column(

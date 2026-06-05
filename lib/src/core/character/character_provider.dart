@@ -3,9 +3,19 @@ import 'package:logger/logger.dart';
 
 import '../constants/storage_keys.dart';
 import '../storage/shared_prefs_provider.dart';
+import '../../features/profile/constants/title_presets.dart';
 import 'character_style.dart';
 
 export '../storage/shared_prefs_provider.dart' show sharedPreferencesProvider;
+
+/// 현재 유저의 장착 칭호 표시 이름. 없으면 null.
+/// StorageKeys.equippedTitleCode → TitlePresets.nameFor() 변환.
+final myEquippedTitleNameProvider = Provider<String?>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  final code = prefs.getString(StorageKeys.equippedTitleCode);
+  if (code == null || code.isEmpty) return null;
+  return TitlePresets.nameFor(code);
+});
 
 final _logger = Logger();
 

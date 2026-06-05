@@ -1,8 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
+import '../../../core/character/character_provider.dart';
+import '../../../core/character/character_style.dart';
 import '../../../core/constants/storage_keys.dart';
-import '../../../core/storage/shared_prefs_provider.dart';
 import '../../../core/storage/token_storage.dart';
 import '../../group_running/providers/run_location_provider.dart';
 import '../../group_running/services/group_run_api_service.dart';
@@ -81,11 +82,28 @@ class AuthNotifier extends Notifier<AuthState> {
     if (result.nickname.isNotEmpty) {
       await prefs.setString(StorageKeys.myNickname, result.nickname);
     }
+    if (result.equippedTitleCode.isNotEmpty) {
+      await prefs.setString(StorageKeys.equippedTitleCode, result.equippedTitleCode);
+    }
+
+    // 캐릭터 색상 즉시 반영 — provider 재빌드 없이 state 직접 갱신
+    final style = CharacterStylePresets.fromCode(result.coreColorCode);
+    await ref.read(selectedCharacterStyleProvider.notifier).setStyle(style);
+
     _logger.i(
       'Login saved — access: ${result.tokenPair.accessToken.substring(0, 20)}... '
-      'coreColor: ${result.coreColorCode} nickname: ${result.nickname}',
+      'coreColor: ${result.coreColorCode} title: ${result.equippedTitleCode} '
+      'nickname: ${result.nickname}',
     );
     state = const AuthStateAuthenticated();
+  }
+
+  /// 토큰 만료/무효 시 API 호출 없이 즉시 로그아웃.
+  /// AuthInterceptor에서 A001/A002/A003 감지 시 호출.
+  Future<void> forceLogout() async {
+    await ref.read(tokenStorageProvider).clear();
+    state = const AuthStateUnauthenticated();
+    _logger.w('Force logout — auth token invalid/expired');
   }
 
   /// Clears token and returns to unauthenticated state.

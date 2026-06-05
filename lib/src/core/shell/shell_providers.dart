@@ -37,6 +37,7 @@ Widget _buildRunning(BuildContext _) => const RunningScreen();
 Widget _buildSpot(BuildContext _) => const PlaceholderTab(
       icon: Icons.location_on_rounded,
       label: '스팟',
+      englishLabel: 'DISCOVER RUNNING SPOTS',
     );
 
 Widget _buildSocial(BuildContext _) => const SocialFeedScreen();

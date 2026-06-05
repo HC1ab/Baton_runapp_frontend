@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:logger/logger.dart';
 
+import '../../../core/constants/app_colors.dart';
+
 final _logger = Logger();
 
 /// Builds a Google Maps [BytesMapBitmap] for a group run participant.
@@ -115,7 +117,7 @@ Future<BytesMapBitmap?> buildParticipantMarkerBitmap({
       final nickPainter = _makePainter(
         nickname,
         fontSize: nickFontLogical * dpr,
-        color: const Color(0xFF1A1612),
+        color: AppColors.textPrimary,
         bold: true,
       );
       nickPainter.layout(maxWidth: canvasWidthPx);
@@ -131,7 +133,7 @@ Future<BytesMapBitmap?> buildParticipantMarkerBitmap({
       final titlePainter = _makePainter(
         titleName,
         fontSize: titleFontLogical * dpr,
-        color: const Color(0xFF8A8480),
+        color: AppColors.textSecondary,
         bold: false,
       );
       titlePainter.layout(maxWidth: canvasWidthPx);

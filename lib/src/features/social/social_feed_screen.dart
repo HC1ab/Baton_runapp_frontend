@@ -5,6 +5,8 @@ import 'package:logger/logger.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_routes.dart';
+import '../../core/constants/app_spacing.dart';
+import '../../core/constants/error_messages.dart';
 import '../../core/constants/storage_keys.dart';
 import '../../core/network/api_client.dart';
 import '../../core/shell/tab_providers.dart';
@@ -94,7 +96,7 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
       _logger.e('group list unexpected error', error: e);
       if (!mounted) return;
       setState(() {
-        _loadError = '목록을 불러오지 못했습니다.';
+        _loadError = ErrorMessages.unknownError;
         _isLoading = false;
       });
     }
@@ -307,60 +309,55 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldGrey,
-      appBar: AppBar(
-        backgroundColor: AppColors.scaffoldGrey,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        titleSpacing: 20,
-        title: Text(
-          '바통',
-          style: TextStyle(
-            color: _pointOrange,
-            fontSize: 17.sp,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.notifications_rounded, color: AppColors.iconNeutral),
-          ),
-          const Padding(
-            padding: EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              radius: 16,
-              backgroundColor: AppColors.avatarTeal,
-              child: Icon(Icons.person_rounded, color: Colors.white, size: 18),
-            ),
-          ),
-        ],
-      ),
       body: SafeArea(
-        top: false,
+        bottom: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.screenHorizontal,
+            AppSpacing.verticalSm,
+            AppSpacing.screenHorizontal,
+            0,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 12),
-              Text(
-                'COMMUNITY FEED',
-                style: TextStyle(
-                  color: AppColors.sectionLabel,
-                  fontSize: 13.sp,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.8,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '소셜',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 44.sp,
-                  fontWeight: FontWeight.w900,
-                  height: 1.1,
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'COMMUNITY FEED',
+                          style: TextStyle(
+                            color: AppColors.sectionLabel,
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.8,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '소셜',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 22.sp,
+                            fontWeight: FontWeight.w900,
+                            height: 1.1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.notifications_rounded, color: AppColors.iconNeutral, size: 22.r),
+                  SizedBox(width: 12.w),
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: AppColors.avatarTeal,
+                    child: Icon(Icons.person_rounded, color: Colors.white, size: 18.r),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               Expanded(
@@ -385,6 +382,10 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
               label: const Text('+ 모집하기'),
             ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      // 외부 HomeScreen 네브바 높이를 내부 Scaffold에 알려줌 → FAB이 네브바 위에 배치됨
+      bottomNavigationBar: SizedBox(
+        height: 115.h + MediaQuery.of(context).viewPadding.bottom,
+      ),
     );
   }
 
@@ -413,7 +414,7 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
-                  const Icon(Icons.error_outline, size: 40, color: Colors.black38),
+                  Icon(Icons.error_outline, size: 40.r, color: Colors.black38),
                   const SizedBox(height: 12),
                   Text(
                     _loadError!,
@@ -436,14 +437,14 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
     if (cards.isEmpty) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        children: const [
-          SizedBox(height: 120),
+        children: [
+          const SizedBox(height: 120),
           Center(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
-                  Icon(Icons.directions_run_rounded, size: 48, color: Colors.black26),
+                  Icon(Icons.directions_run_rounded, size: 48.r, color: Colors.black26),
                   SizedBox(height: 12),
                   Text(
                     '아직 모집 중인 그룹이 없어요.\n+ 모집하기 버튼으로 첫 방을 열어보세요!',
@@ -468,7 +469,9 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
         return Padding(
           padding: EdgeInsets.only(
             top: index == 0 ? 0 : 14,
-            bottom: index == cards.length - 1 ? 120 : 0,
+            bottom: index == cards.length - 1
+                ? MediaQuery.of(context).padding.bottom + 90
+                : 0,
           ),
           child: Material(
             color: Colors.transparent,

@@ -94,6 +94,15 @@ abstract final class TitlePresets {
         _ => Icons.military_tech_rounded,
       };
 
+  /// 칭호 코드 → 표시 이름. 없는 코드면 null.
+  static String? nameFor(String titleCode) {
+    try {
+      return all.firstWhere((t) => t.titleCode == titleCode).name;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// 칭호 코드 → 한 줄 서브텍스트.
   static String subtitleFor(String titleCode) => switch (titleCode) {
         'TITLE_001_START' => '러닝 앱 첫 시작',

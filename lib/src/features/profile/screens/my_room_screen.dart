@@ -48,8 +48,6 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
           ),
           children: [
             _buildAppBar(),
-            SizedBox(height: AppSpacing.xs),
-            _buildSubtitle(),
             SizedBox(height: AppSpacing.verticalLg),
             _buildHeroSphere(currentStyle),
             SizedBox(height: AppSpacing.verticalMd),
@@ -67,22 +65,33 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
   }
 
   Widget _buildAppBar() {
-    return Text(
-      'My Room',
-      style: AppTextStyles.headlineMedium.copyWith(
-        fontWeight: FontWeight.w800,
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Customize your core sphere and identity.',
+          style: TextStyle(
+            color: AppColors.sectionLabel,
+            fontSize: 13.sp,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.8,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '마이 룸',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 22.sp,
+            fontWeight: FontWeight.w900,
+            height: 1.1,
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildSubtitle() {
-    return Text(
-      'Customize your core sphere and identity.',
-      style: AppTextStyles.bodySmall.copyWith(
-        color: AppColors.textSecondary,
-      ),
-    );
-  }
+  Widget _buildSubtitle() => const SizedBox.shrink();
 
   Widget _buildHeroSphere(CharacterStyle style) {
     return Center(

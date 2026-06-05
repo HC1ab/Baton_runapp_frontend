@@ -31,8 +31,10 @@ class RunningNotifier extends Notifier<RunRecordModel> {
   Timer? _clockTimer;
   Timer? _spotsDebounce;
   Position? _lastPosition;
-  Position? _lastSpotsRefreshPos; // 마지막으로 스팀 조회한 위치
+  Position? _lastSpotsRefreshPos; // 마지막으로 스팟 조회한 위치
   double _filteredPace = 0.0; // Low-pass filtered pace value
+  final Set<int> _checkingInSpotIds = {}; // API 호출 중인 스팟 (중복 방지)
+  final Set<int> _blockedSpotIds = {};    // C003 수신 스팟 — 재시도 방지용 (checkedInSpotIds와 분리)
 
   @override
   RunRecordModel build() {
@@ -106,7 +108,8 @@ class RunningNotifier extends Notifier<RunRecordModel> {
       // Debounced nearby spot refresh (only when not running or not frozen)
       _debouncedRefreshSpots(position);
 
-      // Auto check-in 제거 — 마커 탭으로만 체크인 가능
+      // 러닝 중 범위 진입 시 자동 체크인
+      if (state.isRunning) _autoCheckIn(position);
     } catch (e) {
       _logger.e('onPositionUpdate error', error: e);
       state = state.copyWith(errorMessage: _toMessage(e));
@@ -303,7 +306,14 @@ class RunningNotifier extends Notifier<RunRecordModel> {
       });
     } catch (e) {
       _logger.e('checkIn error spot=${spot.id}', error: e);
-      state = state.copyWith(errorMessage: _toMessage(e));
+      // C003: 서버 기준 이미 체크인 → _blockedSpotIds에 기록하여 재시도 방지
+      // checkedInSpotIds는 이번 런에서 실제 체크인 성공한 스팟만 포함 → 카운트/포인트 정확성 유지
+      if (e is ServerException &&
+          e.message == ErrorMessages.spotAlreadyCheckedIn) {
+        _blockedSpotIds.add(spot.id);
+      } else {
+        state = state.copyWith(errorMessage: _toMessage(e));
+      }
     }
   }
 
@@ -322,12 +332,32 @@ class RunningNotifier extends Notifier<RunRecordModel> {
     }
   }
 
+  void _autoCheckIn(Position pos) {
+    for (final spot in state.nearbySpots) {
+      if (state.checkedInSpotIds.contains(spot.id)) continue;
+      if (!spot.canCheckIn) continue;
+      if (_checkingInSpotIds.contains(spot.id)) continue;
+      if (_blockedSpotIds.contains(spot.id)) continue; // C003 수신 스팟 재시도 방지
+
+      final dist = Geolocator.distanceBetween(
+        pos.latitude, pos.longitude,
+        spot.latitude, spot.longitude,
+      );
+      if (dist <= spotCheckInRadiusMeters) {
+        _checkingInSpotIds.add(spot.id);
+        _doCheckIn(spot).whenComplete(() => _checkingInSpotIds.remove(spot.id));
+      }
+    }
+  }
+
   void _cleanUp() {
     _stopClock();
     _positionSub?.cancel();
     _spotsDebounce?.cancel();
     _lastPosition = null;
     _filteredPace = 0.0;
+    _checkingInSpotIds.clear();
+    _blockedSpotIds.clear();
   }
 
   String _isoLocal(DateTime dt) {

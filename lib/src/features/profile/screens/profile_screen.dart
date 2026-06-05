@@ -3,150 +3,141 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_routes.dart';
-import '../../../core/storage/token_storage.dart';
-import '../../../core/utils/jwt_utils.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../services/profile_service.dart';
 
-/// ProfileScreen — 기존 My Room 화면(사용자의 러닝 레벨, 대시보드, 누적 거리, 평균 페이스 등)과
-/// 프로필 탭의 유저 관리 기능(실제 JWT 기반 닉네임 조회, 로그아웃 버튼)을 완벽하게 통합한 새로운 프로필 화면.
-class ProfileScreen extends ConsumerStatefulWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
-  @override
-  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   static const Color _bg = Color(0xFFFBF1EC);
   static const Color _primary = Color(0xFFDD6A3E);
-  static const Color _primarySoft = Color(0xFFF7CDB8);
   static const Color _cardLight = Color(0xFFFFFFFF);
   static const Color _textPrimary = Color(0xFF1F1A17);
   static const Color _textSub = Color(0xFF8C857F);
 
-  String _nickname = 'Baton User';
-  String _email = 'loading...';
-  bool _isLoading = true;
-
   @override
-  void initState() {
-    super.initState();
-    _loadUserInfo();
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profileAsync = ref.watch(profileProvider);
 
-  Future<void> _loadUserInfo() async {
-    try {
-      final pair = await ref.read(tokenStorageProvider).read();
-      final token = pair?.accessToken;
-      if (token != null && token.isNotEmpty) {
-        final nick = nicknameFromAccessToken(token);
-        final mail = emailFromAccessToken(token);
-        if (mounted) {
-          setState(() {
-            _nickname = nick ?? 'Baton User';
-            _email = mail ?? '';
-            _isLoading = false;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bg,
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-          children: [
-            _buildAppBar(context),
-            const SizedBox(height: 12),
-            _buildHeroAvatar(),
-            const SizedBox(height: 20),
-            Text(
-              _nickname,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: _textPrimary,
+        child: profileAsync.when(
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: _primary),
+          ),
+          error: (e, _) => _buildError(ref),
+          data: (profile) => ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+            children: [
+              _buildAppBar(context, ref),
+              const SizedBox(height: 12),
+              _buildHeroAvatar(),
+              const SizedBox(height: 20),
+              Text(
+                profile.nickname,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: _textPrimary,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _isLoading ? '불러오는 중...' : (_email.isEmpty ? 'Pro Runner' : _email),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 15,
-                color: _textSub,
-                fontWeight: FontWeight.w500,
+              const SizedBox(height: 4),
+              Text(
+                profile.equippedTitleName.isEmpty
+                    ? 'No Title'
+                    : profile.equippedTitleName,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: _primary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            _buildLevelCard(),
-            const SizedBox(height: 14),
-            Row(
-              children: const [
-                Expanded(
-                  child: _MetricCard(
-                    icon: Icons.straighten_rounded,
-                    label: '총 거리',
-                    value: '124.8 km',
+              const SizedBox(height: 20),
+              _buildLevelCard(profile.level),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: _MetricCard(
+                      icon: Icons.straighten_rounded,
+                      label: '총 거리',
+                      value: '${profile.totalDistance.toStringAsFixed(1)} km',
+                    ),
                   ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: _MetricCard(
-                    icon: Icons.speed_rounded,
-                    label: '평균 페이스',
-                    value: "5'42\"",
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _MetricCard(
+                      icon: Icons.speed_rounded,
+                      label: '평균 페이스',
+                      value: profile.avgPaceText,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _BigActionCard(
-                    icon: Icons.emoji_events_rounded,
-                    title: '러닝 히스토리',
-                    subtitle: '레벨 혜택 및 기록',
-                    filled: true,
-                    onTap: () => context.push(AppRoutes.history),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _BigActionCard(
+                      icon: Icons.emoji_events_rounded,
+                      title: '러닝 히스토리',
+                      subtitle: '레벨 혜택 및 기록',
+                      filled: true,
+                      onTap: () => context.push(AppRoutes.history),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: _BigActionCard(
-                    icon: Icons.place_rounded,
-                    title: '나의 스팟',
-                    subtitle: '저장된 코스 확인',
-                    filled: false,
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: _BigActionCard(
+                      icon: Icons.place_rounded,
+                      title: '나의 스팟',
+                      subtitle: '저장된 코스 확인',
+                      filled: false,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildAppBar(BuildContext context) {
+  Widget _buildError(WidgetRef ref) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            '프로필을 불러오지 못했어요.',
+            style: TextStyle(color: _textSub, fontSize: 14),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            onPressed: () => ref.invalidate(profileProvider),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primary,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('다시 시도',
+                style: TextStyle(color: Colors.white)),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () => ref.read(authProvider.notifier).logout(),
+            child: const Text('로그아웃', style: TextStyle(color: _textSub)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAppBar(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
         const CircleAvatar(
@@ -167,11 +158,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         const Spacer(),
         IconButton(
           onPressed: () => ref.read(authProvider.notifier).logout(),
-          icon: const Icon(
-            Icons.logout_rounded,
-            color: _primary,
-            size: 24,
-          ),
+          icon: const Icon(Icons.logout_rounded, color: _primary, size: 24),
           tooltip: '로그아웃',
         ),
       ],
@@ -207,8 +194,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildLevelCard() {
-    const double progress = 0.6;
+  Widget _buildLevelCard(int level) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
       decoration: BoxDecoration(
@@ -234,40 +220,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 6),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: const [
-              Text(
-                'Lv.12',
-                style: TextStyle(
-                  fontSize: 38,
-                  fontWeight: FontWeight.w900,
-                  color: _primary,
-                  height: 1.0,
-                ),
-              ),
-              Spacer(),
-              Padding(
-                padding: EdgeInsets.only(bottom: 6),
-                child: Text(
-                  '다음 레벨까지 240 EXP',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: _textSub,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 10,
-              backgroundColor: _primarySoft.withValues(alpha: 0.45),
-              valueColor: const AlwaysStoppedAnimation<Color>(_primary),
+          Text(
+            'Lv.$level',
+            style: const TextStyle(
+              fontSize: 38,
+              fontWeight: FontWeight.w900,
+              color: _primary,
+              height: 1.0,
             ),
           ),
         ],
@@ -275,6 +234,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Shared Sub-widgets
+// ---------------------------------------------------------------------------
 
 class _MetricCard extends StatelessWidget {
   const _MetricCard({
@@ -294,10 +257,7 @@ class _MetricCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFFBF1EC),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: const Color(0xFFEBD9CC),
-          width: 1,
-        ),
+        border: Border.all(color: const Color(0xFFEBD9CC)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,7 +311,8 @@ class _BigActionCard extends StatelessWidget {
 
     final bg = filled ? primary : cardSoft;
     final fg = filled ? Colors.white : textPrimary;
-    final subFg = filled ? Colors.white.withValues(alpha: 0.85) : textSub;
+    final subFg =
+        filled ? Colors.white.withValues(alpha: 0.85) : textSub;
     final iconBg = filled
         ? Colors.white.withValues(alpha: 0.22)
         : Colors.white.withValues(alpha: 0.7);

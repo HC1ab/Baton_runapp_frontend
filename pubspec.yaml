@@ -14,6 +14,7 @@ dependencies:
   # UI
   cupertino_icons: ^1.0.8
   flutter_screenutil: ^5.9.3      # ✅ iOS 지원 확인됨
+  flutter_svg: ^2.0.10+1          # ✅ iOS 지원 확인됨 (SVG 렌더링)
 
   # State management
   flutter_riverpod: ^3.1.0        # ✅ iOS 지원 확인됨
@@ -27,6 +28,7 @@ dependencies:
 
   # Storage
   flutter_secure_storage: ^10.2.0  # ✅ iOS 지원 확인됨
+  shared_preferences: ^2.3.3       # ✅ iOS 지원 확인됨 (간단한 설정값 저장)
 
   # Logging
   logger: ^2.5.0                  # ✅ iOS 지원 확인됨
@@ -36,7 +38,9 @@ dependencies:
   json_annotation: ^4.9.0         # ✅ iOS 지원 확인됨
 
   # Map & Location
-  google_maps_flutter: ^2.9.0     # ✅ Android/iOS 통합 지도 SDK
+  google_maps_flutter: ^2.9.0                    # ✅ Android/iOS 통합 지도 SDK
+  google_maps_flutter_android: ^2.0.0            # Android renderer 초기화 (LATEST renderer 전환용)
+  google_maps_flutter_platform_interface: ^2.0.0 # GoogleMapsFlutterPlatform 접근용
   geolocator: ^14.0.2             # ✅ iOS 지원 확인됨 (Info.plist 키 추가 필요)
   permission_handler: ^12.0.1     # ✅ iOS 지원 확인됨 (Info.plist 키 추가 필요)
   geocoding: ^4.0.0               # ✅ iOS 지원 확인됨 (역지오코딩 — 좌표→주소)
@@ -48,6 +52,9 @@ dependencies:
   intl: ^0.20.2                   # ✅ iOS 지원 확인됨
   blurhash_dart: ^1.2.1           # ✅ iOS 지원 확인됨
   stomp_dart_client: ^3.0.1
+
+  #firebase 배포
+  firebase_core: ^2.10.0         # ✅ iOS 지원 확인됨
 
 dev_dependencies:
   flutter_test:
@@ -67,3 +74,5 @@ flutter:
     - .env.prod
     - assets/images/spot_default.png
     - assets/images/spot_checked.png
+    - assets/images/test_charactor.png
+    - assets/character/

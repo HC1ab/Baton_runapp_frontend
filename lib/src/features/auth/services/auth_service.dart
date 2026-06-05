@@ -9,11 +9,28 @@ import '../../../core/network/dio_client.dart';
 import '../../../core/storage/token_storage.dart';
 import '../models/user_model.dart';
 
+// ---------------------------------------------------------------------------
+// Login Result
+// ---------------------------------------------------------------------------
+
+/// Full login response — token pair + initial core color.
+class LoginResult {
+  const LoginResult({
+    required this.tokenPair,
+    required this.coreColorCode,
+  });
+
+  final TokenPair tokenPair;
+
+  /// Backend CORE_* code (e.g. CORE_ORANGE) received from LoginResponse.
+  final String coreColorCode;
+}
+
 final _logger = Logger();
 
 /// Abstract interface for auth operations.
 abstract class AuthServiceBase {
-  Future<TokenPair> login({
+  Future<LoginResult> login({
     required String email,
     required String password,
   });
@@ -46,7 +63,7 @@ class AuthService implements AuthServiceBase {
 
   // ── Login ────────────────────────────────────────────────────────────────
   @override
-  Future<TokenPair> login({
+  Future<LoginResult> login({
     required String email,
     required String password,
   }) async {
@@ -61,10 +78,15 @@ class AuthService implements AuthServiceBase {
       }
       final access = (data['accessToken'] ?? '').toString();
       final refresh = (data['refreshToken'] ?? '').toString();
+      final coreColorCode =
+          (data['coreColorCode'] ?? 'CORE_ORANGE').toString();
       if (access.isEmpty) {
         throw const ServerException(ErrorMessages.invalidResponse);
       }
-      return TokenPair(accessToken: access, refreshToken: refresh);
+      return LoginResult(
+        tokenPair: TokenPair(accessToken: access, refreshToken: refresh),
+        coreColorCode: coreColorCode,
+      );
     } on AppException {
       rethrow;
     } on DioException catch (e) {

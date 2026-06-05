@@ -1,159 +1,218 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
+import 'package:logger/logger.dart';
 
-/// My Room — 사용자의 러닝 레벨, 누적 거리, 평균 페이스 등을 보여주는
-/// 대시보드 형태의 홈 화면.
-///
-/// 디자인 기준:
-/// - 상단: 아바타 + "Baton" 로고 + 알림 아이콘
-/// - 가운데: 큰 원형 그래픽 + 닉네임 + 등급
-/// - 러닝 레벨 카드 (Lv. + EXP 진행 바)
-/// - 2x2 대시보드 그리드
-class MyRoomScreen extends ConsumerWidget {
+import '../../../common/widgets/character_sphere_widget.dart';
+import '../../../core/character/character_provider.dart';
+import '../../../core/character/character_style.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_spacing.dart';
+import '../../../core/constants/app_text_styles.dart';
+import '../../../core/constants/app_routes.dart';
+import '../../../core/error/app_exception.dart';
+import '../../shop/services/shop_service.dart';
+import '../services/my_room_service.dart';
+import '../services/title_service.dart';
+
+final _logger = Logger();
+
+class MyRoomScreen extends ConsumerStatefulWidget {
   const MyRoomScreen({super.key});
 
-  static const Color _bg = Color(0xFFFBF1EC);
-  static const Color _primary = Color(0xFFDD6A3E);
-  static const Color _primarySoft = Color(0xFFF7CDB8);
-  static const Color _cardLight = Color(0xFFFFFFFF);
-  static const Color _cardSoft = Color(0xFFFCE6DA);
-  static const Color _textPrimary = Color(0xFF1F1A17);
-  static const Color _textSub = Color(0xFF8C857F);
+  @override
+  ConsumerState<MyRoomScreen> createState() => _MyRoomScreenState();
+}
+
+class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
+  int _selectedTab = 0;
+  bool _isChangingColor = false;
+  bool _isEquippingTitle = false;
+
+  static const List<String> _tabs = ['Core Colors', 'Aura', 'Titles'];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final currentStyle = ref.watch(selectedCharacterStyleProvider);
+
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: AppColors.backgroundLight,
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.screenHorizontal,
+            AppSpacing.verticalSm,
+            AppSpacing.screenHorizontal,
+            AppSpacing.verticalXl,
+          ),
           children: [
             _buildAppBar(),
-            const SizedBox(height: 12),
-            _buildHeroAvatar(),
-            const SizedBox(height: 20),
-            const Text(
-              'Baton user 1',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: _textPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Pro Runner',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                color: _textSub,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 20),
-            _buildLevelCard(),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: _MetricCard(
-                    icon: Icons.straighten_rounded,
-                    label: '총 거리',
-                    value: '124.8 km',
-                  ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: _MetricCard(
-                    icon: Icons.speed_rounded,
-                    label: '평균 페이스',
-                    value: "5'42\"",
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: const [
-                Expanded(
-                  child: _BigActionCard(
-                    icon: Icons.emoji_events_rounded,
-                    title: '러닝 히스토리',
-                    subtitle: '레벨 혜택 및 기록',
-                    filled: true,
-                  ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: _BigActionCard(
-                    icon: Icons.place_rounded,
-                    title: '나의 스팟',
-                    subtitle: '저장된 코스 확인',
-                    filled: false,
-                  ),
-                ),
-              ],
-            ),
+            SizedBox(height: AppSpacing.xs),
+            _buildSubtitle(),
+            SizedBox(height: AppSpacing.verticalLg),
+            _buildHeroSphere(currentStyle),
+            SizedBox(height: AppSpacing.verticalMd),
+            _buildEquippedTitle(),
+            SizedBox(height: AppSpacing.verticalMd),
+            _buildShopBanner(),
+            SizedBox(height: AppSpacing.verticalMd),
+            _buildTabSelector(),
+            SizedBox(height: AppSpacing.verticalMd),
+            _buildTabContent(currentStyle),
           ],
         ),
       ),
     );
   }
 
+  // ── AppBar ──────────────────────────────────────────────────────────────
+
   Widget _buildAppBar() {
+    final points = ref.watch(userPointsProvider);
     return Row(
       children: [
-        const CircleAvatar(
-          radius: 18,
-          backgroundColor: _primary,
-          child: Icon(Icons.person, color: Colors.white, size: 20),
-        ),
-        const SizedBox(width: 10),
-        const Text(
-          'Baton',
-          style: TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.w900,
-            color: _primary,
-            letterSpacing: -0.5,
+        Expanded(
+          child: Text(
+            'My Room',
+            style: AppTextStyles.headlineMedium.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
-        const Spacer(),
-        IconButton(
-          onPressed: () {},
-          icon: const Icon(
-            Icons.notifications_none_rounded,
-            color: _primary,
-            size: 26,
-          ),
-        ),
+        _buildPointsBadge(points),
       ],
     );
   }
 
-  Widget _buildHeroAvatar() {
-    return Center(
-      child: Container(
-        width: 180,
-        height: 180,
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            center: Alignment(-0.2, -0.3),
-            radius: 0.95,
-            colors: [
-              Color(0xFFF5A57E),
-              Color(0xFFD96A3F),
-              Color(0xFF8E3A1E),
-            ],
-            stops: [0.0, 0.55, 1.0],
+  Widget _buildPointsBadge(int points) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 18.r,
+            height: 18.r,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.25),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.bolt_rounded, color: Colors.white, size: 11.r),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x33D96A3F),
-              blurRadius: 30,
-              offset: Offset(0, 12),
+          SizedBox(width: 6.w),
+          Text(
+            '$points pts',
+            style: AppTextStyles.labelSmall.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubtitle() {
+    return Text(
+      'Customize your core sphere and identity.',
+      style: AppTextStyles.bodySmall.copyWith(
+        color: AppColors.textSecondary,
+      ),
+    );
+  }
+
+  Widget _buildHeroSphere(CharacterStyle style) {
+    return Center(
+      child: CharacterSphereWidget(style: style),
+    );
+  }
+
+  Widget _buildEquippedTitle() {
+    return ref.watch(myRoomProvider).when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (myRoom) => Column(
+        children: [
+          Text(
+            'EQUIPPED TITLE',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: AppColors.textSecondary,
+              letterSpacing: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            myRoom.equippedTitle.isEmpty ? 'No Title' : myRoom.equippedTitle,
+            textAlign: TextAlign.center,
+            style: AppTextStyles.headlineLarge.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShopBanner() {
+    return GestureDetector(
+      onTap: () => context.push(AppRoutes.shop),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: 14.h,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40.r,
+              height: 40.r,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.storefront_rounded,
+                color: Colors.white,
+                size: 20.r,
+              ),
+            ),
+            SizedBox(width: AppSpacing.sm + AppSpacing.xs),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Baton Shop',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    'GET EXCLUSIVE ITEMS',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.white,
+              size: 24.r,
             ),
           ],
         ),
@@ -161,197 +220,451 @@ class MyRoomScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLevelCard() {
-    const double progress = 0.6;
+  // ── Tab Selector ────────────────────────────────────────────────────────
+
+  Widget _buildTabSelector() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      padding: EdgeInsets.all(4.r),
       decoration: BoxDecoration(
-        color: _cardLight,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 16,
-            offset: Offset(0, 4),
-          ),
-        ],
+        color: AppColors.divider,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '러닝 레벨',
-            style: TextStyle(
-              fontSize: 14,
-              color: _textSub,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: const [
-              Text(
-                'Lv.12',
-                style: TextStyle(
-                  fontSize: 38,
-                  fontWeight: FontWeight.w900,
-                  color: _primary,
-                  height: 1.0,
+      child: Row(
+        children: List.generate(_tabs.length, (index) {
+          final selected = _selectedTab == index;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedTab = index),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: EdgeInsets.symmetric(vertical: 8.h),
+                decoration: BoxDecoration(
+                  color: selected ? Colors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
                 ),
-              ),
-              Spacer(),
-              Padding(
-                padding: EdgeInsets.only(bottom: 6),
                 child: Text(
-                  '다음 레벨까지 240 EXP',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: _textSub,
-                    fontWeight: FontWeight.w500,
+                  _tabs[index],
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
                   ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 10,
-              backgroundColor: _primarySoft.withValues(alpha: 0.45),
-              valueColor: const AlwaysStoppedAnimation<Color>(_primary),
             ),
+          );
+        }),
+      ),
+    );
+  }
+
+  // ── Tab Content ─────────────────────────────────────────────────────────
+
+  Widget _buildTabContent(CharacterStyle currentStyle) {
+    return switch (_selectedTab) {
+      0 => _buildCoreColorSection(currentStyle),
+      2 => _buildTitlesSection(),
+      _ => _buildComingSoon(),
+    };
+  }
+
+  // ── Core Color Tab ───────────────────────────────────────────────────────
+
+  Widget _buildCoreColorSection(CharacterStyle currentStyle) {
+    return ref.watch(myRoomProvider).when(
+      loading: () => SizedBox(
+        height: 120.h,
+        child: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => _buildColorError(),
+      data: (myRoom) => _buildColorGrid(currentStyle, myRoom.colors),
+    );
+  }
+
+  Widget _buildColorGrid(
+    CharacterStyle currentStyle,
+    List<MyRoomColorItem> apiColors,
+  ) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        mainAxisSpacing: 12.h,
+        crossAxisSpacing: 12.w,
+        childAspectRatio: 1,
+      ),
+      itemCount: CharacterStylePresets.all.length,
+      itemBuilder: (context, index) {
+        final style = CharacterStylePresets.all[index];
+
+        final apiColor = apiColors.cast<MyRoomColorItem?>().firstWhere(
+              (c) => c?.code == style.code,
+              orElse: () => null,
+            );
+        final isOwned = apiColor?.owned ??
+            (style.code == CharacterStylePresets.orange.code);
+        final isSelected = currentStyle == style;
+
+        return GestureDetector(
+          onTap: _isChangingColor
+              ? null
+              : () => isOwned
+                  ? _onColorTap(style)
+                  : _showLockedMessage(),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            decoration: BoxDecoration(
+              color: isOwned ? style.baseColor : AppColors.divider,
+              shape: BoxShape.circle,
+              border: isSelected
+                  ? Border.all(
+                      color: AppColors.textPrimary,
+                      width: 2.5,
+                    )
+                  : null,
+            ),
+            child: _isChangingColor && isSelected
+                ? Padding(
+                    padding: EdgeInsets.all(10.r),
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : isSelected
+                    ? Icon(Icons.check_rounded, color: Colors.white, size: 24.r)
+                    : !isOwned
+                        ? Icon(
+                            Icons.lock_rounded,
+                            color: AppColors.textSecondary,
+                            size: 18.r,
+                          )
+                        : null,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildColorError() {
+    return SizedBox(
+      height: 120.h,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            '색상 정보를 불러오지 못했어요.',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          SizedBox(height: 8.h),
+          TextButton(
+            onPressed: () => ref.invalidate(myRoomProvider),
+            child: const Text('다시 시도'),
           ),
         ],
       ),
     );
   }
-}
 
-class _MetricCard extends StatelessWidget {
-  const _MetricCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
+  Future<void> _onColorTap(CharacterStyle style) async {
+    if (ref.read(selectedCharacterStyleProvider) == style) return;
+    if (_isChangingColor) return;
 
-  final IconData icon;
-  final String label;
-  final String value;
+    setState(() => _isChangingColor = true);
+    try {
+      final service = ref.read(myRoomServiceProvider);
+      final confirmedCode = await service.changeCoreColor(style.code);
+      await ref
+          .read(selectedCharacterStyleProvider.notifier)
+          .setStyle(CharacterStylePresets.fromCode(confirmedCode));
+      _logger.i('Core color changed: $confirmedCode');
+    } on AppException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+    } catch (e) {
+      _logger.e('changeCoreColor unexpected error', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('색상 변경에 실패했어요. 다시 시도해주세요.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isChangingColor = false);
+    }
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-      decoration: BoxDecoration(
-        color: MyRoomScreen._bg,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: const Color(0xFFEBD9CC),
-          width: 1,
+  void _showLockedMessage() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Baton Shop에서 구매 후 사용할 수 있어요.')),
+    );
+  }
+
+  // ── Titles Tab ───────────────────────────────────────────────────────────
+
+  Widget _buildTitlesSection() {
+    final titlesAsync = ref.watch(allTitlesProvider);
+    final equippedTitle = ref.watch(myRoomProvider).maybeWhen(
+          data: (r) => r.equippedTitle,
+          orElse: () => '',
+        );
+
+    return titlesAsync.when(
+      loading: () => SizedBox(
+        height: 120.h,
+        child: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => SizedBox(
+        height: 120.h,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '칭호 목록을 불러오지 못했어요.',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            TextButton(
+              onPressed: () => ref.invalidate(allTitlesProvider),
+              child: const Text('다시 시도'),
+            ),
+          ],
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: MyRoomScreen._primary, size: 22),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: MyRoomScreen._textSub,
-              fontWeight: FontWeight.w500,
+      data: (titles) => titles.isEmpty
+          ? SizedBox(
+              height: 100.h,
+              child: Center(
+                child: Text(
+                  '칭호가 없어요.',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            )
+          : Column(
+              children: titles
+                  .map((t) => _buildTitleItem(t, equippedTitle))
+                  .toList(),
+            ),
+    );
+  }
+
+  Widget _buildTitleItem(TitleInfo title, String equippedTitle) {
+    final isEquipped = equippedTitle == title.name;
+    final rarityColor = _rarityColor(title.rarity);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8.h),
+      child: GestureDetector(
+        onTap: _isEquippingTitle || isEquipped
+            ? null
+            : () => _onEquipTitle(title),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: isEquipped
+                ? AppColors.primary.withValues(alpha: 0.06)
+                : Colors.white,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            border: Border.all(
+              color: isEquipped ? AppColors.primary : AppColors.divider,
+              width: isEquipped ? 1.5 : 1,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: MyRoomScreen._textPrimary,
-            ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.only(top: 4.h),
+                child: Container(
+                  width: 10.r,
+                  height: 10.r,
+                  decoration: BoxDecoration(
+                    color: rarityColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+              SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 이름 + rarity
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title.name,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          title.rarity,
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: rarityColor,
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    // 설명
+                    if (title.description.isNotEmpty) ...[
+                      SizedBox(height: 4.h),
+                      Text(
+                        title.description,
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 10.sp,
+                          height: 1.4,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    // 보너스 뱃지
+                    if (title.expBonusRatio > 0 || title.pointBonusRatio > 0) ...[
+                      SizedBox(height: 6.h),
+                      Wrap(
+                        spacing: 4.w,
+                        children: [
+                          if (title.expBonusRatio > 0)
+                            _buildBonusBadge(
+                              'EXP +${(title.expBonusRatio * 100).toStringAsFixed(0)}%',
+                              AppColors.info,
+                            ),
+                          if (title.pointBonusRatio > 0)
+                            _buildBonusBadge(
+                              'PT +${(title.pointBonusRatio * 100).toStringAsFixed(0)}%',
+                              AppColors.success,
+                            ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              SizedBox(width: AppSpacing.sm),
+              if (isEquipped)
+                Container(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                  ),
+                  child: Text(
+                    'ON',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 9.sp,
+                    ),
+                  ),
+                )
+              else
+                Padding(
+                  padding: EdgeInsets.only(top: 2.h),
+                  child: Icon(
+                    Icons.chevron_right_rounded,
+                    size: 20.r,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
-}
 
-class _BigActionCard extends StatelessWidget {
-  const _BigActionCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.filled,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final bool filled;
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = filled ? MyRoomScreen._primary : MyRoomScreen._cardSoft;
-    final fg = filled ? Colors.white : MyRoomScreen._textPrimary;
-    final subFg = filled
-        ? Colors.white.withValues(alpha: 0.85)
-        : MyRoomScreen._textSub;
-    final iconBg = filled
-        ? Colors.white.withValues(alpha: 0.22)
-        : Colors.white.withValues(alpha: 0.7);
-    final iconColor = filled ? Colors.white : MyRoomScreen._primary;
-
+  Widget _buildBonusBadge(String label, Color color) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: filled
-            ? const [
-                BoxShadow(
-                  color: Color(0x33D96A3F),
-                  blurRadius: 14,
-                  offset: Offset(0, 6),
-                ),
-              ]
-            : null,
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: iconBg,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
+      child: Text(
+        label,
+        style: AppTextStyles.labelSmall.copyWith(
+          color: color,
+          fontSize: 9.sp,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Color _rarityColor(String rarity) => switch (rarity) {
+        'RARE' => AppColors.info,
+        'EPIC' => AppColors.primary,
+        'LEGENDARY' => AppColors.warning,
+        _ => AppColors.textSecondary,
+      };
+
+  Future<void> _onEquipTitle(TitleInfo title) async {
+    if (_isEquippingTitle) return;
+    setState(() => _isEquippingTitle = true);
+    try {
+      await ref.read(titleServiceProvider).equipTitle(title.id);
+      ref.invalidate(myRoomProvider);
+      _logger.i('Title equipped: ${title.name}');
+    } on AppException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+    } catch (e) {
+      _logger.e('equipTitle unexpected error', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('칭호 장착에 실패했어요. 다시 시도해주세요.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isEquippingTitle = false);
+    }
+  }
+
+  // ── Coming Soon ──────────────────────────────────────────────────────────
+
+  Widget _buildComingSoon() {
+    return SizedBox(
+      height: 100.h,
+      child: Center(
+        child: Text(
+          'Coming soon',
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
           ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: fg,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 12,
-              color: subFg,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

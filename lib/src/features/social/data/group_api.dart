@@ -112,6 +112,15 @@ class GroupApi {
       mapper: (_) => null,
     );
   }
+
+  /// GET /api/v1/groups/{groupId} — 상세 조회 (hostNickname, participantNicknames 포함)
+  Future<Map<String, dynamic>> getDetail({required int groupId}) {
+    return requestJson<Map<String, dynamic>>(
+      _dio,
+      () => _dio.get('/api/v1/groups/$groupId'),
+      mapper: (json) => json as Map<String, dynamic>,
+    );
+  }
 }
 
 class MockGroupApi extends GroupApi {

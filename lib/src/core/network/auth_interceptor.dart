@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
 import '../storage/token_storage.dart';
+import 'auth_event.dart';
 
 final _logger = Logger();
 
@@ -38,10 +39,16 @@ class AuthInterceptor extends Interceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    // TODO: /member/refresh API 구현 후 토큰 자동 갱신 로직 추가
-    // 토큰 clear 금지 — 러닝 중 spot/check-in 401로 finishRun 토큰 날아가는 버그 방지
     if (err.response?.statusCode == 401) {
       _logger.w('401 received — ${err.requestOptions.method} ${err.requestOptions.path}');
+      final path = err.requestOptions.path;
+      final body = err.response?.data;
+      if (!path.contains('logout') && body is Map<String, dynamic>) {
+        final msg = (body['message'] ?? '').toString();
+        if (msg.contains('존재하지 않는 회원')) {
+          _ref.read(forceLogoutSignalProvider.notifier).signal();
+        }
+      }
     }
     handler.next(err);
   }

@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Baton RunApp</title>
+  <style>
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --border: #2a2a2a;
+      --text: #e0e0e0;
+      --text-muted: #888;
+      --accent: #F57C00;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      line-height: 1.7;
+      padding: 48px 24px;
+    }
+
+    .container { max-width: 860px; margin: 0 auto; }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 40px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    p { color: var(--text-muted); margin-bottom: 12px; }
+
+    ul { padding-left: 20px; color: var(--text-muted); margin-bottom: 12px; }
+    li { margin-bottom: 6px; }
+    strong { color: var(--text); }
+
+    code {
+      background: #2a2a2a;
+      color: #F57C00;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.88rem;
+      font-family: 'Consolas', monospace;
+    }
+
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      overflow-x: auto;
+      margin-bottom: 16px;
+    }
+
+    pre code {
+      background: none;
+      color: var(--text);
+      padding: 0;
+      font-size: 0.85rem;
+    }
+
+    /* ── Color Section ── */
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
+      margin-top: 8px;
+    }
+
+    .color-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .color-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .color-swatch {
+      height: 100px;
+      width: 100%;
+    }
+
+    .color-info {
+      padding: 12px 14px;
+    }
+
+    .color-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .color-code {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: 'Consolas', monospace;
+      margin-bottom: 4px;
+    }
+
+    .color-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .color-hex {
+      font-size: 0.8rem;
+      font-family: 'Consolas', monospace;
+      color: var(--text-muted);
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-weight: 600;
+    }
+
+    .badge-default {
+      background: #F57C0022;
+      color: #F57C00;
+      border: 1px solid #F57C0055;
+    }
+
+    .badge-price {
+      background: #ffffff11;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    /* ── Table ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin-top: 8px;
+    }
+
+    th {
+      text-align: left;
+      padding: 10px 14px;
+      background: var(--surface);
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    td:first-child { color: var(--text); }
+
+    .dot {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <h1>🏃 Baton RunApp</h1>
+  <p>러닝 기록을 측정하고, 주변 스팟(Spot)에 체크인하여 보상을 획득하는 <strong>게이미피케이션 러닝 앱</strong>입니다.<br>
+  Flutter와 Riverpod을 사용하여 개발되었으며, 네이버 지도(Naver Map)를 기반으로 작동합니다.</p>
+
+  <h2>⚡ 터미널 실행</h2>
+  <pre><code>flutter run --dart-define=ENV=dev</code></pre>
+
+  <h2>✨ 주요 기능</h2>
+  <ul>
+    <li><strong>러닝 트래킹</strong>: 실시간 위치 추적, 이동 경로(Polyline) 그리기, 러닝 시간 및 점수 계산</li>
+    <li><strong>스팟 체크인</strong>: 주변 스팟 탐색 및 지도 표시. 스팟 반경 15m 이내 접근 시 자동/수동 체크인 및 포인트 획득</li>
+    <li><strong>개발자 모드 (Mock Mode)</strong>: 실제 밖으로 나가지 않고도 테스트 가능한 가상 위치 조작(Joystick), 자동 걷기(Auto Walk) 및 이동 속도 조절</li>
+    <li><strong>UI/UX</strong>: Glassmorphism 글래스 카드 디자인, 커스텀 하단 네비게이션, 다크/라이트 모드</li>
+  </ul>
+
+  <h2>🛠 기술 스택</h2>
+  <ul>
+    <li><strong>Framework</strong>: Flutter</li>
+    <li><strong>State Management</strong>: Riverpod</li>
+    <li><strong>Map</strong>: flutter_naver_map (Naver Maps API)</li>
+    <li><strong>Location</strong>: geolocator</li>
+    <li><strong>Network</strong>: Dio</li>
+    <li><strong>Architecture</strong>: Feature-based Architecture</li>
+  </ul>
+
+  <h2>📂 프로젝트 구조</h2>
+  <pre><code>lib/
+├── src/
+│   ├── app.dart                   # 앱 최상위 설정 (테마, 라우팅)
+│   ├── core/                      # 공통 모듈 (Network, Session 등)
+│   ├── design/                    # 디자인 시스템 (GlassCard, Theme, CustomBar)
+│   └── features/                  # 기능별 모듈
+│       ├── auth/                  # 인증 (로그인)
+│       ├── map/                   # 지도, 위치 추적, Mock 컨트롤러
+│       ├── run/                   # 러닝 기록 데이터 관리
+│       └── spot/                  # 스팟 데이터 및 API
+└── main.dart                      # 진입점 (Naver Map 초기화)</code></pre>
+
+  <h2>🔗 백엔드 연결</h2>
+  <p>기본 Base URL: <code>http://localhost:8080</code></p>
+  <p>변경 위치: <code>lib/src/core/network/api_client.dart</code></p>
+
+  <!-- ───────────────────────────────────────── -->
+  <h2>🎨 Core Color 팔레트</h2>
+  <p>마이룸에서 캐릭터 색상을 변경할 수 있는 코어 컬러 목록입니다. 주황색은 기본 제공, 나머지는 포인트로 구매합니다.</p>
+
+  <div class="color-grid">
+
+    <div class="color-card">
+      <div class="color-swatch" style="background:#E53935;"></div>
+      <div class="color-info">
+        <div class="color-name">빨간색 코어</div>
+        <div class="color-code">CORE_RED</div>
+        <div class="color-meta">
+          <span class="color-hex">#E53935</span>
+          <span class="badge badge-price">500 pt</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-card">
+      <div class="color-swatch" style="background:#F57C00;"></div>
+      <div class="color-info">
+        <div class="color-name">주황색 코어</div>
+        <div class="color-code">CORE_ORANGE</div>
+        <div class="color-meta">
+          <span class="color-hex">#F57C00</span>
+          <span class="badge badge-default">기본</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-card">
+      <div class="color-swatch" style="background:#F9A825;"></div>
+      <div class="color-info">
+        <div class="color-name">노란색 코어</div>
+        <div class="color-code">CORE_YELLOW</div>
+        <div class="color-meta">
+          <span class="color-hex">#F9A825</span>
+          <span class="badge badge-price">500 pt</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-card">
+      <div class="color-swatch" style="background:#43A047;"></div>
+      <div class="color-info">
+        <div class="color-name">초록색 코어</div>
+        <div class="color-code">CORE_GREEN</div>
+        <div class="color-meta">
+          <span class="color-hex">#43A047</span>
+          <span class="badge badge-price">500 pt</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-card">
+      <div class="color-swatch" style="background:#1E88E5;"></div>
+      <div class="color-info">
+        <div class="color-name">파란색 코어</div>
+        <div class="color-code">CORE_BLUE</div>
+        <div class="color-meta">
+          <span class="color-hex">#1E88E5</span>
+          <span class="badge badge-price">500 pt</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-card">
+      <div class="color-swatch" style="background:#283593;"></div>
+      <div class="color-info">
+        <div class="color-name">남색 코어</div>
+        <div class="color-code">CORE_NAVY</div>
+        <div class="color-meta">
+          <span class="color-hex">#283593</span>
+          <span class="badge badge-price">500 pt</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-card">
+      <div class="color-swatch" style="background:#8E24AA;"></div>
+      <div class="color-info">
+        <div class="color-name">보라색 코어</div>
+        <div class="color-code">CORE_PURPLE</div>
+        <div class="color-meta">
+          <span class="color-hex">#8E24AA</span>
+          <span class="badge badge-price">500 pt</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-card">
+      <div class="color-swatch" style="background:#212121; border-bottom: 1px solid #333;"></div>
+      <div class="color-info">
+        <div class="color-name">검은색 코어</div>
+        <div class="color-code">CORE_BLACK</div>
+        <div class="color-meta">
+          <span class="color-hex">#212121</span>
+          <span class="badge badge-price">500 pt</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 테이블 뷰 -->
+  <h2 style="margin-top:40px;">📋 Core Color 데이터 테이블</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>id</th>
+        <th>code</th>
+        <th>name</th>
+        <th>hex</th>
+        <th>price (pt)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><code>CORE_RED</code></td>
+        <td><span class="dot" style="background:#E53935;"></span>빨간색 코어</td>
+        <td><code>#E53935</code></td>
+        <td>500</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><code>CORE_ORANGE</code></td>
+        <td><span class="dot" style="background:#F57C00;"></span>주황색 코어</td>
+        <td><code>#F57C00</code></td>
+        <td>0 (기본)</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><code>CORE_YELLOW</code></td>
+        <td><span class="dot" style="background:#F9A825;"></span>노란색 코어</td>
+        <td><code>#F9A825</code></td>
+        <td>500</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><code>CORE_GREEN</code></td>
+        <td><span class="dot" style="background:#43A047;"></span>초록색 코어</td>
+        <td><code>#43A047</code></td>
+        <td>500</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><code>CORE_BLUE</code></td>
+        <td><span class="dot" style="background:#1E88E5;"></span>파란색 코어</td>
+        <td><code>#1E88E5</code></td>
+        <td>500</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><code>CORE_NAVY</code></td>
+        <td><span class="dot" style="background:#283593;"></span>남색 코어</td>
+        <td><code>#283593</code></td>
+        <td>500</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td><code>CORE_PURPLE</code></td>
+        <td><span class="dot" style="background:#8E24AA;"></span>보라색 코어</td>
+        <td><code>#8E24AA</code></td>
+        <td>500</td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td><code>CORE_BLACK</code></td>
+        <td><span class="dot" style="background:#212121; border:1px solid #555;"></span>검은색 코어</td>
+        <td><code>#212121</code></td>
+        <td>500</td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+</body>
+</html>

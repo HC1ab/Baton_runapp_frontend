@@ -62,17 +62,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     if (!mounted) return;
     final joinState = ref.read(joinProvider);
     if (joinState.status == JoinStatus.success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '회원가입이 완료되었습니다. 로그인해 주세요.',
-            style: AppTextStyles.bodyMedium.copyWith(color: Colors.white),
-          ),
-          backgroundColor: AppColors.primary,
-          behavior: SnackBarBehavior.floating,
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => _SignupSuccessDialog(
+          onConfirm: () {
+            Navigator.of(context).pop();
+            context.go(AppRoutes.login);
+          },
         ),
       );
-      context.go(AppRoutes.login);
     }
   }
 
@@ -306,6 +305,82 @@ class _PasswordField extends StatelessWidget {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        ),
+      ),
+    );
+  }
+}
+
+class _SignupSuccessDialog extends StatelessWidget {
+  const _SignupSuccessDialog({required this.onConfirm});
+
+  final VoidCallback onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+      ),
+      backgroundColor: AppColors.surfaceLight,
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64.r,
+              height: 64.r,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.check_rounded,
+                color: AppColors.primary,
+                size: 36.r,
+              ),
+            ),
+            SizedBox(height: 20.h),
+            Text(
+              '회원가입 완료!',
+              style: AppTextStyles.headlineMedium.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              '계정이 성공적으로 생성되었어요.\n지금 바로 로그인해 보세요.',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 28.h),
+            SizedBox(
+              width: double.infinity,
+              height: 50.h,
+              child: FilledButton(
+                onPressed: onConfirm,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(AppSpacing.radiusFull),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  '로그인하러 가기',
+                  style: AppTextStyles.labelLarge.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

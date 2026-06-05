@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import 'models/run_card_data.dart';
+import 'social_providers.dart';
 
-class RoomDetailScreen extends StatelessWidget {
+class RoomDetailScreen extends ConsumerStatefulWidget {
   const RoomDetailScreen({
     super.key,
     required this.card,
@@ -21,8 +23,36 @@ class RoomDetailScreen extends StatelessWidget {
   final VoidCallback? onUpdatePressed;
   final VoidCallback? onDeletePressed;
 
+  @override
+  ConsumerState<RoomDetailScreen> createState() => _RoomDetailScreenState();
+}
+
+class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
   static const Color _pointOrange = Color(0xFFF7673B);
   static const Color _pageBg = Color(0xFFF4F4F4);
+
+  RunCardData? _detail;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDetail();
+  }
+
+  Future<void> _fetchDetail() async {
+    final groupId = widget.card.groupId;
+    if (groupId == null) return;
+    try {
+      final json =
+          await ref.read(groupApiProvider).getDetail(groupId: groupId);
+      final detail = RunCardData.fromServerJson(json);
+      if (mounted) setState(() => _detail = detail);
+    } catch (_) {
+      // 실패 시 목록에서 받은 card 데이터로 표시
+    }
+  }
+
+  RunCardData get _card => _detail ?? widget.card;
 
   @override
   Widget build(BuildContext context) {
@@ -48,13 +78,13 @@ class RoomDetailScreen extends StatelessWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _RealMiniMap(card: card),
+          _RealMiniMap(card: _card),
           Expanded(
             child: Transform.translate(
               offset: const Offset(0, -20),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                child: _DetailCard(card: card),
+                child: _DetailCard(card: _card),
               ),
             ),
           ),
@@ -63,13 +93,13 @@ class RoomDetailScreen extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
               child: _BottomActions(
-                card: card,
+                card: _card,
                 pointOrange: _pointOrange,
-                onJoinPressed: onJoinPressed,
-                onEnterLivePressed: onEnterLivePressed,
-                onLeavePressed: onLeavePressed,
-                onUpdatePressed: onUpdatePressed,
-                onDeletePressed: onDeletePressed,
+                onJoinPressed: widget.onJoinPressed,
+                onEnterLivePressed: widget.onEnterLivePressed,
+                onLeavePressed: widget.onLeavePressed,
+                onUpdatePressed: widget.onUpdatePressed,
+                onDeletePressed: widget.onDeletePressed,
               ),
             ),
           ),
@@ -340,6 +370,24 @@ class _DetailCard extends StatelessWidget {
               value: card.effectiveDetailAddress,
               iconColor: const Color(0xFFB33010),
             ),
+            if (card.hostNickname != null) ...[
+              const SizedBox(height: 14),
+              _LabeledLine(
+                icon: Icons.person_rounded,
+                label: '호스트',
+                value: card.hostNickname!,
+                iconColor: const Color(0xFFB33010),
+              ),
+            ],
+            if (card.participantNicknames.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              _LabeledLine(
+                icon: Icons.group_rounded,
+                label: '참여자',
+                value: card.participantNicknames.join(', '),
+                iconColor: const Color(0xFFB33010),
+              ),
+            ],
             const SizedBox(height: 20),
             const Text(
               '모집 내용',

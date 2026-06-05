@@ -61,8 +61,8 @@ class LoginNotifier extends Notifier<LoginState> {
 
     try {
       final service = ref.read(authServiceProvider);
-      final pair = await service.login(email: email, password: password);
-      await ref.read(authProvider.notifier).onLoginSuccess(pair);
+      final result = await service.login(email: email, password: password);
+      await ref.read(authProvider.notifier).onLoginSuccess(result);
       state = const LoginState(status: LoginStatus.success);
     } on AuthException {
       state = const LoginState(

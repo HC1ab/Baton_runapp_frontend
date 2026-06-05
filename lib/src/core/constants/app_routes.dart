@@ -8,7 +8,6 @@ abstract final class AppRoutes {
   static const running = '/running';
   static const history = '/history';
   static const shop = '/shop';
-  static const history = '/history';
 }
 
 /// Bottom navigation tab index constants.

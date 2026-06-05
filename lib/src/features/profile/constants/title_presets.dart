@@ -17,6 +17,8 @@ abstract final class TitlePresets {
       name: '새싹 러너',
       titleCode: 'TITLE_001_START',
       rarity: 'NORMAL',
+      expBonusRatio: 0.0,
+      pointBonusRatio: 0.0,
       description: '새로운 출발과 함께 러닝이라는 재미를 느껴볼까? 당신의 열정이 너무 뜨거워!',
     ),
     // 상점 구매 칭호 (id:2~9)
@@ -25,6 +27,8 @@ abstract final class TitlePresets {
       name: '런린이',
       titleCode: 'TITLE_001',
       rarity: 'NORMAL',
+      expBonusRatio: 0.0,
+      pointBonusRatio: 0.0,
       description: '처음 러닝을 시작한 당신! 가장 중요한 첫걸음을 뗐어요.',
     ),
     TitleInfo(
@@ -32,6 +36,8 @@ abstract final class TitlePresets {
       name: '새벽 러너',
       titleCode: 'TITLE_002',
       rarity: 'NORMAL',
+      expBonusRatio: 0.0,
+      pointBonusRatio: 0.0,
       description: '해가 뜨기 전부터 달리는 당신. 새벽의 고요함을 가장 먼저 깨우는 러너.',
     ),
     TitleInfo(
@@ -39,6 +45,8 @@ abstract final class TitlePresets {
       name: '꾸준한 발걸음',
       titleCode: 'TITLE_003',
       rarity: 'RARE',
+      expBonusRatio: 0.0,
+      pointBonusRatio: 0.0,
       description: '꾸준함이 실력이 된다. 매일매일 포기하지 않고 달리는 당신에게 주어지는 칭호.',
     ),
     TitleInfo(
@@ -46,6 +54,8 @@ abstract final class TitlePresets {
       name: '트랙 탐험가',
       titleCode: 'TITLE_004',
       rarity: 'RARE',
+      expBonusRatio: 0.0,
+      pointBonusRatio: 0.0,
       description: '다양한 코스를 탐험하며 도시 구석구석을 달리는 모험가.',
     ),
     TitleInfo(
@@ -53,6 +63,8 @@ abstract final class TitlePresets {
       name: '마라토너',
       titleCode: 'TITLE_005',
       rarity: 'EPIC',
+      expBonusRatio: 0.0,
+      pointBonusRatio: 0.0,
       description: '긴 거리도 두렵지 않아! 마라톤에 도전할 준비가 된 진정한 러너.',
     ),
     TitleInfo(
@@ -60,6 +72,8 @@ abstract final class TitlePresets {
       name: '스피드 킹',
       titleCode: 'TITLE_006',
       rarity: 'EPIC',
+      expBonusRatio: 0.0,
+      pointBonusRatio: 0.0,
       description: '빠른 페이스가 인상적인 당신. 속도에서만큼은 따라올 자가 없어요.',
     ),
     TitleInfo(
@@ -67,6 +81,8 @@ abstract final class TitlePresets {
       name: '전설의 러너',
       titleCode: 'TITLE_007',
       rarity: 'LEGENDARY',
+      expBonusRatio: 0.0,
+      pointBonusRatio: 0.0,
       description: '전설이 된 러너. 바통 앱에서 가장 빛나는 존재로 기억될 당신.',
     ),
     TitleInfo(
@@ -74,6 +90,8 @@ abstract final class TitlePresets {
       name: '바통 마스터',
       titleCode: 'TITLE_008',
       rarity: 'LEGENDARY',
+      expBonusRatio: 0.0,
+      pointBonusRatio: 0.0,
       description: '바통을 이어받아 가장 높은 경지에 오른 마스터. 이 칭호를 가진 이는 극소수뿐이에요.',
     ),
   ];

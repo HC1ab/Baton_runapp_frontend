@@ -92,8 +92,6 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
     );
   }
 
-  Widget _buildSubtitle() => const SizedBox.shrink();
-
   Widget _buildHeroSphere(CharacterStyle style) {
     return Center(
       child: CharacterSphereWidget(style: style),

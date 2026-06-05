@@ -508,4 +508,3 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
     );
   }
 }
-

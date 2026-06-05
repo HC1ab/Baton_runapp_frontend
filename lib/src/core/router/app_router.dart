@@ -59,6 +59,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const HomeScreen(),
       ),
       GoRoute(
+        path: AppRoutes.history,
+        builder: (_, __) => const HistoryScreen(),
+      ),
+      GoRoute(
         path: AppRoutes.shop,
         builder: (_, __) => const ShopScreen(),
       ),

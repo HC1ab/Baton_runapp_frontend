@@ -6,7 +6,6 @@ import '../../../core/constants/api_constants.dart';
 import '../../../core/constants/error_messages.dart';
 import '../../../core/error/app_exception.dart';
 import '../../../core/network/dio_client.dart';
-import '../constants/title_presets.dart';
 
 final _logger = Logger();
 
@@ -20,17 +19,23 @@ class TitleInfo {
     required this.name,
     required this.titleCode,
     required this.rarity,
+    required this.expBonusRatio,
+    required this.pointBonusRatio,
     required this.description,
   });
 
   final int id;
   final String name;
-
-  /// 프론트-백 약속 코드 (e.g. TITLE_001_GOLD). ShopItem.code와 매핑.
   final String titleCode;
 
-  /// NORMAL | RARE | EPIC | LEGENDARY
+  /// NORMAL / RARE / EPIC / LEGENDARY
   final String rarity;
+
+  /// 경험치 보너스 비율 (0.05 = +5%)
+  final double expBonusRatio;
+
+  /// 포인트 보너스 비율 (0.06 = +6%)
+  final double pointBonusRatio;
 
   final String description;
 
@@ -40,24 +45,9 @@ class TitleInfo {
       name: (json['name'] ?? '') as String,
       titleCode: (json['titleCode'] ?? '') as String,
       rarity: (json['rarity'] ?? 'NORMAL') as String,
+      expBonusRatio: (json['expBonusRatio'] as num? ?? 0).toDouble(),
+      pointBonusRatio: (json['pointBonusRatio'] as num? ?? 0).toDouble(),
       description: (json['description'] ?? '') as String,
-    );
-  }
-}
-
-class EquippedTitleResult {
-  const EquippedTitleResult({
-    required this.titleId,
-    required this.name,
-  });
-
-  final int titleId;
-  final String name;
-
-  factory EquippedTitleResult.fromJson(Map<String, dynamic> json) {
-    return EquippedTitleResult(
-      titleId: (json['titleId'] ?? 0) as int,
-      name: (json['name'] ?? '') as String,
     );
   }
 }
@@ -70,19 +60,34 @@ class TitleService {
   const TitleService(this._dio);
   final Dio _dio;
 
-  /// POST /api/v1/profile/equip?titleId={titleId} — 칭호 장착.
-  /// Returns the equipped title name.
-  Future<EquippedTitleResult> equipTitle(int titleId) async {
+  /// GET /api/v1/title/all — fetch entire title list.
+  Future<List<TitleInfo>> getAllTitles() async {
     try {
-      final response = await _dio.post(
+      final response = await _dio.get(ApiConstants.titleAll);
+      final data = _unwrap(response.data);
+      if (data is! List<dynamic>) {
+        throw const ServerException(ErrorMessages.invalidResponse);
+      }
+      return data
+          .map((e) => TitleInfo.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _mapDio(e);
+    } catch (e) {
+      _logger.e('getAllTitles error', error: e);
+      throw const UnknownException();
+    }
+  }
+
+  /// POST /api/v1/profile/equip?titleId= — equip a title.
+  Future<void> equipTitle(int titleId) async {
+    try {
+      await _dio.post(
         ApiConstants.profileEquip,
         queryParameters: {'titleId': titleId},
       );
-      final data = _unwrap(response.data);
-      if (data is! Map<String, dynamic>) {
-        throw const ServerException(ErrorMessages.invalidResponse);
-      }
-      return EquippedTitleResult.fromJson(data);
     } on AppException {
       rethrow;
     } on DioException catch (e) {
@@ -132,9 +137,8 @@ final titleServiceProvider = Provider<TitleService>((ref) {
   return TitleService(ref.watch(dioProvider));
 });
 
-/// 전체 칭호 목록 (하드코딩 — README.html 칭호 테이블과 1:1).
-/// ShopScreen: titleCode → id 매핑.
-/// MyRoomScreen: Titles 탭 렌더링.
-final allTitlesProvider = Provider<List<TitleInfo>>((ref) {
-  return TitlePresets.all;
+/// Full title list from API.
+/// Invalidate after equipping to refresh UI if needed.
+final allTitlesProvider = FutureProvider<List<TitleInfo>>((ref) {
+  return ref.watch(titleServiceProvider).getAllTitles();
 });

@@ -182,10 +182,32 @@ final shopItemsProvider = FutureProvider<List<ShopItem>>((ref) {
 });
 
 /// Current user's total points.
-/// Updated after purchase / spot check-in / run finish transactions.
+/// Initialized from GET /api/v1/member/me on first access.
+/// Updated after purchase via set().
+/// TODO: replace _fetchPoints() with dedicated points API when available.
 class UserPointsNotifier extends Notifier<int> {
   @override
-  int build() => 0;
+  int build() {
+    _fetchPoints();
+    return 0;
+  }
+
+  Future<void> _fetchPoints() async {
+    try {
+      final dio = ref.read(dioProvider);
+      final response = await dio.get(ApiConstants.me);
+      final raw = response.data;
+      if (raw is Map<String, dynamic> && raw['success'] == true) {
+        final data = raw['data'] as Map<String, dynamic>?;
+        state = (data?['totalPoints'] as int?) ?? 0;
+      }
+    } catch (_) {
+      // /me 미구현 or 비인증 상태 — 0 유지
+    }
+  }
+
+  /// Re-fetch points from server (e.g., after login).
+  Future<void> refresh() => _fetchPoints();
 
   void set(int points) => state = points;
 }

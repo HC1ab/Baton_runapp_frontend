@@ -28,7 +28,11 @@ void main() async {
   //    → ImageReader 표면 반복 생성/해제(GPU 메모리 고갈 → ANR) 방지
   final mapsImpl = GoogleMapsFlutterPlatform.instance;
   if (mapsImpl is GoogleMapsFlutterAndroid) {
-    await mapsImpl.initializeWithRenderer(AndroidMapRenderer.latest);
+    try {
+      await mapsImpl.initializeWithRenderer(AndroidMapRenderer.latest);
+    } catch (_) {
+      // 핫 리스타트 등으로 이미 초기화된 경우 무시
+    }
     mapsImpl.useAndroidViewSurface = true;
   }
 

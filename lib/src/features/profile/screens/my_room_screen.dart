@@ -12,7 +12,6 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/error/app_exception.dart';
-import '../constants/title_presets.dart';
 import '../services/my_room_service.dart';
 import '../services/title_service.dart';
 
@@ -63,6 +62,8 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
       ),
     );
   }
+
+  // ── AppBar ──────────────────────────────────────────────────────────────
 
   Widget _buildAppBar() {
     return Column(
@@ -130,66 +131,64 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
   Widget _buildShopBanner() {
     return GestureDetector(
       onTap: () => context.push(AppRoutes.shop),
-      child: _buildShopBannerContent(),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: 14.h,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40.r,
+              height: 40.r,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.storefront_rounded,
+                color: Colors.white,
+                size: 20.r,
+              ),
+            ),
+            SizedBox(width: AppSpacing.sm + AppSpacing.xs),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Baton Shop',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    'GET EXCLUSIVE ITEMS',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.white,
+              size: 24.r,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildShopBannerContent() {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: 14.h,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40.r,
-            height: 40.r,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.storefront_rounded,
-              color: Colors.white,
-              size: 20.r,
-            ),
-          ),
-          SizedBox(width: AppSpacing.sm + AppSpacing.xs),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Baton Shop',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Text(
-                  'GET EXCLUSIVE ITEMS',
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Icon(
-            Icons.chevron_right_rounded,
-            color: Colors.white,
-            size: 24.r,
-          ),
-        ],
-      ),
-    );
-  }
+  // ── Tab Selector ────────────────────────────────────────────────────────
 
   Widget _buildTabSelector() {
     return Container(
@@ -224,8 +223,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
                   _tabs[index],
                   textAlign: TextAlign.center,
                   style: AppTextStyles.labelSmall.copyWith(
-                    fontWeight:
-                        selected ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                     color: selected
                         ? AppColors.primary
                         : AppColors.textSecondary,
@@ -239,15 +237,17 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
     );
   }
 
+  // ── Tab Content ─────────────────────────────────────────────────────────
+
   Widget _buildTabContent(CharacterStyle currentStyle) {
     return switch (_selectedTab) {
       0 => _buildCoreColorSection(currentStyle),
-      2 => _buildTitleSection(),
+      2 => _buildTitlesSection(),
       _ => _buildComingSoon(),
     };
   }
 
-  // ── Core Color Tab ──────────────────────────────────────────────────────
+  // ── Core Color Tab ───────────────────────────────────────────────────────
 
   Widget _buildCoreColorSection(CharacterStyle currentStyle) {
     return ref.watch(myRoomProvider).when(
@@ -277,7 +277,6 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
       itemBuilder: (context, index) {
         final style = CharacterStylePresets.all[index];
 
-        // API 응답에서 owned 상태 조회 — 없으면 CORE_ORANGE만 기본 소유
         final apiColor = apiColors.cast<MyRoomColorItem?>().firstWhere(
               (c) => c?.code == style.code,
               orElse: () => null,
@@ -349,10 +348,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
     );
   }
 
-  // ── Color Change ────────────────────────────────────────────────────────
-
   Future<void> _onColorTap(CharacterStyle style) async {
-    // 이미 선택된 색상이면 무시
     if (ref.read(selectedCharacterStyleProvider) == style) return;
     if (_isChangingColor) return;
 
@@ -390,175 +386,232 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
 
   // ── Titles Tab ───────────────────────────────────────────────────────────
 
-  Widget _buildTitleSection() {
-    final titles = ref.watch(allTitlesProvider);
-    return ref.watch(myRoomProvider).when(
+  Widget _buildTitlesSection() {
+    final titlesAsync = ref.watch(allTitlesProvider);
+    final equippedTitle = ref.watch(myRoomProvider).maybeWhen(
+          data: (r) => r.equippedTitle,
+          orElse: () => '',
+        );
+
+    return titlesAsync.when(
       loading: () => SizedBox(
-        height: 80.h,
+        height: 120.h,
         child: const Center(child: CircularProgressIndicator()),
       ),
-      error: (_, __) => SizedBox(
-        height: 80.h,
+      error: (e, _) => SizedBox(
+        height: 120.h,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              '칭호 정보를 불러오지 못했어요.',
+              '칭호 목록을 불러오지 못했어요.',
               style: AppTextStyles.bodySmall.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
             SizedBox(height: 8.h),
             TextButton(
-              onPressed: () => ref.invalidate(myRoomProvider),
+              onPressed: () => ref.invalidate(allTitlesProvider),
               child: const Text('다시 시도'),
             ),
           ],
         ),
       ),
-      data: (myRoom) => _buildTitleList(titles, myRoom.equippedTitle),
-    );
-  }
-
-  Widget _buildTitleList(List<TitleInfo> titles, String equippedTitle) {
-    return Column(
-      children: [
-        for (final title in titles) ...[
-          _buildTitleItem(title, title.name == equippedTitle),
-          SizedBox(height: 10.h),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildTitleItem(TitleInfo title, bool isEquipped) {
-    final icon = TitlePresets.iconFor(title.titleCode);
-    final subtitle = TitlePresets.subtitleFor(title.titleCode);
-
-    return GestureDetector(
-      onTap: _isEquippingTitle ? null : () => _onTitleTap(title),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
-        decoration: BoxDecoration(
-          color: isEquipped
-              ? AppColors.primary.withValues(alpha: 0.07)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          border: Border.all(
-            color: isEquipped
-                ? AppColors.primary.withValues(alpha: 0.22)
-                : AppColors.divider,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // ── Icon ──────────────────────────────────────────────────
-            Container(
-              width: 38.r,
-              height: 38.r,
-              decoration: BoxDecoration(
-                color: isEquipped
-                    ? AppColors.primary.withValues(alpha: 0.14)
-                    : AppColors.backgroundLight,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                size: 18.r,
-                color: isEquipped
-                    ? AppColors.primary
-                    : AppColors.textSecondary,
-              ),
-            ),
-            SizedBox(width: AppSpacing.sm),
-
-            // ── Name + subtitle ────────────────────────────────────────
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title.name,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: isEquipped
-                          ? AppColors.primary
-                          : AppColors.textPrimary,
-                    ),
-                  ),
-                  SizedBox(height: 2.h),
-                  Text(
-                    subtitle,
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.textSecondary,
-                      fontSize: 11.sp,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // ── Right badge ────────────────────────────────────────────
-            if (_isEquippingTitle && isEquipped)
-              SizedBox(
-                width: 18.r,
-                height: 18.r,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: AppColors.primary,
-                ),
-              )
-            else if (isEquipped)
-              Container(
-                padding:
-                    EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius:
-                      BorderRadius.circular(AppSpacing.radiusFull),
-                ),
+      data: (titles) => titles.isEmpty
+          ? SizedBox(
+              height: 100.h,
+              child: Center(
                 child: Text(
-                  'ACTIVE',
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 10.sp,
-                    letterSpacing: 0.6,
+                  '칭호가 없어요.',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ),
-          ],
+            )
+          : Column(
+              children: titles
+                  .map((t) => _buildTitleItem(t, equippedTitle))
+                  .toList(),
+            ),
+    );
+  }
+
+  Widget _buildTitleItem(TitleInfo title, String equippedTitle) {
+    final isEquipped = equippedTitle == title.name;
+    final rarityColor = _rarityColor(title.rarity);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8.h),
+      child: GestureDetector(
+        onTap: _isEquippingTitle || isEquipped
+            ? null
+            : () => _onEquipTitle(title),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: isEquipped
+                ? AppColors.primary.withValues(alpha: 0.06)
+                : Colors.white,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            border: Border.all(
+              color: isEquipped ? AppColors.primary : AppColors.divider,
+              width: isEquipped ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.only(top: 4.h),
+                child: Container(
+                  width: 10.r,
+                  height: 10.r,
+                  decoration: BoxDecoration(
+                    color: rarityColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+              SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 이름 + rarity
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title.name,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          title.rarity,
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: rarityColor,
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    // 설명
+                    if (title.description.isNotEmpty) ...[
+                      SizedBox(height: 4.h),
+                      Text(
+                        title.description,
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 10.sp,
+                          height: 1.4,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    // 보너스 뱃지
+                    if (title.expBonusRatio > 0 || title.pointBonusRatio > 0) ...[
+                      SizedBox(height: 6.h),
+                      Wrap(
+                        spacing: 4.w,
+                        children: [
+                          if (title.expBonusRatio > 0)
+                            _buildBonusBadge(
+                              'EXP +${(title.expBonusRatio * 100).toStringAsFixed(0)}%',
+                              AppColors.info,
+                            ),
+                          if (title.pointBonusRatio > 0)
+                            _buildBonusBadge(
+                              'PT +${(title.pointBonusRatio * 100).toStringAsFixed(0)}%',
+                              AppColors.success,
+                            ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              SizedBox(width: AppSpacing.sm),
+              if (isEquipped)
+                Container(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                  ),
+                  child: Text(
+                    'ON',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 9.sp,
+                    ),
+                  ),
+                )
+              else
+                Padding(
+                  padding: EdgeInsets.only(top: 2.h),
+                  child: Icon(
+                    Icons.chevron_right_rounded,
+                    size: 20.r,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Future<void> _onTitleTap(TitleInfo title) async {
+  Widget _buildBonusBadge(String label, Color color) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+      ),
+      child: Text(
+        label,
+        style: AppTextStyles.labelSmall.copyWith(
+          color: color,
+          fontSize: 9.sp,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Color _rarityColor(String rarity) => switch (rarity) {
+        'RARE' => AppColors.info,
+        'EPIC' => AppColors.primary,
+        'LEGENDARY' => AppColors.warning,
+        _ => AppColors.textSecondary,
+      };
+
+  Future<void> _onEquipTitle(TitleInfo title) async {
     if (_isEquippingTitle) return;
     setState(() => _isEquippingTitle = true);
     try {
       await ref.read(titleServiceProvider).equipTitle(title.id);
       ref.invalidate(myRoomProvider);
-      _logger.i('Equipped title: ${title.name}');
+      ref.invalidate(allTitlesProvider);
+      _logger.i('Title equipped: ${title.name}');
     } on AppException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message),
-            backgroundColor: AppColors.error,
-          ),
+          SnackBar(content: Text(e.message)),
         );
       }
     } catch (e) {
-      _logger.e('equipTitle error', error: e);
+      _logger.e('equipTitle unexpected error', error: e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('칭호 장착에 실패했어요. 다시 시도해주세요.')),
@@ -569,7 +622,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
     }
   }
 
-  // ── Coming Soon ─────────────────────────────────────────────────────────
+  // ── Coming Soon ──────────────────────────────────────────────────────────
 
   Widget _buildComingSoon() {
     return SizedBox(

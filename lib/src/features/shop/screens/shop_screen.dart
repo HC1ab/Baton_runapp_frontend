@@ -47,7 +47,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
     );
   }
 
-  // ── Header ──────────────────────────────────────────────────────────────
+  // ── Header ───────────────────────────────────────────────────────────────
 
   Widget _buildHeader(int points) {
     return Padding(
@@ -126,7 +126,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
     );
   }
 
-  // ── States ───────────────────────────────────────────────────────────────
+  // ── States ────────────────────────────────────────────────────────────────
 
   Widget _buildLoading() {
     return const Center(child: CircularProgressIndicator());
@@ -247,7 +247,8 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
 
       ref.invalidate(myRoomProvider);
 
-      _logger.i('Purchased: ${item.name}, pts left: ${result.currentTotalPoints}');
+      _logger.i(
+          'Purchased: ${item.name}, pts left: ${result.currentTotalPoints}');
 
       if (mounted) {
         await showDialog<void>(

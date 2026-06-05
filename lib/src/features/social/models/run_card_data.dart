@@ -20,6 +20,7 @@ class RunCardData {
     this.detailAddress,
     this.body,
     this.hostNickname,
+    this.participantNicknames = const [],
   });
 
   final int? groupId;
@@ -34,6 +35,7 @@ class RunCardData {
   final int maxMembers;
   final List<String> participantImageUrls;
   final String? hostNickname;
+  final List<String> participantNicknames;
 
   /// 상세: 종료 시간 라벨 (예: 오후 9:30)
   final String? endTimeLabel;
@@ -186,6 +188,12 @@ class RunCardData {
                 : null))
         ?.toString();
 
+    final participantNicknames =
+        (json['participantNicknames'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
+
     return RunCardData(
       groupId: groupId,
       isHost: isHost,
@@ -207,6 +215,7 @@ class RunCardData {
       detailAddress: detailAddress,
       body: body,
       hostNickname: hostNickname,
+      participantNicknames: participantNicknames,
     );
   }
 
@@ -228,6 +237,7 @@ class RunCardData {
     String? detailAddress,
     String? body,
     String? hostNickname,
+    List<String>? participantNicknames,
   }) {
     return RunCardData(
       groupId: groupId ?? this.groupId,
@@ -247,6 +257,7 @@ class RunCardData {
       detailAddress: detailAddress ?? this.detailAddress,
       body: body ?? this.body,
       hostNickname: hostNickname ?? this.hostNickname,
+      participantNicknames: participantNicknames ?? this.participantNicknames,
     );
   }
 }

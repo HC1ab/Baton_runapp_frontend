@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
@@ -6,8 +7,10 @@ import '../../features/auth/providers/auth_provider.dart';
 import '../storage/token_storage.dart';
 final _logger = Logger();
 
-/// A001/A002/A003 — 토큰 인증 실패 코드. 감지 시 강제 로그아웃.
-const _authErrorCodes = {'A001', 'A002', 'A003'};
+/// 토큰 인증 실패 코드 (A001/A002/A003) → forceLogout.
+/// code 없는 401 (Spring Security 레벨 거부)도 forceLogout.
+/// C002/G002/G003 등 권한 부족 401은 forceLogout 대상 아님.
+const _tokenAuthCodes = {'A001', 'A002', 'A003'};
 
 /// Attaches Bearer token to every request.
 /// 토큰 갱신(refresh)은 미구현 — 추후 /member/refresh API 구현 후 추가 예정.
@@ -37,18 +40,23 @@ class AuthInterceptor extends Interceptor {
   }
 
   @override
-  Future<void> onError(
+  void onError(
     DioException err,
     ErrorInterceptorHandler handler,
-  ) async {
+  ) {
     // TODO: /member/refresh API 구현 후 토큰 자동 갱신 로직 추가
     if (err.response?.statusCode == 401) {
       final code = _extractErrorCode(err.response);
       _logger.w('401 received (code: $code) — ${err.requestOptions.method} ${err.requestOptions.path}');
 
-      if (code != null && _authErrorCodes.contains(code)) {
-        _logger.w('Auth error $code → forceLogout');
-        await _ref.read(authProvider.notifier).forceLogout();
+      // A001/A002/A003 또는 code 없는 401(Spring Security 레벨) → forceLogout
+      // C002/G002/G003 등 권한 부족 코드는 해당 없음 → handler.next로 에러 전파
+      final isTokenAuthFailure = code == null || _tokenAuthCodes.contains(code);
+      if (isTokenAuthFailure) {
+        _logger.w('Auth token failure (code: $code) → forceLogout (deferred)');
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          _ref.read(authProvider.notifier).forceLogout();
+        });
       }
     }
     handler.next(err);

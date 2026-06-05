@@ -354,6 +354,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
     try {
       final service = ref.read(myRoomServiceProvider);
       final confirmedCode = await service.changeCoreColor(style.code);
+      if (!mounted) return;
       await ref
           .read(selectedCharacterStyleProvider.notifier)
           .setStyle(CharacterStylePresets.fromCode(confirmedCode));
@@ -599,6 +600,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
     setState(() => _isEquippingTitle = true);
     try {
       await ref.read(titleServiceProvider).equipTitle(title.id);
+      if (!mounted) return;
       ref.invalidate(myRoomProvider);
       ref.invalidate(allTitlesProvider);
       _logger.i('Title equipped: ${title.name}');

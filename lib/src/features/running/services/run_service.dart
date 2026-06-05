@@ -83,7 +83,18 @@ class RunService implements RunServiceBase {
   AppException _mapDio(DioException e) {
     final status = e.response?.statusCode;
     if (status == 401) {
-      return const AuthException();
+      final data = e.response?.data;
+      final code = data is Map<String, dynamic> ? data['code'] as String? : null;
+      const tokenCodes = {'A001', 'A002', 'A003'};
+      // 토큰 인증 실패 or code 없음(Spring Security 레벨) → AuthException
+      // C002 등 권한 부족 → 서버 메시지 포함 ServerException
+      if (code == null || tokenCodes.contains(code)) {
+        return const AuthException();
+      }
+      final msg = data is Map<String, dynamic>
+          ? (data['message'] as String? ?? '권한이 없습니다.')
+          : '권한이 없습니다.';
+      return ServerException(msg);
     }
     if (status != null && status >= 500) {
       return const ServerException();

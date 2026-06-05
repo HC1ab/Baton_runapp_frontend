@@ -190,6 +190,7 @@ class RunningNotifier extends Notifier<RunRecordModel> {
       );
     } catch (e) {
       _logger.e('startRun error', error: e);
+      if (e is AuthException) return;
       state = state.copyWith(errorMessage: _toMessage(e));
     }
   }
@@ -224,6 +225,8 @@ class RunningNotifier extends Notifier<RunRecordModel> {
       );
     } catch (e) {
       _logger.e('finishRun error', error: e);
+      // AuthException → AuthInterceptor가 forceLogout 처리. 에러 상태 불필요.
+      if (e is AuthException) return;
       state = state.copyWith(
         status: RunStatus.running,
         errorMessage: _toMessage(e),

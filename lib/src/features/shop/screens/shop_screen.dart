@@ -236,6 +236,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
 
     try {
       final result = await ref.read(shopServiceProvider).purchase(item.itemId);
+      if (!mounted) return;
 
       ref.read(userPointsProvider.notifier).set(result.currentTotalPoints);
 

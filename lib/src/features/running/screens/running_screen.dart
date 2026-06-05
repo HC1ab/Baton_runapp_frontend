@@ -753,7 +753,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: AppSpacing.sm,
+            bottom: MediaQuery.of(context).padding.bottom + 70.h + AppSpacing.sm - 40.h,
             child: _BottomPanel(
               record: record,
               isDev: ref.read(useMockGpsProvider),

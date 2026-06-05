@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
 import '../../../core/network/api_client.dart';
+import '../../../core/network/dio_client.dart';
 
 final _logger = Logger();
 
@@ -46,5 +47,5 @@ class GroupRunApiService {
 }
 
 final groupRunApiServiceProvider = Provider<GroupRunApiService>((ref) {
-  return GroupRunApiService(ref.watch(socialDioProvider));
+  return GroupRunApiService(ref.watch(dioProvider));
 });

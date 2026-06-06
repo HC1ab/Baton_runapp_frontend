@@ -4,7 +4,6 @@ import 'package:logger/logger.dart';
 import '../../../core/character/character_provider.dart';
 import '../../../core/character/character_style.dart';
 import '../../../core/constants/storage_keys.dart';
-import '../../../core/storage/shared_prefs_provider.dart';
 import '../../../core/storage/token_storage.dart';
 import '../../group_running/providers/run_location_provider.dart';
 import '../../group_running/services/group_run_api_service.dart';

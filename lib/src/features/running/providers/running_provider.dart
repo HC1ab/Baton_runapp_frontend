@@ -201,6 +201,14 @@ class RunningNotifier extends Notifier<RunRecordModel> {
     final runId = state.runId;
     if (runId == null || !state.isRunning) return;
 
+    // 최소 거리 미달 시 종료 거부
+    if (state.distanceMeters < 200) {
+      state = state.copyWith(
+        errorMessage: ErrorMessages.runTooShort,
+      );
+      return;
+    }
+
     _stopClock();
     state = state.copyWith(clearError: true);
 
@@ -214,6 +222,7 @@ class RunningNotifier extends Notifier<RunRecordModel> {
       await ref.read(runServiceProvider).finishRun(
             runId: runId,
             endTimeIsoLocal: _isoLocal(DateTime.now()),
+            realStartTimeIsoLocal: _isoLocal(state.startTime ?? DateTime.now()),
             path: state.path,
           );
 

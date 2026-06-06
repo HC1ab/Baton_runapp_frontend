@@ -24,12 +24,12 @@ abstract final class WsConstants {
   /// Subscribe — 서버(Redis) 가 방 참가자들의 위치를 브로드캐스트하는 채널.
   /// 예: `/topic/groups/123/location`
   static String subscribeDestination(int groupId) =>
-      '/topic/groups/$groupId/location';
+      '/topic/group/$groupId';
 
   /// Publish — 내 GPS 좌표를 서버로 보내는 목적지.
   /// 예: `/app/groups/123/location`
   static String publishDestination(int groupId) =>
-      '/app/groups/$groupId/location';
+      '/app/group/$groupId/location';
 
   /// GPS publish 주기. 백엔드 요구사항: 1~2초.
   static const locationPublishInterval = Duration(seconds: 2);

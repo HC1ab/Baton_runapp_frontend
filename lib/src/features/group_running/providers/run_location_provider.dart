@@ -5,6 +5,7 @@ import '../../../core/constants/error_messages.dart';
 import '../../../core/storage/token_storage.dart';
 import '../../../core/utils/jwt_utils.dart';
 import '../models/participant_location.dart';
+import '../services/group_run_api_service.dart';
 import '../services/run_location_websocket_service.dart';
 
 export '../services/run_location_websocket_service.dart'
@@ -61,6 +62,8 @@ class RunLocationState {
 
 class RunLocationNotifier extends Notifier<RunLocationState> {
   RunLocationWebSocketService? _service;
+  // memberId → {nickname, titleName} 캐시
+  Map<int, ParticipantInfo> _infoCache = {};
 
   @override
   RunLocationState build() {
@@ -111,6 +114,9 @@ class RunLocationNotifier extends Notifier<RunLocationState> {
         myMemberId: memberId,
         clearError: true,
       );
+
+      // 참가자 닉네임·칭호 비동기 fetch (연결 완료 후)
+      _fetchParticipantInfoCache(groupId, memberId);
     } catch (e) {
       _logger.e('joinRoom failed', error: e);
       state = state.copyWith(
@@ -120,9 +126,37 @@ class RunLocationNotifier extends Notifier<RunLocationState> {
     }
   }
 
+  Future<void> _fetchParticipantInfoCache(int groupId, int myMemberId) async {
+    try {
+      final apiService = ref.read(groupRunApiServiceProvider);
+      final map = await apiService.fetchParticipantInfoMap(groupId);
+      // 본인 제외
+      map.remove(myMemberId);
+      _infoCache = map;
+      // 이미 수신된 participants에 정보 주입
+      if (state.participants.isNotEmpty) {
+        final updated = state.participants.map((id, loc) {
+          final info = _infoCache[id];
+          if (info == null) return MapEntry(id, loc);
+          return MapEntry(id, loc.copyWith(
+            nickname: info.nickname,
+            titleName: info.titleName,
+          ));
+        });
+        state = state.copyWith(participants: updated);
+      }
+    } catch (e) {
+      _logger.w('_fetchParticipantInfoCache failed', error: e);
+    }
+  }
+
   void _onRemoteLocation(ParticipantLocation location) {
+    final info = _infoCache[location.memberId];
+    final enriched = info != null
+        ? location.copyWith(nickname: info.nickname, titleName: info.titleName)
+        : location;
     final updated = Map<int, ParticipantLocation>.from(state.participants)
-      ..[location.memberId] = location;
+      ..[enriched.memberId] = enriched;
     state = state.copyWith(participants: updated);
   }
 

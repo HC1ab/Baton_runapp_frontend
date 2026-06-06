@@ -102,6 +102,7 @@ class RunLocationWebSocketService {
       destination: destination,
       callback: (frame) {
         final body = frame.body;
+        _logger.d('[WS] received: $body');
         if (body == null || body.isEmpty) return;
         try {
           final decoded = jsonDecode(body);
@@ -176,6 +177,7 @@ class RunLocationWebSocketService {
         updatedAt: DateTime.now(),
       ).toPublishJson(groupId: groupId, memberId: memberId);
 
+      _logger.d('[WS] publish → ${WsConstants.publishDestination(groupId)}: $payload');
       client.send(
         destination: WsConstants.publishDestination(groupId),
         body: jsonEncode(payload),

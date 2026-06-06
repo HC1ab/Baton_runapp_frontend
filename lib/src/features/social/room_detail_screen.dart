@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:logger/logger.dart';
 
 import 'models/run_card_data.dart';
 import 'social_providers.dart';
+
+final _logger = Logger();
 
 class RoomDetailScreen extends ConsumerStatefulWidget {
   const RoomDetailScreen({
@@ -45,10 +48,19 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
     try {
       final json =
           await ref.read(groupApiProvider).getDetail(groupId: groupId);
-      final detail = RunCardData.fromServerJson(json);
+      _logger.d('[RoomDetail] raw json: $json');
+      var detail = RunCardData.fromServerJson(json);
+      _logger.d('[RoomDetail] lat=${detail.latitude} lng=${detail.longitude}');
+      // 서버가 좌표를 반환하지 않으면 목록/생성 시 저장된 좌표 유지
+      if (detail.latitude == null && widget.card.latitude != null) {
+        detail = detail.copyWith(
+          latitude: widget.card.latitude,
+          longitude: widget.card.longitude,
+        );
+      }
       if (mounted) setState(() => _detail = detail);
-    } catch (_) {
-      // 실패 시 목록에서 받은 card 데이터로 표시
+    } catch (e, st) {
+      _logger.e('[RoomDetail] _fetchDetail failed', error: e, stackTrace: st);
     }
   }
 
@@ -79,7 +91,9 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (_card.latitude != null && _card.longitude != null)
-            _RealMiniMap(card: _card),
+            _RealMiniMap(card: _card)
+          else
+            const _MapPlaceholder(),
           Expanded(
             child: Transform.translate(
               offset: const Offset(0, -20),
@@ -273,6 +287,22 @@ class _BottomActions extends StatelessWidget {
   }
 }
 
+class _MapPlaceholder extends StatelessWidget {
+  const _MapPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 250,
+      width: double.infinity,
+      color: const Color(0xFFE8E8E8),
+      child: const Center(
+        child: Icon(Icons.map_outlined, size: 48, color: Color(0xFFBBBBBB)),
+      ),
+    );
+  }
+}
+
 class _RealMiniMap extends StatelessWidget {
   const _RealMiniMap({required this.card});
 
@@ -382,11 +412,9 @@ class _DetailCard extends StatelessWidget {
             ],
             if (card.participantNicknames.isNotEmpty) ...[
               const SizedBox(height: 14),
-              _LabeledLine(
-                icon: Icons.group_rounded,
-                label: '참여자',
-                value: card.participantNicknames.join(', '),
-                iconColor: const Color(0xFFB33010),
+              _ParticipantList(
+                nicknames: card.participantNicknames,
+                hostNickname: card.hostNickname,
               ),
             ],
             const SizedBox(height: 20),
@@ -489,6 +517,119 @@ class _LabeledLine extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _ParticipantList
+// ---------------------------------------------------------------------------
+
+class _ParticipantList extends StatelessWidget {
+  const _ParticipantList({
+    required this.nicknames,
+    required this.hostNickname,
+  });
+
+  final List<String> nicknames;
+  final String? hostNickname;
+
+  static const _avatarColor = Color(0xFFE8380D);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(Icons.group_rounded, size: 22, color: Color(0xFFB33010)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '참여자',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF888888),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 12,
+                runSpacing: 10,
+                children: nicknames.map((name) {
+                  final isHost = name == hostNickname;
+                  return _ParticipantChip(
+                    nickname: name,
+                    isHost: isHost,
+                    avatarColor: _avatarColor,
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ParticipantChip extends StatelessWidget {
+  const _ParticipantChip({
+    required this.nickname,
+    required this.isHost,
+    required this.avatarColor,
+  });
+
+  final String nickname;
+  final bool isHost;
+  final Color avatarColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = nickname.isNotEmpty ? nickname[0] : '?';
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: avatarColor,
+              child: Text(
+                initial,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            if (isHost)
+              Positioned(
+                top: -6,
+                right: -6,
+                child: Icon(
+                  Icons.workspace_premium_rounded,
+                  size: 16,
+                  color: Colors.amber.shade600,
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(width: 6),
+        Text(
+          nickname,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1F1F1F),
           ),
         ),
       ],

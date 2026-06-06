@@ -231,6 +231,8 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
             distanceKm: distanceValue,
             location: placeName,
             address: address,
+            latitude: _selectedLatLng?.latitude,
+            longitude: _selectedLatLng?.longitude,
           );
       if (!mounted) return;
       Navigator.of(context).pop<RunCardData>(

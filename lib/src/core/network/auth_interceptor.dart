@@ -49,14 +49,19 @@ class AuthInterceptor extends Interceptor {
       final code = _extractErrorCode(err.response);
       _logger.w('401 received (code: $code) — ${err.requestOptions.method} ${err.requestOptions.path}');
 
-      // A001/A002/A003 또는 code 없는 401(Spring Security 레벨) → forceLogout
+      // A001/A002/A003 또는 code 없는 401(Spring Security 필터 레벨 거부) → forceLogout
       // C002/G002/G003 등 권한 부족 코드는 해당 없음 → handler.next로 에러 전파
       final isTokenAuthFailure = code == null || _tokenAuthCodes.contains(code);
       if (isTokenAuthFailure) {
-        _logger.w('Auth token failure (code: $code) → forceLogout (deferred)');
-        SchedulerBinding.instance.addPostFrameCallback((_) {
-          _ref.read(authProvider.notifier).forceLogout();
-        });
+        // 이미 로그아웃 상태면 중복 호출 방지
+        if (_ref.read(authProvider) is AuthStateUnauthenticated) {
+          _logger.d('forceLogout skipped — already unauthenticated');
+        } else {
+          _logger.w('Auth token failure (code: $code) → forceLogout (deferred)');
+          SchedulerBinding.instance.addPostFrameCallback((_) {
+            _ref.read(authProvider.notifier).forceLogout();
+          });
+        }
       }
     }
     handler.next(err);

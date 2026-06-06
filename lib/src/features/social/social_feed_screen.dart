@@ -14,7 +14,6 @@ import '../../core/storage/shared_prefs_provider.dart';
 import '../../core/storage/token_storage.dart';
 import '../../core/utils/jwt_utils.dart';
 import '../group_running/providers/run_location_provider.dart';
-import 'active_room_screen.dart';
 import 'create_room_screen.dart';
 import 'models/run_card_data.dart';
 import 'room_detail_screen.dart';
@@ -174,6 +173,7 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
     if (groupId == null) return;
     try {
       await ref.read(groupApiProvider).leave(groupId: groupId);
+      await ref.read(runLocationProvider.notifier).leaveRoom();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('그룹에서 나갔습니다.')),
@@ -210,6 +210,7 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
     if (confirmed != true || !mounted) return;
     try {
       await ref.read(groupApiProvider).delete(groupId: groupId);
+      await ref.read(runLocationProvider.notifier).leaveRoom();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('그룹이 삭제됐습니다.')),
@@ -283,28 +284,7 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 활성 그룹 러닝 세션 — 피드 대신 전용 화면 표시
-    final locState = ref.watch(runLocationProvider);
-    if (locState.isConnected && locState.groupId != null) {
-      final activeGroupId = locState.groupId!;
-      final card = _cards.where((c) => c.groupId == activeGroupId).firstOrNull;
-
-      if (card == null) {
-        // 카드 아직 로딩 중
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        );
-      }
-
-      return ActiveRoomScreen(
-        card: card,
-        onUpdatePressed: () => _updateGroup(card),
-        onDeletePressed: () => _deleteGroup(card),
-        onLeavePressed: () => _leaveGroup(card),
-      );
-    }
-
-    // 일반 피드
+    // 일반 피드 (참여 중이어도 목록 표시 — 참여/호스트 카드는 상단 정렬됨)
     final cards = _cards;
 
     return Scaffold(

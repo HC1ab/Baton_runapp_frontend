@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:logger/logger.dart';
 
 import '../../../common/widgets/character_sphere_widget.dart';
 import '../../../core/character/character_style.dart';
+
+final _logger = Logger();
 
 /// 캐릭터 구체를 화면 좌표계에 오버레이.
 ///
@@ -20,6 +23,7 @@ class CharacterSphereOverlay extends StatefulWidget {
     required this.characterStyle,
     this.size = 48.0,
     this.titleName,
+    this.nickname,
   });
 
   final LatLng? latLng;
@@ -32,8 +36,45 @@ class CharacterSphereOverlay extends StatefulWidget {
   /// 장착 칭호 표시 이름. null이면 배지 숨김.
   final String? titleName;
 
+  /// 닉네임 — 칭호 위에 표시. null이면 숨김.
+  final String? nickname;
+
   @override
   State<CharacterSphereOverlay> createState() => _CharacterSphereOverlayState();
+}
+
+class _LabelBadge extends StatelessWidget {
+  const _LabelBadge({
+    required this.text,
+    this.backgroundColor,
+    this.textColor = Colors.white,
+  });
+  final String text;
+  final Color? backgroundColor;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: backgroundColor ?? Colors.black.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(999.r),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: textColor,
+          fontSize: 9.sp,
+          fontWeight: FontWeight.w700,
+          height: 1.2,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
 }
 
 class _CharacterSphereOverlayState extends State<CharacterSphereOverlay> {
@@ -61,7 +102,9 @@ class _CharacterSphereOverlayState extends State<CharacterSphereOverlay> {
       final coord = await widget.mapController.getScreenCoordinate(pos);
       if (!mounted) return;
       setState(() => _screenCoord = coord);
-    } catch (_) {}
+    } catch (e) {
+      _logger.w('[Overlay] getScreenCoordinate failed', error: e);
+    }
   }
 
   @override
@@ -70,6 +113,7 @@ class _CharacterSphereOverlayState extends State<CharacterSphereOverlay> {
     final dpr = MediaQuery.devicePixelRatioOf(context);
     final s = widget.size;
     final title = widget.titleName;
+    final nickname = widget.nickname;
 
     // 기준점(LatLng)에서 구 반지름만큼 위로 올림
     final cx = coord != null ? coord.x / dpr : -500.0;
@@ -97,24 +141,20 @@ class _CharacterSphereOverlayState extends State<CharacterSphereOverlay> {
                 left: 0,
                 right: 0,
                 child: Center(
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.55),
-                      borderRadius: BorderRadius.circular(999.r),
-                    ),
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 9.sp,
-                        fontWeight: FontWeight.w700,
-                        height: 1.2,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                    ),
+                  child: _LabelBadge(text: title),
+                ),
+              ),
+            // 닉네임 배지 — 칭호 위 (칭호 없으면 구체 바로 위)
+            if (nickname != null)
+              Positioned(
+                bottom: s + 2.h + (title != null ? 18.h : 0),
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: _LabelBadge(
+                    text: nickname,
+                    backgroundColor: Colors.white.withValues(alpha: 0.85),
+                    textColor: Colors.black87,
                   ),
                 ),
               ),

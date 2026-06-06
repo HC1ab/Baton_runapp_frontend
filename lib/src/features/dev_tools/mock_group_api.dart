@@ -15,6 +15,8 @@ class MockGroupApi extends GroupApi {
     required int distanceKm,
     required String location,
     required String address,
+    double? latitude,
+    double? longitude,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 200));
     return 1;

@@ -99,6 +99,9 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   int? _activeGroupId;
   bool _activeIsHost = false;
 
+  // dispose()에서 ref 사용 불가 → groupId 미리 캐시
+  int? _cachedGroupIdForDispose;
+
   // 마커 아이콘 캐시 — initState에서 한 번만 생성
   BitmapDescriptor? _iconDefault;
   BitmapDescriptor? _iconChecked;
@@ -138,18 +141,22 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   }
 
   @override
+  void deactivate() {
+    // deactivate()는 dispose() 전에 호출 → ref 안전하게 사용 가능
+    final hasGroup = widget.groupId != null || _cachedGroupIdForDispose != null;
+    if (hasGroup) {
+      unawaited(ref.read(runLocationProvider.notifier).leaveRoom());
+    }
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
     _gpsSub?.cancel();
     _compassSub?.cancel();
     _mockTimer?.cancel();
     _mapCtrl?.dispose();
     _lifecycleListener?.dispose();
-    // 그룹 러닝 STOMP 연결 해제 (widget param 또는 provider 경유 진입 모두 대응)
-    final hasGroup = widget.groupId != null ||
-        ref.read(runLocationProvider).groupId != null;
-    if (hasGroup) {
-      unawaited(ref.read(runLocationProvider.notifier).leaveRoom());
-    }
     super.dispose();
   }
 
@@ -268,6 +275,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   /// 소셜 탭에서 pendingGroupJoinProvider를 통해 진입할 때 호출.
   Future<void> _joinGroupFromPending(int groupId, {required bool isHost}) async {
     _activeGroupId = groupId;
+    _cachedGroupIdForDispose = groupId;
     _activeIsHost = isHost;
     await ref.read(runLocationProvider.notifier).joinRoom(
           groupId,
@@ -281,6 +289,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     final groupId = widget.groupId;
     if (groupId != null) {
       _activeGroupId = groupId;
+      _cachedGroupIdForDispose = groupId;
       _activeIsHost = widget.isHost;
       await ref.read(runLocationProvider.notifier).joinRoom(
             groupId,
@@ -298,7 +307,16 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       if (!mounted) return;
 
       if (useMockGps) {
-        _mockPos = _makeMockPos(lat: 35.2475, lng: 129.0914, speed: 0);
+        // 실제 GPS로 초기 위치 설정 — 실패 시 기본값(구석역) 사용
+        double initLat = 35.2475, initLng = 129.0914;
+        try {
+          final realPos = await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+          );
+          initLat = realPos.latitude;
+          initLng = realPos.longitude;
+        } catch (_) {}
+        _mockPos = _makeMockPos(lat: initLat, lng: initLng, speed: 0);
         _myLatLng = LatLng(_mockPos!.latitude, _mockPos!.longitude);
         await ref
             .read(runningProvider.notifier)
@@ -657,15 +675,12 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
               tiltGesturesEnabled: false,
               buildingsEnabled: true,
               fortyFiveDegreeImageryEnabled: true,
-              markers: {
-                ..._cachedMarkers,
-                ..._participantMarkers.values,
-              },
+              markers: _cachedMarkers,
               circles: _cachedCircles,
               polylines: _cachedPolylines,
               groundOverlays: groundOverlays,
               onMapCreated: (ctrl) async {
-                _mapCtrl = ctrl;
+                setState(() => _mapCtrl = ctrl);
                 if (!mounted) return;
                 final pos = _mockPos;
                 if (pos != null) await _updateCamera(pos);
@@ -689,6 +704,31 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
               characterStyle: characterStyle,
               titleName: ref.watch(myEquippedTitleNameProvider),
             ),
+
+          // ── 참가자 오버레이 (상대방 캐릭터 — 그림자 + 회색 구체 + 닉네임) ────
+          if (_mapCtrl != null)
+            ...ref.watch(runLocationProvider).participants.values.expand((p) {
+              final latLng = LatLng(p.latitude, p.longitude);
+              return [
+                CharacterShadowOverlay(
+                  key: ValueKey('participant_shadow_${p.memberId}'),
+                  latLng: latLng,
+                  mapController: _mapCtrl!,
+                ),
+                CharacterSphereOverlay(
+                  key: ValueKey('participant_${p.memberId}'),
+                  latLng: latLng,
+                  mapController: _mapCtrl!,
+                  characterStyle: const CharacterStyle(
+                    code: 'CORE_GREY',
+                    name: '회색 코어',
+                    baseColor: Color(0xFF9E9E9E),
+                  ),
+                  nickname: p.nickname ?? '러너 ${p.memberId}',
+                  titleName: p.titleName,
+                ),
+              ];
+            }),
 
           // ── Mock 방향 조작 버튼 (autoWalk 중에만 표시) ───────────────────
           if (_mockAutoWalk && ref.read(useMockGpsProvider)) ...[

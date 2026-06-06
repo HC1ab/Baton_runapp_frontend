@@ -5,6 +5,7 @@ class ParticipantLocation {
     required this.latitude,
     required this.longitude,
     this.nickname,
+    this.titleName,
     this.updatedAt,
   });
 
@@ -12,6 +13,7 @@ class ParticipantLocation {
   final double latitude;
   final double longitude;
   final String? nickname;
+  final String? titleName;
   final DateTime? updatedAt;
 
   factory ParticipantLocation.fromJson(Map<String, dynamic> json) {
@@ -40,15 +42,15 @@ class ParticipantLocation {
       {
         'groupId': groupId,
         'memberId': memberId,
-        'latitude': latitude,
-        'longitude': longitude,
-        'timestamp': DateTime.now().toIso8601String(),
+        'lat': latitude,
+        'lng': longitude,
       };
 
   ParticipantLocation copyWith({
     double? latitude,
     double? longitude,
     String? nickname,
+    String? titleName,
     DateTime? updatedAt,
   }) {
     return ParticipantLocation(
@@ -56,6 +58,7 @@ class ParticipantLocation {
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       nickname: nickname ?? this.nickname,
+      titleName: titleName ?? this.titleName,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }

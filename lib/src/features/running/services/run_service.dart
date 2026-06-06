@@ -14,6 +14,7 @@ abstract class RunServiceBase {
   Future<void> finishRun({
     required int runId,
     required String endTimeIsoLocal,
+    required String realStartTimeIsoLocal,
     required List<RunPathPoint> path,
   });
 }
@@ -49,6 +50,7 @@ class RunService implements RunServiceBase {
   Future<void> finishRun({
     required int runId,
     required String endTimeIsoLocal,
+    required String realStartTimeIsoLocal,
     required List<RunPathPoint> path,
   }) async {
     try {
@@ -56,6 +58,7 @@ class RunService implements RunServiceBase {
         '${ApiConstants.runFinish}/$runId/finish',
         data: {
           'endTime': endTimeIsoLocal,
+          'realStartTime': realStartTimeIsoLocal,
           'path': path.map((p) => p.toJson()).toList(),
         },
       );

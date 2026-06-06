@@ -15,6 +15,8 @@ class GroupApi {
     required int distanceKm,
     required String location,
     required String address,
+    double? latitude,
+    double? longitude,
   }) {
     return requestJson<int>(
       _dio,
@@ -29,6 +31,8 @@ class GroupApi {
           'distance': distanceKm,
           'location': location,
           'address': address,
+          if (latitude != null) 'lat': latitude,
+          if (longitude != null) 'lon': longitude,
         },
       ),
       mapper: (json) => (json as num).toInt(),

@@ -81,6 +81,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         _passwordController.text = dotenv.env['DEV_PASSWORD'] ?? '';
                         _submit();
                       },
+                      onQuickLogin2: () {
+                        _emailController.text = 'test1@naver.com';
+                        _passwordController.text = 'password1234';
+                        _submit();
+                      },
                     ),
                     SizedBox(height: AppSpacing.verticalMd),
                   ],
@@ -196,9 +201,13 @@ class _Header extends StatelessWidget {
 }
 
 class _DevBanner extends StatelessWidget {
-  const _DevBanner({required this.onQuickLogin});
+  const _DevBanner({
+    required this.onQuickLogin,
+    required this.onQuickLogin2,
+  });
 
   final VoidCallback onQuickLogin;
+  final VoidCallback onQuickLogin2;
 
   @override
   Widget build(BuildContext context) {
@@ -214,43 +223,64 @@ class _DevBanner extends StatelessWidget {
           color: AppColors.primary.withValues(alpha: 0.3),
         ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(
-            Icons.construction_rounded,
-            size: 15.r,
-            color: AppColors.primary,
-          ),
-          SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text(
-              '개발 모드 · ${dotenv.env['DEV_EMAIL'] ?? ''}',
-              style: AppTextStyles.labelSmall.copyWith(
-                color: AppColors.primary,
-              ),
-            ),
-          ),
-          GestureDetector(
-            onTap: onQuickLogin,
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: 4.h,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-              ),
-              child: Text(
-                '바로 입장',
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+          Row(
+            children: [
+              Icon(Icons.construction_rounded, size: 15.r, color: AppColors.primary),
+              SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  '개발 모드 · ${dotenv.env['DEV_EMAIL'] ?? ''}',
+                  style: AppTextStyles.labelSmall.copyWith(color: AppColors.primary),
                 ),
               ),
-            ),
+              _QuickLoginButton(label: 'ADMIN', onTap: onQuickLogin),
+            ],
+          ),
+          SizedBox(height: 16.h),
+          Row(
+            children: [
+              Icon(Icons.construction_rounded, size: 15.r, color: Colors.transparent),
+              SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  'test1@naver.com',
+                  style: AppTextStyles.labelSmall.copyWith(color: AppColors.primary),
+                ),
+              ),
+              _QuickLoginButton(label: 'test1', onTap: onQuickLogin2),
+            ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _QuickLoginButton extends StatelessWidget {
+  const _QuickLoginButton({required this.label, required this.onTap});
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4.h),
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+        ),
+        child: Text(
+          label,
+          style: AppTextStyles.labelSmall.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }

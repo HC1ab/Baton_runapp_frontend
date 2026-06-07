@@ -15,8 +15,10 @@ import '../../core/storage/token_storage.dart';
 import '../../core/utils/jwt_utils.dart';
 import '../group_running/providers/run_location_provider.dart';
 import 'create_room_screen.dart';
+import 'follow_requests_screen.dart';
 import 'models/run_card_data.dart';
 import 'room_detail_screen.dart';
+import 'services/follow_service.dart';
 import 'social_providers.dart';
 import 'widgets/group_run_card.dart';
 
@@ -178,7 +180,7 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('그룹에서 나갔습니다.')),
       );
-      await _loadCards();
+      Navigator.of(context).maybePop();
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -330,7 +332,7 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
                       ],
                     ),
                   ),
-                  Icon(Icons.notifications_rounded, color: AppColors.iconNeutral, size: 22.r),
+                  _NotificationBell(),
                   SizedBox(width: 12.w),
                   CircleAvatar(
                     radius: 16,
@@ -485,6 +487,61 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+class _NotificationBell extends ConsumerWidget {
+  // ignore: prefer_const_constructors_in_immutables
+  _NotificationBell();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final requestsAsync = ref.watch(pendingFollowRequestsProvider);
+    final count = requestsAsync.when(
+      data: (list) => list.length,
+      loading: () => 0,
+      error: (_, __) => 0,
+    );
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context)
+            .push(MaterialPageRoute<void>(
+              builder: (_) => const FollowRequestsScreen(),
+            ))
+            .then((_) => ref.invalidate(pendingFollowRequestsProvider));
+      },
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Icon(Icons.notifications_rounded,
+              color: AppColors.iconNeutral, size: 22.r),
+          if (count > 0)
+            Positioned(
+              top: -4,
+              right: -4,
+              child: Container(
+                width: 16,
+                height: 16,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE53935),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    count > 9 ? '9+' : '$count',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

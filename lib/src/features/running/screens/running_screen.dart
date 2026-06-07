@@ -318,6 +318,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
         } catch (_) {}
         _mockPos = _makeMockPos(lat: initLat, lng: initLng, speed: 0);
         _myLatLng = LatLng(_mockPos!.latitude, _mockPos!.longitude);
+        ref.read(runLocationProvider.notifier).updateMockPosition(initLat, initLng);
         await ref
             .read(runningProvider.notifier)
             .onPositionUpdate(_mockPos!, isDev: true);
@@ -382,6 +383,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
         final stopped =
             _makeMockPos(lat: cur.latitude, lng: cur.longitude, speed: 0);
         _mockPos = stopped;
+        ref.read(runLocationProvider.notifier).updateMockPosition(cur.latitude, cur.longitude);
         unawaited(
           ref
               .read(runningProvider.notifier)
@@ -439,6 +441,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     );
     _mockPos = next;
     _myLatLng = LatLng(next.latitude, next.longitude);
+    ref.read(runLocationProvider.notifier).updateMockPosition(next.latitude, next.longitude);
 
     unawaited(
       ref.read(runningProvider.notifier).onPositionUpdate(next, isDev: true),

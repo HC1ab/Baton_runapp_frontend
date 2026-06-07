@@ -140,7 +140,7 @@ class _CharacterSphereOverlayState extends State<CharacterSphereOverlay> {
                 bottom: s + 2.h,
                 left: 0,
                 right: 0,
-                child: Center(
+                child: UnconstrainedBox(
                   child: _LabelBadge(text: title),
                 ),
               ),
@@ -150,7 +150,7 @@ class _CharacterSphereOverlayState extends State<CharacterSphereOverlay> {
                 bottom: s + 2.h + (title != null ? 18.h : 0),
                 left: 0,
                 right: 0,
-                child: Center(
+                child: UnconstrainedBox(
                   child: _LabelBadge(
                     text: nickname,
                     backgroundColor: Colors.white.withValues(alpha: 0.85),

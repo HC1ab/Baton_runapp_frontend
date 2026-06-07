@@ -160,6 +160,11 @@ class RunLocationNotifier extends Notifier<RunLocationState> {
     state = state.copyWith(participants: updated);
   }
 
+  /// 목 GPS 모드에서 호출 — WS publish 좌표를 가상 좌표로 고정.
+  void updateMockPosition(double lat, double lng) {
+    _service?.setMockPosition(lat, lng);
+  }
+
   void updateMyLocation(double latitude, double longitude) {
     final memberId = state.myMemberId;
     if (memberId == null) return;

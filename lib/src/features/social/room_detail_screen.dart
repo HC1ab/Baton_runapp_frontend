@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:logger/logger.dart';
 
+import '../profile/screens/member_profile_screen.dart';
 import 'models/run_card_data.dart';
 import 'social_providers.dart';
 
@@ -20,7 +21,7 @@ class RoomDetailScreen extends ConsumerStatefulWidget {
   });
 
   final RunCardData card;
-  final VoidCallback? onJoinPressed;
+  final Future<void> Function()? onJoinPressed;
   final VoidCallback? onEnterLivePressed;
   final VoidCallback? onLeavePressed;
   final VoidCallback? onUpdatePressed;
@@ -35,6 +36,7 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
   static const Color _pageBg = Color(0xFFF4F4F4);
 
   RunCardData? _detail;
+  bool _isJoining = false;
 
   @override
   void initState() {
@@ -51,6 +53,8 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
       _logger.d('[RoomDetail] raw json: $json');
       var detail = RunCardData.fromServerJson(json);
       _logger.d('[RoomDetail] lat=${detail.latitude} lng=${detail.longitude}');
+      // GroupDetail 응답에 isHost 필드 없음 → 목록에서 이미 판별된 값 유지
+      detail = detail.copyWith(isHost: widget.card.isHost);
       // 서버가 좌표를 반환하지 않으면 목록/생성 시 저장된 좌표 유지
       if (detail.latitude == null && widget.card.latitude != null) {
         detail = detail.copyWith(
@@ -110,7 +114,19 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
               child: _BottomActions(
                 card: _card,
                 pointOrange: _pointOrange,
-                onJoinPressed: widget.onJoinPressed,
+                isJoining: _isJoining,
+                onJoinPressed: widget.onJoinPressed == null
+                    ? null
+                    : () async {
+                        if (_isJoining) return;
+                        setState(() => _isJoining = true);
+                        try {
+                          await widget.onJoinPressed!();
+                          if (mounted) await _fetchDetail();
+                        } finally {
+                          if (mounted) setState(() => _isJoining = false);
+                        }
+                      },
                 onEnterLivePressed: widget.onEnterLivePressed,
                 onLeavePressed: widget.onLeavePressed,
                 onUpdatePressed: widget.onUpdatePressed,
@@ -128,6 +144,7 @@ class _BottomActions extends StatelessWidget {
   const _BottomActions({
     required this.card,
     required this.pointOrange,
+    required this.isJoining,
     required this.onJoinPressed,
     required this.onEnterLivePressed,
     required this.onLeavePressed,
@@ -137,6 +154,7 @@ class _BottomActions extends StatelessWidget {
 
   final RunCardData card;
   final Color pointOrange;
+  final bool isJoining;
   final VoidCallback? onJoinPressed;
   final VoidCallback? onEnterLivePressed;
   final VoidCallback? onLeavePressed;
@@ -269,7 +287,7 @@ class _BottomActions extends StatelessWidget {
       width: double.infinity,
       height: 52,
       child: FilledButton(
-        onPressed: onJoinPressed,
+        onPressed: isJoining ? null : onJoinPressed,
         style: FilledButton.styleFrom(
           backgroundColor: pointOrange,
           foregroundColor: Colors.white,
@@ -281,7 +299,16 @@ class _BottomActions extends StatelessWidget {
             fontWeight: FontWeight.w800,
           ),
         ),
-        child: const Text('참여하기'),
+        child: isJoining
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Colors.white,
+                ),
+              )
+            : const Text('참여하기'),
       ),
     );
   }
@@ -593,7 +620,13 @@ class _ParticipantChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final initial = nickname.isNotEmpty ? nickname[0] : '?';
-    return Row(
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => MemberProfileScreen(nickname: nickname),
+        ),
+      ),
+      child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Stack(
@@ -633,6 +666,7 @@ class _ParticipantChip extends StatelessWidget {
           ),
         ),
       ],
+      ),
     );
   }
 }

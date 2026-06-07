@@ -42,8 +42,8 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   final _membersController = TextEditingController();
   final _distanceController = TextEditingController();
 
-  TimeOfDay _startTime = const TimeOfDay(hour: 20, minute: 0);
-  TimeOfDay _endTime = const TimeOfDay(hour: 21, minute: 30);
+  late TimeOfDay _startTime;
+  late TimeOfDay _endTime;
   int _memberCount = 2;
   int _distanceIndex = 4;
   LatLng? _selectedLatLng;
@@ -52,6 +52,10 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now();
+    _startTime = TimeOfDay(hour: now.hour, minute: now.minute);
+    final end = now.add(const Duration(minutes: 30));
+    _endTime = TimeOfDay(hour: end.hour, minute: end.minute);
     _syncTimeControllers();
     _syncMemberDistanceControllers();
   }

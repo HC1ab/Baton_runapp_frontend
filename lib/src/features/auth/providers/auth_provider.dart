@@ -100,6 +100,8 @@ class AuthNotifier extends Notifier<AuthState> {
   /// 토큰 만료/무효 시 API 호출 없이 즉시 로그아웃.
   /// AuthInterceptor에서 A001/A002/A003 감지 시 호출.
   Future<void> forceLogout() async {
+    // 그룹 러닝 정리 (best-effort — 토큰 만료 상태이므로 API 실패 가능)
+    await _cleanupActiveGroup();
     await ref.read(tokenStorageProvider).clear();
     state = const AuthStateUnauthenticated();
     _logger.w('Force logout — auth token invalid/expired');
@@ -107,40 +109,7 @@ class AuthNotifier extends Notifier<AuthState> {
 
   /// Clears token and returns to unauthenticated state.
   Future<void> logout() async {
-    // ── 활성 그룹 러닝 정리 ──────────────────────────────────────────────────
-    // runLocationProvider(WebSocket) 기준으로 groupId + isHost 확인.
-    // activeHostGroupIdProvider는 fallback (push 경로 호환).
-    final locState = ref.read(runLocationProvider);
-    final runState = ref.read(runningProvider);
-    final activeGroupId = locState.groupId ?? ref.read(activeHostGroupIdProvider);
-
-    if (activeGroupId != null) {
-      final isHost = runState.isHost ||
-          (ref.read(activeHostGroupIdProvider) == activeGroupId);
-
-      if (isHost) {
-        // 호스트 → 방 삭제 (best-effort)
-        _logger.i('logout: host → deleteGroup($activeGroupId)');
-        await ref
-            .read(groupRunApiServiceProvider)
-            .deleteGroup(activeGroupId);
-      } else {
-        // 참가자 → 방 나가기 (best-effort)
-        _logger.i('logout: participant → leave($activeGroupId)');
-        try {
-          await ref
-              .read(groupApiProvider)
-              .leave(groupId: activeGroupId);
-        } catch (e) {
-          _logger.w('logout leave failed (best-effort)', error: e);
-        }
-      }
-
-      // WebSocket 해제 + 상태 초기화
-      await ref.read(runLocationProvider.notifier).leaveRoom();
-      ref.read(runningProvider.notifier).resetToIdle();
-      ref.read(activeHostGroupIdProvider.notifier).set(null);
-    }
+    await _cleanupActiveGroup();
 
     try {
       await ref.read(authServiceProvider).logout();
@@ -150,6 +119,44 @@ class AuthNotifier extends Notifier<AuthState> {
       await ref.read(tokenStorageProvider).clear();
       state = const AuthStateUnauthenticated();
     }
+  }
+
+  /// 활성 그룹 러닝 정리 — host는 방 삭제, 참가자는 나가기, WS 해제.
+  /// logout / forceLogout 공통 호출. 모두 best-effort (실패 무시).
+  Future<void> _cleanupActiveGroup() async {
+    // runLocationProvider(WebSocket) 기준으로 groupId 확인.
+    // activeHostGroupIdProvider는 push 경로 호환 fallback.
+    final locState = ref.read(runLocationProvider);
+    final runState = ref.read(runningProvider);
+    final activeGroupId = locState.groupId ?? ref.read(activeHostGroupIdProvider);
+
+    if (activeGroupId == null) return;
+
+    final isHost = runState.isHost ||
+        (ref.read(activeHostGroupIdProvider) == activeGroupId);
+
+    if (isHost) {
+      // 호스트 → 방 삭제 (best-effort)
+      _logger.i('_cleanupActiveGroup: host → deleteGroup($activeGroupId)');
+      await ref
+          .read(groupRunApiServiceProvider)
+          .deleteGroup(activeGroupId);
+    } else {
+      // 참가자 → 방 나가기 (best-effort)
+      _logger.i('_cleanupActiveGroup: participant → leave($activeGroupId)');
+      try {
+        await ref
+            .read(groupApiProvider)
+            .leave(groupId: activeGroupId);
+      } catch (e) {
+        _logger.w('_cleanupActiveGroup leave failed (best-effort)', error: e);
+      }
+    }
+
+    // WebSocket 해제 + 상태 초기화
+    await ref.read(runLocationProvider.notifier).leaveRoom();
+    ref.read(runningProvider.notifier).resetToIdle();
+    ref.read(activeHostGroupIdProvider.notifier).set(null);
   }
 }
 

@@ -40,4 +40,11 @@ abstract final class ApiConstants {
   static const titleAll = '/api/v1/title/all';
   static const profileEquip = '/api/v1/profile/equip';
   static const profileMe = '/api/v1/profile/me';
+  static const profileSearch = '/api/v1/profile/search';
+
+  // Endpoints — Follow
+  static const followRequest = '/api/v1/follows/request';
+  static const followRequests = '/api/v1/follows/requests';
+  static String followAccept(String followId) => '/api/v1/follows/$followId/accept';
+  static String followReject(String followId) => '/api/v1/follows/$followId/reject';
 }

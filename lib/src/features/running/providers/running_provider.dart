@@ -201,7 +201,18 @@ class RunningNotifier extends Notifier<RunRecordModel> {
     final runId = state.runId;
     if (runId == null || !state.isRunning) return;
 
-    // 최소 거리 미달 시 종료 거부
+    // 호스트면 거리 무관하게 그룹 러닝 종료 먼저 브로드캐스트
+    final groupId = state.groupId;
+    if (groupId != null && state.isHost) {
+      try {
+        await ref.read(groupRunApiServiceProvider).runFinish(groupId);
+        await ref.read(groupRunApiServiceProvider).deleteGroup(groupId);
+      } catch (e) {
+        _logger.e('group runFinish/delete error', error: e);
+      }
+    }
+
+    // 최소 거리 미달 시 개인 러닝 기록 저장 거부
     if (state.distanceMeters < 200) {
       state = state.copyWith(
         errorMessage: ErrorMessages.runTooShort,
@@ -213,12 +224,6 @@ class RunningNotifier extends Notifier<RunRecordModel> {
     state = state.copyWith(clearError: true);
 
     try {
-      // 호스트면 그룹 러닝 종료 API 먼저 호출 (SESSION_ENDED 브로드캐스트 트리거)
-      final groupId = state.groupId;
-      if (groupId != null && state.isHost) {
-        await ref.read(groupRunApiServiceProvider).runFinish(groupId);
-      }
-
       await ref.read(runServiceProvider).finishRun(
             runId: runId,
             endTimeIsoLocal: _isoLocal(DateTime.now()),

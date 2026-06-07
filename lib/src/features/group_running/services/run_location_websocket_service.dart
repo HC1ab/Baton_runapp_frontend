@@ -25,6 +25,16 @@ class RunLocationWebSocketService {
   LocationMessageHandler? _onLocation;
   SessionEndedHandler? _onSessionEnded;
 
+  // 목 GPS override — null이면 실 GPS 사용
+  double? _overrideLat;
+  double? _overrideLng;
+
+  /// 목 GPS 모드에서 publish할 좌표를 고정. null 해제 불필요 (배포 전 목 전용).
+  void setMockPosition(double lat, double lng) {
+    _overrideLat = lat;
+    _overrideLng = lng;
+  }
+
   bool get isConnected => _client?.connected ?? false;
   int? get activeGroupId => _activeGroupId;
 
@@ -152,28 +162,38 @@ class RunLocationWebSocketService {
     if (client == null || !client.connected) return;
 
     try {
-      final enabled = await Geolocator.isLocationServiceEnabled();
-      if (!enabled) return;
+      double lat, lng;
 
-      var perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) {
-        perm = await Geolocator.requestPermission();
-      }
-      if (perm == LocationPermission.denied ||
-          perm == LocationPermission.deniedForever) {
-        return;
-      }
+      if (_overrideLat != null && _overrideLng != null) {
+        // 목 GPS override — 실 GPS 호출 없이 가상 좌표 사용
+        lat = _overrideLat!;
+        lng = _overrideLng!;
+      } else {
+        final enabled = await Geolocator.isLocationServiceEnabled();
+        if (!enabled) return;
 
-      final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
+        var perm = await Geolocator.checkPermission();
+        if (perm == LocationPermission.denied) {
+          perm = await Geolocator.requestPermission();
+        }
+        if (perm == LocationPermission.denied ||
+            perm == LocationPermission.deniedForever) {
+          return;
+        }
+
+        final pos = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+          ),
+        );
+        lat = pos.latitude;
+        lng = pos.longitude;
+      }
 
       final payload = ParticipantLocation(
         memberId: memberId,
-        latitude: pos.latitude,
-        longitude: pos.longitude,
+        latitude: lat,
+        longitude: lng,
         updatedAt: DateTime.now(),
       ).toPublishJson(groupId: groupId, memberId: memberId);
 

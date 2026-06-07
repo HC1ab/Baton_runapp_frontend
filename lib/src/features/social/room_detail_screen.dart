@@ -60,13 +60,6 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
       _logger.d('[RoomDetail] lat=${detail.latitude} lng=${detail.longitude}');
       // GroupDetail 응답에 isHost 필드 없음 → 목록에서 이미 판별된 값 유지
       detail = detail.copyWith(isHost: widget.card.isHost);
-      // 서버가 좌표를 반환하지 않으면 목록/생성 시 저장된 좌표 유지
-      if (detail.latitude == null && widget.card.latitude != null) {
-        detail = detail.copyWith(
-          latitude: widget.card.latitude,
-          longitude: widget.card.longitude,
-        );
-      }
       if (mounted) setState(() => _detail = detail);
 
       // 참여자 색상 비동기 로드
@@ -118,10 +111,7 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (_card.latitude != null && _card.longitude != null)
-            _RealMiniMap(card: _card)
-          else
-            const _MapPlaceholder(),
+          _RealMiniMap(card: _card),
           Expanded(
             child: Transform.translate(
               offset: const Offset(0, -20),
@@ -338,21 +328,6 @@ class _BottomActions extends StatelessWidget {
   }
 }
 
-class _MapPlaceholder extends StatelessWidget {
-  const _MapPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 250,
-      width: double.infinity,
-      color: const Color(0xFFE8E8E8),
-      child: const Center(
-        child: Icon(Icons.map_outlined, size: 48, color: Color(0xFFBBBBBB)),
-      ),
-    );
-  }
-}
 
 class _RealMiniMap extends StatelessWidget {
   const _RealMiniMap({required this.card});
@@ -361,8 +336,7 @@ class _RealMiniMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final target = LatLng(card.latitude!, card.longitude!);
-
+    final target = LatLng(card.latitude, card.longitude);
     return SizedBox(
       height: 250,
       width: double.infinity,

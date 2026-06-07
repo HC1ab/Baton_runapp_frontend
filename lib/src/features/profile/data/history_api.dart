@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 
+import '../../../core/constants/api_constants.dart';
 import '../../../core/network/api_client.dart';
 import '../models/monthly_summary_model.dart';
+import '../models/run_detail_model.dart';
 
 // ---------------------------------------------------------------------------
 // Model
@@ -22,8 +24,9 @@ class RunListItem {
   /// 평균 페이스 (초/km). avgPace * totalDistanceKm = 총 소요 시간(초).
   final int avgPace;
 
-  /// "M'SS\"" 형식 페이스 텍스트 (예: "6'00\"")
+  /// "M'SS\"" 형식 페이스 텍스트 (예: "6'00\""), pace 없으면 "--'--\""
   String get avgPaceText {
+    if (avgPace <= 0) return "--'--\"";
     final m = avgPace ~/ 60;
     final s = avgPace % 60;
     return "$m'${s.toString().padLeft(2, '0')}\"";
@@ -33,11 +36,12 @@ class RunListItem {
   int get durationSeconds => (avgPace * totalDistanceKm).round();
 
   factory RunListItem.fromJson(Map<String, dynamic> json) {
+    final pace = (json['avgPaceSecPerKm'] ?? json['avgPace'] as num? ?? 0).toInt();
     return RunListItem(
-      runId: json['runId'] as int,
+      runId: (json['runId'] ?? json['id'] as num? ?? 0).toInt(),
       startTime: DateTime.parse(json['startTime'] as String),
       totalDistanceKm: (json['totalDistanceKm'] as num? ?? 0.0).toDouble(),
-      avgPace: (json['avgPace'] as num? ?? 0).toInt(),
+      avgPace: pace,
     );
   }
 }
@@ -77,5 +81,15 @@ class HistoryApi {
     return unwrapped
         .map((e) => RunListItem.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  /// GET /api/v1/runs/{runId} — 러닝 상세 조회 (경로 포함)
+  Future<RunDetailModel> getRunDetail(int runId) async {
+    final response = await _dio.get('${ApiConstants.runs}/$runId');
+    final unwrapped = unwrapApiResponse(response.data);
+    if (unwrapped is! Map<String, dynamic>) {
+      throw ApiException('러닝 상세 응답이 올바르지 않습니다.');
+    }
+    return RunDetailModel.fromJson(unwrapped);
   }
 }

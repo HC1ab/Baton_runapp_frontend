@@ -39,10 +39,7 @@ class ActiveRoomScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // ── 미니맵 (방 지정 위치 기준) ─────────────────────────────────────
-          if (card.latitude != null && card.longitude != null)
-            _ActiveMiniMap(card: card)
-          else
-            SizedBox(height: 200.h, child: const ColoredBox(color: Color(0xFFDDDDDD))),
+          _ActiveMiniMap(card: card),
 
           // ── 방 정보 카드 ──────────────────────────────────────────────────
           Expanded(
@@ -87,7 +84,7 @@ class _ActiveMiniMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final target = LatLng(card.latitude!, card.longitude!);
+    final target = LatLng(card.latitude, card.longitude);
 
     return SizedBox(
       height: 220.h,

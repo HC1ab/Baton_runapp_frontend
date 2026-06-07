@@ -4,9 +4,12 @@ import 'package:logger/logger.dart';
 import '../../../core/character/character_provider.dart';
 import '../../../core/character/character_style.dart';
 import '../../../core/constants/storage_keys.dart';
+import '../../../core/myroom/my_room_service.dart';
 import '../../../core/storage/token_storage.dart';
 import '../../group_running/providers/run_location_provider.dart';
 import '../../group_running/services/group_run_api_service.dart';
+import '../../profile/providers/history_providers.dart';
+import '../../profile/services/profile_service.dart';
 import '../../running/providers/running_provider.dart';
 import '../../social/social_providers.dart';
 import '../services/auth_service.dart';
@@ -89,6 +92,12 @@ class AuthNotifier extends Notifier<AuthState> {
     final style = CharacterStylePresets.fromCode(result.coreColorCode);
     await ref.read(selectedCharacterStyleProvider.notifier).setStyle(style);
 
+    // 이전 유저 캐시 초기화 — 새 토큰으로 데이터 재조회
+    ref.invalidate(profileProvider);
+    ref.invalidate(myRoomProvider);
+    ref.invalidate(monthlySummaryProvider);
+    ref.invalidate(myRunsProvider);
+
     _logger.i(
       'Login saved — access: ${result.tokenPair.accessToken.substring(0, 20)}... '
       'coreColor: ${result.coreColorCode} title: ${result.equippedTitleCode} '
@@ -100,9 +109,13 @@ class AuthNotifier extends Notifier<AuthState> {
   /// 토큰 만료/무효 시 API 호출 없이 즉시 로그아웃.
   /// AuthInterceptor에서 A001/A002/A003 감지 시 호출.
   Future<void> forceLogout() async {
-    // 그룹 러닝 정리 (best-effort — 토큰 만료 상태이므로 API 실패 가능)
-    await _cleanupActiveGroup();
+    // 토큰이 이미 만료 상태이므로 API 호출 없이 로컬 상태만 정리.
+    await _cleanupLocalState();
     await ref.read(tokenStorageProvider).clear();
+    ref.invalidate(profileProvider);
+    ref.invalidate(myRoomProvider);
+    ref.invalidate(monthlySummaryProvider);
+    ref.invalidate(myRunsProvider);
     state = const AuthStateUnauthenticated();
     _logger.w('Force logout — auth token invalid/expired');
   }
@@ -117,12 +130,16 @@ class AuthNotifier extends Notifier<AuthState> {
       _logger.w('Logout API call failed', error: e);
     } finally {
       await ref.read(tokenStorageProvider).clear();
+      ref.invalidate(profileProvider);
+      ref.invalidate(myRoomProvider);
+      ref.invalidate(monthlySummaryProvider);
+      ref.invalidate(myRunsProvider);
       state = const AuthStateUnauthenticated();
     }
   }
 
   /// 활성 그룹 러닝 정리 — host는 방 삭제, 참가자는 나가기, WS 해제.
-  /// logout / forceLogout 공통 호출. 모두 best-effort (실패 무시).
+  /// logout 전용. API 실패는 best-effort로 무시.
   Future<void> _cleanupActiveGroup() async {
     // runLocationProvider(WebSocket) 기준으로 groupId 확인.
     // activeHostGroupIdProvider는 push 경로 호환 fallback.
@@ -138,9 +155,13 @@ class AuthNotifier extends Notifier<AuthState> {
     if (isHost) {
       // 호스트 → 방 삭제 (best-effort)
       _logger.i('_cleanupActiveGroup: host → deleteGroup($activeGroupId)');
-      await ref
-          .read(groupRunApiServiceProvider)
-          .deleteGroup(activeGroupId);
+      try {
+        await ref
+            .read(groupRunApiServiceProvider)
+            .deleteGroup(activeGroupId);
+      } catch (e) {
+        _logger.w('_cleanupActiveGroup deleteGroup failed (best-effort)', error: e);
+      }
     } else {
       // 참가자 → 방 나가기 (best-effort)
       _logger.i('_cleanupActiveGroup: participant → leave($activeGroupId)');
@@ -154,9 +175,27 @@ class AuthNotifier extends Notifier<AuthState> {
     }
 
     // WebSocket 해제 + 상태 초기화
-    await ref.read(runLocationProvider.notifier).leaveRoom();
-    ref.read(runningProvider.notifier).resetToIdle();
-    ref.read(activeHostGroupIdProvider.notifier).set(null);
+    await _cleanupLocalState();
+  }
+
+  /// WebSocket 해제 + 로컬 러닝 상태 초기화 (API 없음).
+  /// forceLogout 및 _cleanupActiveGroup에서 공통 호출.
+  Future<void> _cleanupLocalState() async {
+    try {
+      await ref.read(runLocationProvider.notifier).leaveRoom();
+    } catch (e) {
+      _logger.w('_cleanupLocalState leaveRoom failed', error: e);
+    }
+    try {
+      ref.read(runningProvider.notifier).resetToIdle();
+    } catch (e) {
+      _logger.w('_cleanupLocalState resetToIdle failed', error: e);
+    }
+    try {
+      ref.read(activeHostGroupIdProvider.notifier).set(null);
+    } catch (e) {
+      _logger.w('_cleanupLocalState activeHostGroupId clear failed', error: e);
+    }
   }
 }
 

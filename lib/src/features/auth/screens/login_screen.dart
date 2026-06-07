@@ -182,7 +182,7 @@ class _Header extends StatelessWidget {
         ),
         SizedBox(height: 24.h),
         Text(
-          '반갑습니다 👋',
+          'BATON',
           style: AppTextStyles.displayMedium.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,

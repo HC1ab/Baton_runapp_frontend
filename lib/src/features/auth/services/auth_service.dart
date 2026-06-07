@@ -59,6 +59,8 @@ abstract class AuthServiceBase {
     required String oldPassword,
     required String newPassword,
   });
+
+  Future<void> deleteAccount({required String password});
 }
 
 // ---------------------------------------------------------------------------
@@ -202,6 +204,24 @@ class AuthService implements AuthServiceBase {
       throw _mapDio(e);
     } catch (e) {
       _logger.e('changePassword error', error: e);
+      throw const UnknownException();
+    }
+  }
+
+  // ── Delete Account ────────────────────────────────────────────────────────
+  @override
+  Future<void> deleteAccount({required String password}) async {
+    try {
+      await _dio.delete(
+        ApiConstants.me,
+        data: {'password': password},
+      );
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _mapDio(e);
+    } catch (e) {
+      _logger.e('deleteAccount error', error: e);
       throw const UnknownException();
     }
   }

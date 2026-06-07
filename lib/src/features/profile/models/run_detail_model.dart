@@ -1,0 +1,53 @@
+class PathPoint {
+  const PathPoint({required this.lat, required this.lng});
+  final double lat;
+  final double lng;
+
+  factory PathPoint.fromJson(Map<String, dynamic> json) => PathPoint(
+        lat: (json['lat'] as num).toDouble(),
+        lng: (json['lng'] as num).toDouble(),
+      );
+}
+
+class RunDetailModel {
+  const RunDetailModel({
+    required this.runId,
+    required this.totalDistanceKm,
+    required this.totalTimeSeconds,
+    required this.avgPaceSecPerKm,
+    required this.path,
+  });
+
+  final int runId;
+  final double totalDistanceKm;
+  final int totalTimeSeconds;
+
+  /// 평균 페이스 (초/km)
+  final int avgPaceSecPerKm;
+  final List<PathPoint> path;
+
+  String get avgPaceText {
+    if (avgPaceSecPerKm <= 0) return "--'--\"";
+    final m = avgPaceSecPerKm ~/ 60;
+    final s = avgPaceSecPerKm % 60;
+    return "$m'${s.toString().padLeft(2, '0')}\"";
+  }
+
+  String get totalTimeText {
+    if (totalTimeSeconds <= 0) return '0:00:00';
+    final h = totalTimeSeconds ~/ 3600;
+    final m = (totalTimeSeconds % 3600) ~/ 60;
+    final s = totalTimeSeconds % 60;
+    return '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  factory RunDetailModel.fromJson(Map<String, dynamic> json) => RunDetailModel(
+        runId: (json['runId'] as num? ?? 0).toInt(),
+        totalDistanceKm: (json['totalDistanceKm'] as num? ?? 0.0).toDouble(),
+        totalTimeSeconds: (json['totalTimeSeconds'] as num? ?? 0).toInt(),
+        avgPaceSecPerKm: (json['avgPace'] as num? ?? 0).toInt(),
+        path: (json['path'] as List<dynamic>? ?? [])
+            .map((e) => PathPoint.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+}

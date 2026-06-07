@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/dio_client.dart';
 import '../data/history_api.dart';
 import '../models/monthly_summary_model.dart';
+import '../models/run_detail_model.dart';
 
 export '../data/history_api.dart' show RunListItem;
+export '../models/run_detail_model.dart' show RunDetailModel, PathPoint;
 
 /// Provider for HistoryApi using authenticated dioProvider
 final historyApiProvider = Provider<HistoryApi>((ref) {
@@ -54,4 +56,10 @@ final myRunsProvider = FutureProvider<List<RunListItem>>((ref) async {
           r.startTime.month == selectedDate.month)
       .toList()
     ..sort((a, b) => a.startTime.compareTo(b.startTime));
+});
+
+/// GET /api/v1/runs/{runId} — 러닝 상세 (경로 포함)
+final runDetailProvider =
+    FutureProvider.family<RunDetailModel, int>((ref, runId) {
+  return ref.read(historyApiProvider).getRunDetail(runId);
 });

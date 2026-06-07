@@ -23,10 +23,15 @@ abstract final class ApiConstants {
   // Endpoints — Run
   static const runStart = '/api/v1/runs/start';
   static const runFinish = '/api/v1/runs'; // + /{runId}/finish
+  static const runs = '/api/v1/runs'; // + /{runId}
+
+  // Endpoints — Notice
+  static const notices = '/api/v1/notices';
 
   // Endpoints — Spot
   static const spots = '/api/v1/spots';
   static const spotsNearby = '/api/v1/spots/nearby';
+  static const spotsCooldowns = '/api/v1/spots/cooldowns';
 
   // Endpoints — MyRoom
   static const myRoom = '/api/v1/myroom';

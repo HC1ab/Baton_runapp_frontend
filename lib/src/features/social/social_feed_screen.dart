@@ -134,10 +134,11 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
       // 현재 참여 중인 방 저장 (다음 갱신 시 비교용)
       final participating = cards.firstWhere(
         (c) => c.isHost || c.isParticipating,
-        orElse: () => cards.isEmpty ? RunCardData(
+        orElse: () => cards.isEmpty ? const RunCardData(
           title: '', time: '', location: '',
+          latitude: 0, longitude: 0,
           currentMembers: 0, maxMembers: 0,
-          participantImageUrls: const [],
+          participantImageUrls: [],
         ) : cards.first,
       );
       if (participating.isHost || participating.isParticipating) {

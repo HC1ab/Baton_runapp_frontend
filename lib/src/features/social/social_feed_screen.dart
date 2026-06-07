@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -36,13 +38,44 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
   bool _isLoading = false;
   String? _loadError;
   int? _myMemberId;
+  int? _prevParticipatingGroupId;
+  Timer? _pollingTimer;
 
   static const Color _pointOrange = AppColors.socialAccent;
+  static const Duration _pollingInterval = Duration(seconds: 30);
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadCards());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadCards();
+      _startPolling();
+      // 탭 전환 감지 — 소셜 탭 재진입 시 즉시 갱신 + 폴링 재시작
+      ref.listenManual<int>(currentTabProvider, (prev, next) {
+        if (next == AppTabs.social) {
+          _loadCards();
+          _startPolling();
+        } else {
+          _stopPolling();
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _stopPolling();
+    super.dispose();
+  }
+
+  void _startPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(_pollingInterval, (_) => _loadCards());
+  }
+
+  void _stopPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
   }
 
   /// 서버에서 그룹 목록을 가져와 정렬한다.
@@ -82,6 +115,36 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
       });
 
       if (!mounted) return;
+
+      // 이전에 참여 중이던 방이 목록에서 사라졌는지 감지
+      final prevId = _prevParticipatingGroupId;
+      if (prevId != null) {
+        final stillExists = cards.any(
+          (c) => c.groupId == prevId && (c.isHost || c.isParticipating),
+        );
+        if (!stillExists) {
+          _prevParticipatingGroupId = null;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('참여 중인 방이 종료되었습니다.')),
+          );
+        }
+      }
+
+      // 현재 참여 중인 방 저장 (다음 갱신 시 비교용)
+      final participating = cards.firstWhere(
+        (c) => c.isHost || c.isParticipating,
+        orElse: () => cards.isEmpty ? RunCardData(
+          title: '', time: '', location: '',
+          currentMembers: 0, maxMembers: 0,
+          participantImageUrls: const [],
+        ) : cards.first,
+      );
+      if (participating.isHost || participating.isParticipating) {
+        _prevParticipatingGroupId = participating.groupId;
+      } else {
+        _prevParticipatingGroupId = null;
+      }
+
       setState(() {
         _cards = cards;
         _isLoading = false;

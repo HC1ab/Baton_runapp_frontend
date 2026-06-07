@@ -9,10 +9,7 @@ import GoogleMaps
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     GMSServices.provideAPIKey("AIzaSyCNYSv9LXcgTJSXJqBTqvmhzE1I5oxoVHM")
+    GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
-  }
-
-  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
-    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
   }
 }

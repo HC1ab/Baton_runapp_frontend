@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/error_messages.dart';
 import '../../models/run_record_model.dart';
 
 class RunFinishCard extends StatelessWidget {
@@ -42,19 +43,58 @@ class RunFinishCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.check_circle_rounded,
-                  color: AppColors.primary, size: 22.r),
+              Icon(
+                record.recordedToServer
+                    ? Icons.check_circle_rounded
+                    : Icons.info_outline_rounded,
+                color: record.recordedToServer
+                    ? AppColors.primary
+                    : AppColors.textSecondary,
+                size: 22.r,
+              ),
               SizedBox(width: 8.w),
               Text(
-                '러닝 완료!',
+                record.recordedToServer ? '러닝 완료!' : '러닝 종료',
                 style: AppTextStyles.headlineMedium.copyWith(
-                  color: AppColors.textPrimary,  
+                  color: AppColors.textPrimary,
                   fontWeight: FontWeight.w800,
                 ),
               ),
             ],
           ),
-          SizedBox(height: 24.h),
+          SizedBox(height: 12.h),
+
+          // 기록 안 됨 배너
+          if (!record.recordedToServer) ...[
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: 10.h,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.textSecondary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded,
+                      color: AppColors.textSecondary, size: 16.r),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Text(
+                      ErrorMessages.runTooShortNotice,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 16.h),
+          ] else
+            SizedBox(height: 12.h),
 
           // 주 지표 — 거리
           Column(

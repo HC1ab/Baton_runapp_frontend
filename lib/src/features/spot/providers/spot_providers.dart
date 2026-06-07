@@ -10,6 +10,8 @@ final spotApiProvider = Provider<SpotApi>((ref) {
   return SpotApi(ref.watch(dioProvider));
 });
 
-final spotCooldownsProvider = FutureProvider<List<SpotCooldownModel>>((ref) {
-  return ref.read(spotApiProvider).getCooldowns();
+/// autoDispose: 탭 이탈 시 자동 해제 → 재진입 시 재조회 (런 후 최신 체크인 반영).
+final spotCooldownsProvider =
+    FutureProvider.autoDispose<List<SpotCooldownModel>>((ref) {
+  return ref.watch(spotApiProvider).getCooldowns();
 });

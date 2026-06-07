@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
@@ -57,10 +56,13 @@ class AuthInterceptor extends Interceptor {
         if (_ref.read(authProvider) is AuthStateUnauthenticated) {
           _logger.d('forceLogout skipped — already unauthenticated');
         } else {
-          _logger.w('Auth token failure (code: $code) → forceLogout (deferred)');
-          SchedulerBinding.instance.addPostFrameCallback((_) {
-            _ref.read(authProvider.notifier).forceLogout();
-          });
+          _logger.w('Auth token failure (code: $code) → forceLogout');
+          // Future.microtask: 현재 Dio 콜스택 완료 후 즉시 실행.
+          // addPostFrameCallback 대신 사용 — 앱 유휴 상태에서 프레임 미스케줄 시
+          // 콜백이 무기한 대기하는 버그 방지.
+          Future.microtask(
+            () => _ref.read(authProvider.notifier).forceLogout(),
+          );
         }
       }
     }

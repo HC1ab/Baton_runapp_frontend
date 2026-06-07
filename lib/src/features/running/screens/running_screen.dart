@@ -132,6 +132,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   Set<Polyline> _cachedPolylines = {};
   List<SpotSummary>? _prevNearbySpots;
   Set<int>? _prevCheckedInIds;
+  Set<int>? _prevBlockedIds;
   List<RunPathPoint>? _prevPath;
   Color? _prevTrailColor;
 
@@ -314,15 +315,9 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       if (!mounted) return;
 
       if (useMockGps) {
-        // 실제 GPS로 초기 위치 설정 — 실패 시 기본값(구석역) 사용
-        double initLat = 35.2475, initLng = 129.0914;
-        try {
-          final realPos = await Geolocator.getCurrentPosition(
-            locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
-          );
-          initLat = realPos.latitude;
-          initLng = realPos.longitude;
-        } catch (_) {}
+        // 목 모드 시작 위치 — 구서역 1호선 고정
+        const initLat = 35.2475;
+        const initLng = 129.0914;
         _mockPos = _makeMockPos(lat: initLat, lng: initLng, speed: 0);
         _myLatLng = LatLng(_mockPos!.latitude, _mockPos!.longitude);
         ref.read(runLocationProvider.notifier).updateMockPosition(initLat, initLng);
@@ -491,19 +486,13 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
         Marker(
           markerId: MarkerId('spot_${spot.id}'),
           position: LatLng(spot.latitude, spot.longitude),
-          icon: (record.checkedInSpotIds.contains(spot.id) || !spot.canCheckIn)
+          icon: _isSpotDone(record, spot.id, spot.canCheckIn)
               ? (_iconChecked ?? BitmapDescriptor.defaultMarker)
               : (_iconDefault ?? BitmapDescriptor.defaultMarker),
           anchor: const Offset(0.5, 0.5),
-          infoWindow: InfoWindow(
-            title: spot.name,
-            snippet: (record.checkedInSpotIds.contains(spot.id) || !spot.canCheckIn)
-                ? '✅ +${spot.rewardAmount}P'
-                : '+${spot.rewardAmount}P',
-          ),
-          // onTap 없음 — Marker.== 에 onTap 포함되므로 클로저 재생성 시
-          // 매 build마다 "변경됨" 판정 → 20개 마커를 platform channel로 재전송 → ANR
-          // 체크인은 _autoCheckIn(위치 기반)으로 처리
+          infoWindow: InfoWindow.noText,
+          consumeTapEvents: true,
+          // 터치 기능 없음 — 체크인은 _autoCheckIn(위치 기반)으로만 처리
         ),
     };
   }
@@ -511,12 +500,11 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   Set<Circle> _buildSpotCircles(RunRecordModel record) {
     final result = <Circle>{};
     for (final spot in record.nearbySpots) {
-      final checked =
-          record.checkedInSpotIds.contains(spot.id) || !spot.canCheckIn;
+      final checked = _isSpotDone(record, spot.id, spot.canCheckIn);
       result.add(Circle(
         circleId: CircleId('circle_${spot.id}'),
         center: LatLng(spot.latitude, spot.longitude),
-        radius: 30,
+        radius: spotCheckInRadiusMeters,
         fillColor: checked
             ? AppColors.primary.withValues(alpha: 0.25)
             : AppColors.spotNeutral.withValues(alpha: 0.15),
@@ -527,6 +515,16 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       ));
     }
     return result;
+  }
+
+  /// 스팟이 "완료" 상태인지 판단.
+  /// - checkedInSpotIds: 이번 런 체크인 성공
+  /// - blockedSpotIds: C003 — 서버 기준 24h 이내 이미 체크인
+  /// - !canCheckIn: nearby 조회 시 서버가 이미 쿨다운 표시
+  bool _isSpotDone(RunRecordModel record, int spotId, bool canCheckIn) {
+    return record.checkedInSpotIds.contains(spotId) ||
+        record.blockedSpotIds.contains(spotId) ||
+        !canCheckIn;
   }
 
   Set<Polyline> _buildPolylines(RunRecordModel record, Color trailColor) {
@@ -638,9 +636,11 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     // identical() 체크 — 소스 ref 바뀔 때만 재계산
     // copyWith(duration:...) 는 nearbySpots/checkedInSpotIds/path ref 유지 → 클럭 틱에서 재계산 없음
     if (!identical(_prevNearbySpots, record.nearbySpots) ||
-        !identical(_prevCheckedInIds, record.checkedInSpotIds)) {
+        !identical(_prevCheckedInIds, record.checkedInSpotIds) ||
+        !identical(_prevBlockedIds, record.blockedSpotIds)) {
       _prevNearbySpots = record.nearbySpots;
       _prevCheckedInIds = record.checkedInSpotIds;
+      _prevBlockedIds = record.blockedSpotIds;
       _cachedMarkers = _buildSpotMarkers(record);
       _cachedCircles = _buildSpotCircles(record);
     }

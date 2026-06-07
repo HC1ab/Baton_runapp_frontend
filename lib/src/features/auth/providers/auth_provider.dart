@@ -122,7 +122,11 @@ class AuthNotifier extends Notifier<AuthState> {
 
   /// Clears token and returns to unauthenticated state.
   Future<void> logout() async {
-    await _cleanupActiveGroup();
+    try {
+      await _cleanupActiveGroup();
+    } catch (e) {
+      _logger.w('logout cleanupActiveGroup failed (best-effort)', error: e);
+    }
 
     try {
       await ref.read(authServiceProvider).logout();

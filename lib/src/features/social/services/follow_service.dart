@@ -6,6 +6,7 @@ import '../../../core/constants/api_constants.dart';
 import '../../../core/constants/error_messages.dart';
 import '../../../core/error/app_exception.dart';
 import '../../../core/network/dio_client.dart';
+import '../models/follow_member_model.dart';
 import '../models/follow_request_model.dart';
 
 final _logger = Logger();
@@ -74,6 +75,64 @@ class FollowService {
       throw _mapDio(e);
     } catch (e) {
       _logger.e('reject error', error: e);
+      throw const UnknownException();
+    }
+  }
+
+  Future<List<FollowMemberModel>> getFollowers() async {
+    try {
+      final response = await _dio.get(ApiConstants.followFollowers);
+      final raw = response.data;
+      if (raw is Map<String, dynamic> && raw['success'] == true) {
+        final list = (raw['data'] as List<dynamic>? ?? []);
+        return list
+            .cast<Map<String, dynamic>>()
+            .map(FollowMemberModel.fromJson)
+            .toList();
+      }
+      throw const ServerException(ErrorMessages.invalidResponse);
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _mapDio(e);
+    } catch (e) {
+      _logger.e('getFollowers error', error: e);
+      throw const UnknownException();
+    }
+  }
+
+  Future<List<FollowMemberModel>> getFollowings() async {
+    try {
+      final response = await _dio.get(ApiConstants.followFollowings);
+      final raw = response.data;
+      if (raw is Map<String, dynamic> && raw['success'] == true) {
+        final list = (raw['data'] as List<dynamic>? ?? []);
+        return list
+            .cast<Map<String, dynamic>>()
+            .map(FollowMemberModel.fromJson)
+            .toList();
+      }
+      throw const ServerException(ErrorMessages.invalidResponse);
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _mapDio(e);
+    } catch (e) {
+      _logger.e('getFollowings error', error: e);
+      throw const UnknownException();
+    }
+  }
+
+  /// 팔로잉 삭제 (내가 팔로우한 관계 제거).
+  Future<void> deleteFollow(String followId) async {
+    try {
+      await _dio.delete(ApiConstants.followDelete(followId));
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _mapDio(e);
+    } catch (e) {
+      _logger.e('deleteFollow error', error: e);
       throw const UnknownException();
     }
   }

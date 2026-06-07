@@ -50,8 +50,11 @@ abstract final class ApiConstants {
   // Endpoints — Follow
   static const followRequest = '/api/v1/follows/request';
   static const followRequests = '/api/v1/follows/requests';
+  static const followFollowers = '/api/v1/follows/followers';
+  static const followFollowings = '/api/v1/follows/followings';
   static String followAccept(String followId) => '/api/v1/follows/$followId/accept';
   static String followReject(String followId) => '/api/v1/follows/$followId/reject';
+  static String followDelete(String followId) => '/api/v1/follows/$followId';
 
   // Endpoints — Colors
   static const profileColors = '/api/v1/profile/colors';

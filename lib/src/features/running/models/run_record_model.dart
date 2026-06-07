@@ -25,6 +25,8 @@ class RunRecordModel {
     required this.checkedInSpotIds,
     required this.spotPoints,
     required this.laps,
+    this.blockedSpotIds = const {},
+    this.recordedToServer = false,
     this.runId,
     this.startTime,
     this.errorMessage,
@@ -41,6 +43,15 @@ class RunRecordModel {
   final List<RunPathPoint> path;
   final List<SpotSummary> nearbySpots;
   final Set<int> checkedInSpotIds;
+
+  /// C003 수신 스팟 — 서버 기준 이미 체크인(24h 쿨다운). 맵에서 체크인 완료로 표시.
+  /// checkedInSpotIds와 분리해 이번 런 포인트/카운트에 영향 없음.
+  final Set<int> blockedSpotIds;
+
+  /// 백엔드에 러닝 기록이 저장되었는지 여부.
+  /// false = 0.2km 미만 종료 등으로 미저장. 결과 화면에서 "기록 안 됨" 표시.
+  final bool recordedToServer;
+
   final int spotPoints;
   final List<LapRecord> laps;
   final int? runId;
@@ -88,6 +99,8 @@ class RunRecordModel {
     List<RunPathPoint>? path,
     List<SpotSummary>? nearbySpots,
     Set<int>? checkedInSpotIds,
+    Set<int>? blockedSpotIds,
+    bool? recordedToServer,
     int? spotPoints,
     List<LapRecord>? laps,
     int? runId,
@@ -112,6 +125,8 @@ class RunRecordModel {
       path: path ?? this.path,
       nearbySpots: nearbySpots ?? this.nearbySpots,
       checkedInSpotIds: checkedInSpotIds ?? this.checkedInSpotIds,
+      blockedSpotIds: blockedSpotIds ?? this.blockedSpotIds,
+      recordedToServer: recordedToServer ?? this.recordedToServer,
       spotPoints: spotPoints ?? this.spotPoints,
       laps: laps ?? this.laps,
       runId: clearRunId ? null : (runId ?? this.runId),

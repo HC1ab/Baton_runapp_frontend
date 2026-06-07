@@ -212,15 +212,21 @@ class RunningNotifier extends Notifier<RunRecordModel> {
       }
     }
 
-    // 최소 거리 미달 시 개인 러닝 기록 저장 거부
+    _stopClock();
+
+    // 최소 거리 미달 — 백엔드 미전송, 결과 화면은 표시 (recordedToServer: false)
     if (state.distanceMeters < 200) {
+      _logger.i('finishRun: distance=${state.distanceMeters.toStringAsFixed(0)}m < 200m — skip server save');
       state = state.copyWith(
-        errorMessage: ErrorMessages.runTooShort,
+        status: RunStatus.finished,
+        recordedToServer: false,
+        clearRunId: true,
+        clearGroup: true,
+        clearError: true,
       );
       return;
     }
 
-    _stopClock();
     state = state.copyWith(clearError: true);
 
     try {
@@ -233,6 +239,7 @@ class RunningNotifier extends Notifier<RunRecordModel> {
 
       state = state.copyWith(
         status: RunStatus.finished,
+        recordedToServer: true,
         clearRunId: true,
         clearError: true,
         clearGroup: true,
@@ -279,9 +286,7 @@ class RunningNotifier extends Notifier<RunRecordModel> {
       spot.latitude, spot.longitude,
     );
     if (dist > spotCheckInRadiusMeters) {
-      state = state.copyWith(
-        errorMessage: '${spotCheckInRadiusMeters.toInt()}m 이내에서만 체크인할 수 있어요.',
-      );
+      state = state.copyWith(errorMessage: ErrorMessages.spotOutOfRange);
       return;
     }
 
@@ -349,7 +354,12 @@ class RunningNotifier extends Notifier<RunRecordModel> {
   Future<void> _doCheckIn(SpotSummary spot) async {
     final runId = state.runId;
     final pos = _lastPosition;
-    if (runId == null || pos == null) return;
+    if (runId == null || pos == null) {
+      _logger.w('doCheckIn: skipped — runId=$runId pos=${pos == null ? "null" : "ok"}');
+      return;
+    }
+
+    _logger.d('doCheckIn: spot=${spot.id}(${spot.name}) runId=$runId lat=${pos.latitude.toStringAsFixed(5)} lng=${pos.longitude.toStringAsFixed(5)}');
 
     try {
       final result = await ref.read(spotServiceProvider).checkIn(
@@ -359,6 +369,7 @@ class RunningNotifier extends Notifier<RunRecordModel> {
             longitude: pos.longitude,
             timestamp: _isoLocal(DateTime.now()),
           );
+      _logger.i('doCheckIn: SUCCESS spot=${spot.id}(${spot.name}) +${result.earnedPoints}P total=${result.currentTotalPoints}P');
       final newIds = {...state.checkedInSpotIds, spot.id};
       state = state.copyWith(
         checkedInSpotIds: newIds,
@@ -378,6 +389,10 @@ class RunningNotifier extends Notifier<RunRecordModel> {
       if (e is ServerException &&
           e.message == ErrorMessages.spotAlreadyCheckedIn) {
         _blockedSpotIds.add(spot.id);
+        // 맵에서 체크인 완료로 표시 — 포인트/카운트는 영향 없음
+        state = state.copyWith(
+          blockedSpotIds: {...state.blockedSpotIds, spot.id},
+        );
       } else {
         state = state.copyWith(errorMessage: _toMessage(e));
       }
@@ -400,6 +415,10 @@ class RunningNotifier extends Notifier<RunRecordModel> {
   }
 
   void _autoCheckIn(Position pos) {
+    if (state.nearbySpots.isEmpty) {
+      _logger.v('autoCheckIn: nearbySpots empty — skipping');
+      return;
+    }
     for (final spot in state.nearbySpots) {
       if (state.checkedInSpotIds.contains(spot.id)) continue;
       if (!spot.canCheckIn) continue;
@@ -410,7 +429,9 @@ class RunningNotifier extends Notifier<RunRecordModel> {
         pos.latitude, pos.longitude,
         spot.latitude, spot.longitude,
       );
+      _logger.v('autoCheckIn: spot=${spot.id}(${spot.name}) dist=${dist.toStringAsFixed(1)}m radius=${spotCheckInRadiusMeters}m');
       if (dist <= spotCheckInRadiusMeters) {
+        _logger.i('autoCheckIn: entering spot=${spot.id}(${spot.name}) dist=${dist.toStringAsFixed(1)}m → checkIn');
         _checkingInSpotIds.add(spot.id);
         _doCheckIn(spot).whenComplete(() => _checkingInSpotIds.remove(spot.id));
       }

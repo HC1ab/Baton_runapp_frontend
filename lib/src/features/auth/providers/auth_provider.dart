@@ -4,10 +4,13 @@ import 'package:logger/logger.dart';
 import '../../../core/character/character_provider.dart';
 import '../../../core/character/character_style.dart';
 import '../../../core/constants/storage_keys.dart';
+import '../../../core/myroom/my_room_service.dart';
 import '../../../core/storage/shared_prefs_provider.dart';
 import '../../../core/storage/token_storage.dart';
 import '../../group_running/providers/run_location_provider.dart';
 import '../../group_running/services/group_run_api_service.dart';
+import '../../profile/providers/history_providers.dart';
+import '../../profile/services/profile_service.dart';
 import '../../running/providers/running_provider.dart';
 import '../../social/social_providers.dart';
 import '../services/auth_service.dart';
@@ -90,6 +93,12 @@ class AuthNotifier extends Notifier<AuthState> {
     final style = CharacterStylePresets.fromCode(result.coreColorCode);
     await ref.read(selectedCharacterStyleProvider.notifier).setStyle(style);
 
+    // 이전 유저 캐시 초기화 — 새 토큰으로 데이터 재조회
+    ref.invalidate(profileProvider);
+    ref.invalidate(myRoomProvider);
+    ref.invalidate(monthlySummaryProvider);
+    ref.invalidate(myRunsProvider);
+
     _logger.i(
       'Login saved — access: ${result.tokenPair.accessToken.substring(0, 20)}... '
       'coreColor: ${result.coreColorCode} title: ${result.equippedTitleCode} '
@@ -102,6 +111,10 @@ class AuthNotifier extends Notifier<AuthState> {
   /// AuthInterceptor에서 A001/A002/A003 감지 시 호출.
   Future<void> forceLogout() async {
     await ref.read(tokenStorageProvider).clear();
+    ref.invalidate(profileProvider);
+    ref.invalidate(myRoomProvider);
+    ref.invalidate(monthlySummaryProvider);
+    ref.invalidate(myRunsProvider);
     state = const AuthStateUnauthenticated();
     _logger.w('Force logout — auth token invalid/expired');
   }
@@ -149,6 +162,10 @@ class AuthNotifier extends Notifier<AuthState> {
       _logger.w('Logout API call failed', error: e);
     } finally {
       await ref.read(tokenStorageProvider).clear();
+      ref.invalidate(profileProvider);
+      ref.invalidate(myRoomProvider);
+      ref.invalidate(monthlySummaryProvider);
+      ref.invalidate(myRunsProvider);
       state = const AuthStateUnauthenticated();
     }
   }

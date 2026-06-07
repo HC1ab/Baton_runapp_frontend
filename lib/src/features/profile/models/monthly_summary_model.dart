@@ -23,6 +23,9 @@ class MonthlySummaryModel {
   final int earnedPoints;
 
   factory MonthlySummaryModel.fromJson(Map<String, dynamic> json) {
+    // 백엔드는 'avgPace'로 전송 (avgPaceSecPerKm 필드 없음)
+    final paceSec = (json['avgPaceSecPerKm'] ?? json['avgPace'] as num? ?? 0).toInt();
+    final paceText = json['avgPaceText'] as String? ?? _formatPace(paceSec);
     return MonthlySummaryModel(
       year: json['year'] as int? ?? 0,
       month: json['month'] as int? ?? 0,
@@ -30,10 +33,17 @@ class MonthlySummaryModel {
       totalDistanceKm: (json['totalDistanceKm'] as num? ?? 0.0).toDouble(),
       avgDistanceKm: (json['avgDistanceKm'] as num? ?? 0.0).toDouble(),
       bestDistanceKm: (json['bestDistanceKm'] as num? ?? 0.0).toDouble(),
-      avgPaceSecPerKm: json['avgPaceSecPerKm'] as int? ?? 0,
-      avgPaceText: json['avgPaceText'] as String? ?? '00:00',
+      avgPaceSecPerKm: paceSec,
+      avgPaceText: paceText,
       earnedPoints: json['earnedPoints'] as int? ?? 0,
     );
+  }
+
+  static String _formatPace(int secPerKm) {
+    if (secPerKm <= 0) return "--'--\"";
+    final m = secPerKm ~/ 60;
+    final s = secPerKm % 60;
+    return "$m'${s.toString().padLeft(2, '0')}\"";
   }
 
   Map<String, dynamic> toJson() => {

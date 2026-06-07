@@ -8,6 +8,11 @@ import '../../features/auth/screens/signup_screen.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/profile/screens/history_screen.dart';
+import '../../features/profile/screens/run_detail_screen.dart';
+import '../../features/settings/screens/account_screen.dart';
+import '../../features/settings/screens/notice_detail_screen.dart';
+import '../../features/settings/screens/notice_list_screen.dart';
+import '../../features/settings/screens/settings_screen.dart';
 import '../../features/shop/screens/shop_screen.dart';
 import '../constants/app_routes.dart';
 
@@ -69,6 +74,31 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.history,
         builder: (_, __) => const HistoryScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settings,
+        builder: (_, __) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.account,
+        builder: (_, __) => const AccountScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.noticeList,
+        builder: (_, __) => const NoticeListScreen(),
+      ),
+      GoRoute(
+        path: '/notices/:noticeId',
+        builder: (_, state) => NoticeDetailScreen(
+          noticeId: int.parse(state.pathParameters['noticeId']!),
+          title: state.extra as String?,
+        ),
+      ),
+      GoRoute(
+        path: '${AppRoutes.runDetail}/:runId',
+        builder: (_, state) => RunDetailScreen(
+          runId: int.parse(state.pathParameters['runId']!),
+        ),
       ),
       // RunningScreen은 HomeScreen의 IndexedStack 안에 포함됨
       // GoRoute(path: AppRoutes.running, ...) 제거

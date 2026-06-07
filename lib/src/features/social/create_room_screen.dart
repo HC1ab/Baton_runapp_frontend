@@ -231,6 +231,8 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
             distanceKm: distanceValue,
             location: placeName,
             address: address,
+            latitude: _selectedLatLng?.latitude ?? 35.1631,
+            longitude: _selectedLatLng?.longitude ?? 129.0536,
           );
       if (!mounted) return;
       Navigator.of(context).pop<RunCardData>(
@@ -241,8 +243,8 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           title: title,
           time: _formatFeedTime(startDateTime),
           location: placeName,
-          latitude: _selectedLatLng?.latitude,
-          longitude: _selectedLatLng?.longitude,
+          latitude: _selectedLatLng?.latitude ?? 35.1631,
+          longitude: _selectedLatLng?.longitude ?? 129.0536,
           currentMembers: 1,
           maxMembers: _memberCount,
           participantImageUrls: const [''],

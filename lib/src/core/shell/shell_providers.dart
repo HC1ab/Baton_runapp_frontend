@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'tab_registry.dart';
 
-import '../../features/home/home_screen.dart';
 import '../../features/running/screens/running_screen.dart';
 import '../../features/profile/screens/my_room_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/social/social_feed_screen.dart';
+import '../../features/spot/screens/spot_screen.dart';
 
 /// 앱 전체 탭 목록을 제공하는 provider.
 /// HomeScreen은 이 provider만 watch하고 feature를 직접 import하지 않음.
@@ -34,11 +34,7 @@ Widget _buildMyRoom(BuildContext _) => const MyRoomScreen();
 
 Widget _buildRunning(BuildContext _) => const RunningScreen();
 
-Widget _buildSpot(BuildContext _) => const PlaceholderTab(
-      icon: Icons.location_on_rounded,
-      label: '스팟',
-      englishLabel: 'DISCOVER RUNNING SPOTS',
-    );
+Widget _buildSpot(BuildContext _) => const SpotScreen();
 
 Widget _buildSocial(BuildContext _) => const SocialFeedScreen();
 

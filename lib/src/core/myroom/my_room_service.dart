@@ -13,6 +13,33 @@ final _logger = Logger();
 // Models
 // ---------------------------------------------------------------------------
 
+/// Single title item from the MyRoom titles list.
+class MyRoomTitleItem {
+  const MyRoomTitleItem({
+    required this.titleId,
+    required this.name,
+    required this.rarity,
+    required this.description,
+    required this.owned,
+  });
+
+  final int titleId;
+  final String name;
+  final String rarity;
+  final String description;
+  final bool owned;
+
+  factory MyRoomTitleItem.fromJson(Map<String, dynamic> json) {
+    return MyRoomTitleItem(
+      titleId: (json['titleId'] as num).toInt(),
+      name: (json['name'] ?? '') as String,
+      rarity: (json['rarity'] ?? 'NORMAL') as String,
+      description: (json['description'] ?? '') as String,
+      owned: (json['owned'] as bool? ?? false),
+    );
+  }
+}
+
 /// Single color item in the MyRoom palette.
 class MyRoomColorItem {
   const MyRoomColorItem({
@@ -52,6 +79,7 @@ class MyRoomResult {
     required this.equippedTitle,
     required this.currentColorCode,
     required this.colors,
+    required this.titles,
   });
 
   final int memberId;
@@ -59,6 +87,7 @@ class MyRoomResult {
   final String equippedTitle;
   final String currentColorCode;
   final List<MyRoomColorItem> colors;
+  final List<MyRoomTitleItem> titles;
 
   factory MyRoomResult.fromJson(Map<String, dynamic> json) {
     return MyRoomResult(
@@ -68,6 +97,9 @@ class MyRoomResult {
       currentColorCode: json['currentColorCode'] as String,
       colors: (json['colors'] as List<dynamic>)
           .map((e) => MyRoomColorItem.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      titles: ((json['titles'] as List<dynamic>?) ?? [])
+          .map((e) => MyRoomTitleItem.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
   }

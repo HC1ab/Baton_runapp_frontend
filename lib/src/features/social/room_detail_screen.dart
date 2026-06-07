@@ -45,9 +45,13 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
     try {
       final json =
           await ref.read(groupApiProvider).getDetail(groupId: groupId);
+      debugPrint('[RoomDetail] getDetail raw json keys: ${json.keys.toList()}');
+      debugPrint('[RoomDetail] content field: ${json['content']}');
       final detail = RunCardData.fromServerJson(json);
+      debugPrint('[RoomDetail] parsed body: ${detail.body}');
       if (mounted) setState(() => _detail = detail);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[RoomDetail] _fetchDetail error: $e');
       // 실패 시 목록에서 받은 card 데이터로 표시
     }
   }
@@ -78,8 +82,7 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (_card.latitude != null && _card.longitude != null)
-            _RealMiniMap(card: _card),
+          _RealMiniMap(card: _card),
           Expanded(
             child: Transform.translate(
               offset: const Offset(0, -20),
@@ -280,8 +283,7 @@ class _RealMiniMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final target = LatLng(card.latitude!, card.longitude!);
-
+    final target = LatLng(card.latitude, card.longitude);
     return SizedBox(
       height: 250,
       width: double.infinity,

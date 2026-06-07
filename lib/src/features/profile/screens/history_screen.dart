@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/constants/app_routes.dart';
 import '../providers/history_providers.dart';
 import '../models/monthly_summary_model.dart';
 
@@ -80,7 +81,7 @@ class HistoryScreen extends ConsumerWidget {
                 error: (err, stack) => _buildSummaryError(ref, err),
               ),
               const SizedBox(height: 28),
-              _buildRecentActivitiesSection(ref, runsAsync),
+              _buildRecentActivitiesSection(context, ref, runsAsync),
             ],
           ),
         ),
@@ -384,7 +385,7 @@ class HistoryScreen extends ConsumerWidget {
   // ── Recent Activities ─────────────────────────────────────────────────────
 
   Widget _buildRecentActivitiesSection(
-      WidgetRef ref, AsyncValue<List<RunListItem>> runsAsync) {
+      BuildContext context, WidgetRef ref, AsyncValue<List<RunListItem>> runsAsync) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -423,7 +424,9 @@ class HistoryScreen extends ConsumerWidget {
             final sorted = [...runs]
               ..sort((a, b) => b.startTime.compareTo(a.startTime));
             return Column(
-              children: sorted.map(_buildRunCard).toList(),
+              children: sorted
+                  .map((r) => _buildRunCard(context, r))
+                  .toList(),
             );
           },
         ),
@@ -431,12 +434,14 @@ class HistoryScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRunCard(RunListItem run) {
+  Widget _buildRunCard(BuildContext context, RunListItem run) {
     final dateLabel = DateFormat('MMM d, yyyy').format(run.startTime);
     final title = _runTitle(run.startTime);
     final distanceStr = run.totalDistanceKm.toStringAsFixed(2);
 
-    return Container(
+    return GestureDetector(
+      onTap: () => context.push('${AppRoutes.runDetail}/${run.runId}'),
+      child: Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -495,6 +500,7 @@ class HistoryScreen extends ConsumerWidget {
             ],
           ),
         ],
+      ),
       ),
     );
   }

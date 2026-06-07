@@ -13,6 +13,7 @@ import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/error/app_exception.dart';
 import '../services/my_room_service.dart';
+import '../services/profile_service.dart';
 import '../services/title_service.dart';
 
 final _logger = Logger();
@@ -385,13 +386,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
   // ── Titles Tab ───────────────────────────────────────────────────────────
 
   Widget _buildTitlesSection() {
-    final titlesAsync = ref.watch(allTitlesProvider);
-    final equippedTitle = ref.watch(myRoomProvider).maybeWhen(
-          data: (r) => r.equippedTitle,
-          orElse: () => '',
-        );
-
-    return titlesAsync.when(
+    return ref.watch(myRoomProvider).when(
       loading: () => SizedBox(
         height: 120.h,
         child: const Center(child: CircularProgressIndicator()),
@@ -409,40 +404,45 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
             ),
             SizedBox(height: 8.h),
             TextButton(
-              onPressed: () => ref.invalidate(allTitlesProvider),
+              onPressed: () => ref.invalidate(myRoomProvider),
               child: const Text('다시 시도'),
             ),
           ],
         ),
       ),
-      data: (titles) => titles.isEmpty
-          ? SizedBox(
-              height: 100.h,
-              child: Center(
-                child: Text(
-                  '칭호가 없어요.',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+      data: (myRoom) {
+        final titles = myRoom.titles;
+        if (titles.isEmpty) {
+          return SizedBox(
+            height: 100.h,
+            child: Center(
+              child: Text(
+                '칭호가 없어요.',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
                 ),
               ),
-            )
-          : Column(
-              children: titles
-                  .map((t) => _buildTitleItem(t, equippedTitle))
-                  .toList(),
             ),
+          );
+        }
+        return Column(
+          children: titles
+              .map((t) => _buildTitleItem(t, myRoom.equippedTitle))
+              .toList(),
+        );
+      },
     );
   }
 
-  Widget _buildTitleItem(TitleInfo title, String equippedTitle) {
+  Widget _buildTitleItem(MyRoomTitleItem title, String equippedTitle) {
     final isEquipped = equippedTitle == title.name;
+    final isOwned = title.owned;
     final rarityColor = _rarityColor(title.rarity);
 
     return Padding(
       padding: EdgeInsets.only(bottom: 8.h),
       child: GestureDetector(
-        onTap: _isEquippingTitle || isEquipped
+        onTap: !isOwned || _isEquippingTitle || isEquipped
             ? null
             : () => _onEquipTitle(title),
         child: AnimatedContainer(
@@ -451,7 +451,9 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
           decoration: BoxDecoration(
             color: isEquipped
                 ? AppColors.primary.withValues(alpha: 0.06)
-                : Colors.white,
+                : !isOwned
+                    ? AppColors.divider.withValues(alpha: 0.5)
+                    : Colors.white,
             borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             border: Border.all(
               color: isEquipped ? AppColors.primary : AppColors.divider,
@@ -467,7 +469,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
                   width: 10.r,
                   height: 10.r,
                   decoration: BoxDecoration(
-                    color: rarityColor,
+                    color: isOwned ? rarityColor : AppColors.textSecondary,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -477,7 +479,6 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 이름 + rarity
                     Row(
                       children: [
                         Expanded(
@@ -485,21 +486,22 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
                             title.name,
                             style: AppTextStyles.bodySmall.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
+                              color: isOwned
+                                  ? AppColors.textPrimary
+                                  : AppColors.textSecondary,
                             ),
                           ),
                         ),
                         Text(
                           title.rarity,
                           style: AppTextStyles.labelSmall.copyWith(
-                            color: rarityColor,
+                            color: isOwned ? rarityColor : AppColors.textSecondary,
                             fontSize: 10.sp,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
                     ),
-                    // 설명
                     if (title.description.isNotEmpty) ...[
                       SizedBox(height: 4.h),
                       Text(
@@ -513,33 +515,13 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
-                    // 보너스 뱃지
-                    if (title.expBonusRatio > 0 || title.pointBonusRatio > 0) ...[
-                      SizedBox(height: 6.h),
-                      Wrap(
-                        spacing: 4.w,
-                        children: [
-                          if (title.expBonusRatio > 0)
-                            _buildBonusBadge(
-                              'EXP +${(title.expBonusRatio * 100).toStringAsFixed(0)}%',
-                              AppColors.info,
-                            ),
-                          if (title.pointBonusRatio > 0)
-                            _buildBonusBadge(
-                              'PT +${(title.pointBonusRatio * 100).toStringAsFixed(0)}%',
-                              AppColors.success,
-                            ),
-                        ],
-                      ),
-                    ],
                   ],
                 ),
               ),
               SizedBox(width: AppSpacing.sm),
               if (isEquipped)
                 Container(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
                   decoration: BoxDecoration(
                     color: AppColors.primary,
                     borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
@@ -553,6 +535,8 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
                     ),
                   ),
                 )
+              else if (!isOwned)
+                Icon(Icons.lock_rounded, size: 16.r, color: AppColors.textSecondary)
               else
                 Padding(
                   padding: EdgeInsets.only(top: 2.h),
@@ -569,24 +553,6 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
     );
   }
 
-  Widget _buildBonusBadge(String label, Color color) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-      ),
-      child: Text(
-        label,
-        style: AppTextStyles.labelSmall.copyWith(
-          color: color,
-          fontSize: 9.sp,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-
   Color _rarityColor(String rarity) => switch (rarity) {
         'RARE' => AppColors.info,
         'EPIC' => AppColors.primary,
@@ -594,13 +560,13 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
         _ => AppColors.textSecondary,
       };
 
-  Future<void> _onEquipTitle(TitleInfo title) async {
+  Future<void> _onEquipTitle(MyRoomTitleItem title) async {
     if (_isEquippingTitle) return;
     setState(() => _isEquippingTitle = true);
     try {
-      await ref.read(titleServiceProvider).equipTitle(title.id);
+      await ref.read(titleServiceProvider).equipTitle(title.titleId);
       ref.invalidate(myRoomProvider);
-      ref.invalidate(allTitlesProvider);
+      ref.invalidate(profileProvider);
       _logger.i('Title equipped: ${title.name}');
     } on AppException catch (e) {
       if (mounted) {

@@ -114,6 +114,10 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   // AppLifecycle — 호스트 방 삭제용
   AppLifecycleListener? _lifecycleListener;
 
+  // dispose()에서 ref 사용 불가 — 그룹 참가 여부와 notifier를 미리 캐싱
+  int? _cachedGroupId;
+  RunLocationNotifier? _locationNotifier;
+
   // GroundOverlay 캐시 — 위치 변경 시만 재생성
   // Set도 캐시: 클럭 틱마다 동일 참조 반환 → GoogleMap.didUpdateWidget에서 변경 없음 판정
   GroundOverlay? _cachedGroundOverlay;
@@ -145,10 +149,9 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     _mapCtrl?.dispose();
     _lifecycleListener?.dispose();
     // 그룹 러닝 STOMP 연결 해제 (widget param 또는 provider 경유 진입 모두 대응)
-    final hasGroup = widget.groupId != null ||
-        ref.read(runLocationProvider).groupId != null;
+    final hasGroup = widget.groupId != null || _cachedGroupId != null;
     if (hasGroup) {
-      unawaited(ref.read(runLocationProvider.notifier).leaveRoom());
+      unawaited(_locationNotifier?.leaveRoom());
     }
     super.dispose();
   }
@@ -578,6 +581,11 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     final characterStyle = ref.watch(selectedCharacterStyleProvider);
     final topPadding = MediaQuery.of(context).padding.top;
     final mapHeight = MediaQuery.of(context).size.height;
+
+    // dispose()에서 ref 사용 불가 — 매 빌드마다 최신 값 캐싱
+    _cachedGroupId = ref.read(runLocationProvider).groupId;
+    _locationNotifier = ref.read(runLocationProvider.notifier);
+    ref.listen(runLocationProvider, (_, next) => _cachedGroupId = next.groupId);
 
     // 스타일 변경 시 맵 마커 재생성 (async)
     ref.listen(selectedCharacterStyleProvider, (prev, next) {

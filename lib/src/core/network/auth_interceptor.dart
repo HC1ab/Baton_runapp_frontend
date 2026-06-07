@@ -46,8 +46,8 @@ class AuthInterceptor extends Interceptor {
       final code = _extractErrorCode(err.response);
       _logger.w('401 received (code: $code) — ${err.requestOptions.method} ${err.requestOptions.path}');
 
-      if (code != null && _authErrorCodes.contains(code)) {
-        _logger.w('Auth error $code → forceLogout');
+      if (code == null || _authErrorCodes.contains(code)) {
+        _logger.w('Auth error (code: $code) → forceLogout');
         await _ref.read(authProvider.notifier).forceLogout();
       }
     }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_routes.dart';
+import '../../../core/shell/tab_providers.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../services/profile_service.dart';
 
@@ -91,12 +92,15 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: _BigActionCard(
                       icon: Icons.place_rounded,
                       title: '나의 스팟',
                       subtitle: '저장된 코스 확인',
                       filled: false,
+                      onTap: () => ref
+                          .read(currentTabProvider.notifier)
+                          .switchTo(AppTabs.spot),
                     ),
                   ),
                 ],
@@ -158,9 +162,9 @@ class ProfileScreen extends ConsumerWidget {
         ),
         const Spacer(),
         IconButton(
-          onPressed: () => ref.read(authProvider.notifier).logout(),
-          icon: const Icon(Icons.logout_rounded, color: _primary, size: 24),
-          tooltip: '로그아웃',
+          onPressed: () => context.push(AppRoutes.settings),
+          icon: const Icon(Icons.settings_rounded, color: _primary, size: 24),
+          tooltip: '설정',
         ),
       ],
     );

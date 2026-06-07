@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:logger/logger.dart';
 
+import '../../common/widgets/character_sphere_widget.dart';
+import '../../core/character/character_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_routes.dart';
 import '../../core/constants/app_spacing.dart';
@@ -12,7 +14,6 @@ import '../../core/constants/error_messages.dart';
 import '../../core/constants/storage_keys.dart';
 import '../../core/network/api_client.dart';
 import '../../core/shell/tab_providers.dart';
-import '../../core/storage/shared_prefs_provider.dart';
 import '../../core/storage/token_storage.dart';
 import '../../core/utils/jwt_utils.dart';
 import '../group_running/providers/run_location_provider.dart';
@@ -397,11 +398,7 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
                   ),
                   _NotificationBell(),
                   SizedBox(width: 12.w),
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: AppColors.avatarTeal,
-                    child: Icon(Icons.person_rounded, color: Colors.white, size: 18.r),
-                  ),
+                  _MyAvatar(),
                 ],
               ),
               const SizedBox(height: 12),
@@ -551,6 +548,17 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
         );
       },
     );
+  }
+}
+
+class _MyAvatar extends ConsumerWidget {
+  // ignore: prefer_const_constructors_in_immutables
+  _MyAvatar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final style = ref.watch(selectedCharacterStyleProvider);
+    return CharacterSphereWidget(style: style, size: 32.r);
   }
 }
 

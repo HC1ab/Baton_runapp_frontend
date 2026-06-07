@@ -6,11 +6,16 @@ import '../../../core/network/dio_client.dart';
 
 final _logger = Logger();
 
-/// 참가자 닉네임·칭호 캐시 모델
+/// 참가자 닉네임·칭호·색상 캐시 모델
 class ParticipantInfo {
-  const ParticipantInfo({required this.nickname, this.titleName});
+  const ParticipantInfo({
+    required this.nickname,
+    this.titleName,
+    this.coreColorCode,
+  });
   final String nickname;
   final String? titleName;
+  final String? coreColorCode;
 }
 
 class GroupRunApiService {
@@ -105,6 +110,52 @@ class GroupRunApiService {
     }
     _logger.i('fetchParticipantInfoMap groupId=$groupId → ${result.length} members');
     return result;
+  }
+
+  /// GET /api/v1/groups/{groupId}/members/colors — 그룹 전체 참가자 색상 일괄 조회
+  Future<Map<int, ParticipantInfo>> fetchGroupMemberColors(int groupId) async {
+    try {
+      final res = await _dio.get('/api/v1/groups/$groupId/members/colors');
+      final list = res.data['data'] as List<dynamic>? ?? [];
+      final result = <int, ParticipantInfo>{};
+      for (final item in list.cast<Map<String, dynamic>>()) {
+        final id = item['memberId'];
+        if (id == null) continue;
+        result[id as int] = ParticipantInfo(
+          nickname: item['nickname'] as String? ?? '',
+          coreColorCode: item['coreColorCode'] as String?,
+        );
+      }
+      _logger.i('fetchGroupMemberColors groupId=$groupId → ${result.length} members');
+      return result;
+    } catch (e) {
+      _logger.w('fetchGroupMemberColors failed', error: e);
+      return {};
+    }
+  }
+
+  /// GET /api/v1/profile/colors?memberIds=1,2,3 — 특정 멤버 색상 배치 조회
+  Future<Map<int, String>> fetchProfileColorsBatch(List<int> memberIds) async {
+    if (memberIds.isEmpty) return {};
+    try {
+      final res = await _dio.get(
+        '/api/v1/profile/colors',
+        queryParameters: {'memberIds': memberIds.join(',')},
+      );
+      final list = res.data['data'] as List<dynamic>? ?? [];
+      final result = <int, String>{};
+      for (final item in list.cast<Map<String, dynamic>>()) {
+        final id = item['memberId'];
+        final code = item['coreColorCode'];
+        if (id != null && code != null) {
+          result[id as int] = code as String;
+        }
+      }
+      return result;
+    } catch (e) {
+      _logger.w('fetchProfileColorsBatch failed ids=$memberIds', error: e);
+      return {};
+    }
   }
 
   /// DELETE /api/v1/groups/{groupId} — 방 삭제 (로그아웃/앱 종료 시)

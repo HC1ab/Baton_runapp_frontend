@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../common/widgets/character_sphere_widget.dart';
+import '../../../core/character/character_style.dart';
 import '../../social/services/follow_service.dart';
 import '../models/member_profile_model.dart';
 import '../services/member_profile_service.dart';
@@ -87,7 +89,7 @@ class MemberProfileScreen extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
       children: [
         const SizedBox(height: 12),
-        _buildHeroAvatar(),
+        _buildHeroAvatar(ref, profile.memberId),
         const SizedBox(height: 20),
         Text(
           profile.nickname,
@@ -139,31 +141,17 @@ class MemberProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeroAvatar() {
+  Widget _buildHeroAvatar(WidgetRef ref, int memberId) {
+    final colorAsync = ref.watch(memberColorCodeProvider(memberId));
+    final colorCode = colorAsync.when(
+      data: (c) => c ?? 'CORE_ORANGE',
+      loading: () => 'CORE_ORANGE',
+      error: (_, __) => 'CORE_ORANGE',
+    );
     return Center(
-      child: Container(
-        width: 120,
-        height: 120,
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            center: Alignment(-0.2, -0.3),
-            radius: 0.95,
-            colors: [
-              Color(0xFFF5A57E),
-              Color(0xFFD96A3F),
-              Color(0xFF8E3A1E),
-            ],
-            stops: [0.0, 0.55, 1.0],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x33D96A3F),
-              blurRadius: 24,
-              offset: Offset(0, 10),
-            ),
-          ],
-        ),
+      child: CharacterSphereWidget(
+        style: CharacterStylePresets.fromCode(colorCode),
+        size: 120,
       ),
     );
   }

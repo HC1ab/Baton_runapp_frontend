@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
@@ -62,14 +64,18 @@ class RunLocationState {
 
 class RunLocationNotifier extends Notifier<RunLocationState> {
   RunLocationWebSocketService? _service;
-  // memberId → {nickname, titleName} 캐시
+  // memberId → {nickname, titleName, coreColorCode} 캐시
   Map<int, ParticipantInfo> _infoCache = {};
+  // 색상 미조회 멤버 ID 모아두고 debounce 후 배치 조회
+  final Set<int> _pendingColorFetch = {};
+  Timer? _colorFetchDebounce;
 
   @override
   RunLocationState build() {
     ref.onDispose(() {
       _service?.dispose();
       _service = null;
+      _colorFetchDebounce?.cancel();
     });
     return const RunLocationState();
   }
@@ -129,8 +135,7 @@ class RunLocationNotifier extends Notifier<RunLocationState> {
   Future<void> _fetchParticipantInfoCache(int groupId, int myMemberId) async {
     try {
       final apiService = ref.read(groupRunApiServiceProvider);
-      final map = await apiService.fetchParticipantInfoMap(groupId);
-      // 본인 제외
+      final map = await apiService.fetchGroupMemberColors(groupId);
       map.remove(myMemberId);
       _infoCache = map;
       // 이미 수신된 participants에 정보 주입
@@ -141,6 +146,7 @@ class RunLocationNotifier extends Notifier<RunLocationState> {
           return MapEntry(id, loc.copyWith(
             nickname: info.nickname,
             titleName: info.titleName,
+            coreColorCode: info.coreColorCode,
           ));
         });
         state = state.copyWith(participants: updated);
@@ -153,11 +159,58 @@ class RunLocationNotifier extends Notifier<RunLocationState> {
   void _onRemoteLocation(ParticipantLocation location) {
     final info = _infoCache[location.memberId];
     final enriched = info != null
-        ? location.copyWith(nickname: info.nickname, titleName: info.titleName)
+        ? location.copyWith(
+            nickname: info.nickname,
+            titleName: info.titleName,
+            coreColorCode: info.coreColorCode,
+          )
         : location;
+
+    // cache miss → 배치 조회 예약
+    if (info == null) {
+      _pendingColorFetch.add(location.memberId);
+      _colorFetchDebounce?.cancel();
+      _colorFetchDebounce = Timer(
+        const Duration(milliseconds: 500),
+        _flushPendingColorFetch,
+      );
+    }
+
     final updated = Map<int, ParticipantLocation>.from(state.participants)
       ..[enriched.memberId] = enriched;
     state = state.copyWith(participants: updated);
+  }
+
+  Future<void> _flushPendingColorFetch() async {
+    if (_pendingColorFetch.isEmpty) return;
+    final ids = List<int>.from(_pendingColorFetch);
+    _pendingColorFetch.clear();
+    try {
+      final colorMap = await ref
+          .read(groupRunApiServiceProvider)
+          .fetchProfileColorsBatch(ids);
+      if (colorMap.isEmpty) return;
+
+      // cache 업데이트
+      for (final entry in colorMap.entries) {
+        final existing = _infoCache[entry.key];
+        _infoCache[entry.key] = ParticipantInfo(
+          nickname: existing?.nickname ?? '',
+          titleName: existing?.titleName,
+          coreColorCode: entry.value,
+        );
+      }
+
+      // 현재 participants에 색상 반영
+      final updated = state.participants.map((id, loc) {
+        final code = colorMap[id];
+        if (code == null) return MapEntry(id, loc);
+        return MapEntry(id, loc.copyWith(coreColorCode: code));
+      });
+      state = state.copyWith(participants: updated);
+    } catch (e) {
+      _logger.w('_flushPendingColorFetch failed', error: e);
+    }
   }
 
   /// 목 GPS 모드에서 호출 — WS publish 좌표를 가상 좌표로 고정.

@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:logger/logger.dart';
 
+import '../../common/widgets/character_sphere_widget.dart';
+import '../../core/character/character_style.dart';
+import '../group_running/services/group_run_api_service.dart';
 import '../profile/screens/member_profile_screen.dart';
 import 'models/run_card_data.dart';
 import 'social_providers.dart';
@@ -37,6 +40,8 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
 
   RunCardData? _detail;
   bool _isJoining = false;
+  // nickname → coreColorCode
+  Map<String, String> _participantColors = {};
 
   @override
   void initState() {
@@ -63,8 +68,27 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
         );
       }
       if (mounted) setState(() => _detail = detail);
+
+      // 참여자 색상 비동기 로드
+      _fetchParticipantColors(groupId);
     } catch (e, st) {
       _logger.e('[RoomDetail] _fetchDetail failed', error: e, stackTrace: st);
+    }
+  }
+
+  Future<void> _fetchParticipantColors(int groupId) async {
+    try {
+      final infoMap = await ref
+          .read(groupRunApiServiceProvider)
+          .fetchGroupMemberColors(groupId);
+      final colors = <String, String>{};
+      for (final entry in infoMap.entries) {
+        final code = entry.value.coreColorCode;
+        if (code != null) colors[entry.value.nickname] = code;
+      }
+      if (mounted) setState(() => _participantColors = colors);
+    } catch (e) {
+      _logger.w('[RoomDetail] _fetchParticipantColors failed', error: e);
     }
   }
 
@@ -103,7 +127,7 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
               offset: const Offset(0, -20),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                child: _DetailCard(card: _card),
+                child: _DetailCard(card: _card, colorMap: _participantColors),
               ),
             ),
           ),
@@ -368,9 +392,10 @@ class _RealMiniMap extends StatelessWidget {
 }
 
 class _DetailCard extends StatelessWidget {
-  const _DetailCard({required this.card});
+  const _DetailCard({required this.card, required this.colorMap});
 
   final RunCardData card;
+  final Map<String, String> colorMap;
 
   @override
   Widget build(BuildContext context) {
@@ -442,6 +467,7 @@ class _DetailCard extends StatelessWidget {
               _ParticipantList(
                 nicknames: card.participantNicknames,
                 hostNickname: card.hostNickname,
+                colorMap: colorMap,
               ),
             ],
             const SizedBox(height: 20),
@@ -559,12 +585,12 @@ class _ParticipantList extends StatelessWidget {
   const _ParticipantList({
     required this.nicknames,
     required this.hostNickname,
+    required this.colorMap,
   });
 
   final List<String> nicknames;
   final String? hostNickname;
-
-  static const _avatarColor = Color(0xFFE8380D);
+  final Map<String, String> colorMap;
 
   @override
   Widget build(BuildContext context) {
@@ -591,10 +617,11 @@ class _ParticipantList extends StatelessWidget {
                 runSpacing: 10,
                 children: nicknames.map((name) {
                   final isHost = name == hostNickname;
+                  final colorCode = colorMap[name] ?? 'CORE_ORANGE';
                   return _ParticipantChip(
                     nickname: name,
                     isHost: isHost,
-                    avatarColor: _avatarColor,
+                    characterStyle: CharacterStylePresets.fromCode(colorCode),
                   );
                 }).toList(),
               ),
@@ -610,16 +637,15 @@ class _ParticipantChip extends StatelessWidget {
   const _ParticipantChip({
     required this.nickname,
     required this.isHost,
-    required this.avatarColor,
+    required this.characterStyle,
   });
 
   final String nickname;
   final bool isHost;
-  final Color avatarColor;
+  final CharacterStyle characterStyle;
 
   @override
   Widget build(BuildContext context) {
-    final initial = nickname.isNotEmpty ? nickname[0] : '?';
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute<void>(
@@ -632,18 +658,7 @@ class _ParticipantChip extends StatelessWidget {
         Stack(
           clipBehavior: Clip.none,
           children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: avatarColor,
-              child: Text(
-                initial,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
+            CharacterSphereWidget(style: characterStyle, size: 36),
             if (isHost)
               Positioned(
                 top: -6,

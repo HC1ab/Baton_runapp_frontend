@@ -6,6 +6,7 @@ class ParticipantLocation {
     required this.longitude,
     this.nickname,
     this.titleName,
+    this.coreColorCode,
     this.updatedAt,
   });
 
@@ -14,6 +15,7 @@ class ParticipantLocation {
   final double longitude;
   final String? nickname;
   final String? titleName;
+  final String? coreColorCode;
   final DateTime? updatedAt;
 
   factory ParticipantLocation.fromJson(Map<String, dynamic> json) {
@@ -51,6 +53,7 @@ class ParticipantLocation {
     double? longitude,
     String? nickname,
     String? titleName,
+    String? coreColorCode,
     DateTime? updatedAt,
   }) {
     return ParticipantLocation(
@@ -59,6 +62,7 @@ class ParticipantLocation {
       longitude: longitude ?? this.longitude,
       nickname: nickname ?? this.nickname,
       titleName: titleName ?? this.titleName,
+      coreColorCode: coreColorCode ?? this.coreColorCode,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }

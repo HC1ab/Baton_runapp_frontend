@@ -112,7 +112,8 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
 
   // 그룹 참가자 마커 캐시
   final Map<int, Marker> _participantMarkers = {};
-  final Map<int, BytesMapBitmap?> _participantBitmapCache = {};
+  // key: '${memberId}_${coreColorCode}' — 색상 변경 시 자동 재빌드
+  final Map<String, BytesMapBitmap?> _participantBitmapCache = {};
 
   // AppLifecycle — 호스트 방 삭제용
   AppLifecycleListener? _lifecycleListener;
@@ -234,16 +235,22 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       final p = entry.value;
       final markerId = entry.key;
 
-      // 비트맵 캐시 미스 시 생성
-      if (!_participantBitmapCache.containsKey(markerId)) {
-        _participantBitmapCache[markerId] = await buildParticipantMarkerBitmap(
+      // 비트맵 캐시 미스 시 생성 (색상 포함 key)
+      final colorCode = p.coreColorCode ?? 'CORE_ORANGE';
+      final cacheKey = '${markerId}_$colorCode';
+      if (!_participantBitmapCache.containsKey(cacheKey)) {
+        final sphereColor =
+            CharacterStylePresets.fromCode(colorCode).baseColor;
+        _participantBitmapCache[cacheKey] =
+            await buildParticipantMarkerBitmap(
           nickname: p.nickname,
-          titleName: null, // API에 칭호 없음 — 추후 확장
+          titleName: p.titleName,
+          sphereColor: sphereColor,
         );
         if (!mounted) return;
       }
 
-      final bitmap = _participantBitmapCache[markerId];
+      final bitmap = _participantBitmapCache[cacheKey];
       newMarkers[markerId] = Marker(
         markerId: MarkerId('participant_$markerId'),
         position: LatLng(p.latitude, p.longitude),
@@ -722,10 +729,8 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
                   key: ValueKey('participant_${p.memberId}'),
                   latLng: latLng,
                   mapController: _mapCtrl!,
-                  characterStyle: const CharacterStyle(
-                    code: 'CORE_GREY',
-                    name: '회색 코어',
-                    baseColor: Color(0xFF9E9E9E),
+                  characterStyle: CharacterStylePresets.fromCode(
+                    p.coreColorCode ?? 'CORE_ORANGE',
                   ),
                   nickname: p.nickname ?? '러너 ${p.memberId}',
                   titleName: p.titleName,

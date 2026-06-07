@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../common/widgets/character_sphere_widget.dart';
+import '../../core/character/character_style.dart';
+import '../group_running/services/group_run_api_service.dart';
 import '../profile/screens/member_profile_screen.dart';
 import 'models/follow_request_model.dart';
 import 'services/follow_service.dart';
@@ -138,8 +141,25 @@ class _FollowRequestTile extends ConsumerStatefulWidget {
 
 class _FollowRequestTileState extends ConsumerState<_FollowRequestTile> {
   bool _isLoading = false;
+  String _colorCode = 'CORE_ORANGE';
 
   static const Color _primary = Color(0xFFDD6A3E);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadColor();
+  }
+
+  Future<void> _loadColor() async {
+    try {
+      final colorMap = await ref
+          .read(groupRunApiServiceProvider)
+          .fetchProfileColorsBatch([widget.request.memberId]);
+      final code = colorMap[widget.request.memberId];
+      if (code != null && mounted) setState(() => _colorCode = code);
+    } catch (_) {}
+  }
 
   Future<void> _handle(Future<void> Function() action) async {
     if (_isLoading) return;
@@ -161,9 +181,6 @@ class _FollowRequestTileState extends ConsumerState<_FollowRequestTile> {
   @override
   Widget build(BuildContext context) {
     final service = ref.read(followServiceProvider);
-    final initial = widget.request.nickname.isNotEmpty
-        ? widget.request.nickname[0]
-        : '?';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -189,17 +206,9 @@ class _FollowRequestTileState extends ConsumerState<_FollowRequestTile> {
               ),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundColor: _primary,
-                    child: Text(
-                      initial,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                  CharacterSphereWidget(
+                    style: CharacterStylePresets.fromCode(_colorCode),
+                    size: 44,
                   ),
                   const SizedBox(width: 12),
                   Expanded(

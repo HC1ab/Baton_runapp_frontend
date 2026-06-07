@@ -8,6 +8,8 @@ import '../../../core/error/app_exception.dart';
 import '../../../core/network/dio_client.dart';
 import '../models/member_profile_model.dart';
 
+export '../models/member_profile_model.dart' show MemberProfileModel;
+
 final _logger = Logger();
 
 class MemberProfileService {
@@ -65,4 +67,22 @@ final memberProfileServiceProvider = Provider<MemberProfileService>((ref) {
 final memberProfileProvider =
     FutureProvider.family<MemberProfileModel, String>((ref, nickname) {
   return ref.watch(memberProfileServiceProvider).getByNickname(nickname);
+});
+
+/// memberId → coreColorCode 단건 조회
+final memberColorCodeProvider =
+    FutureProvider.family<String?, int>((ref, memberId) async {
+  final dio = ref.watch(dioProvider);
+  try {
+    final res = await dio.get(
+      ApiConstants.profileColors,
+      queryParameters: {'memberIds': '$memberId'},
+    );
+    final list = res.data['data'] as List<dynamic>? ?? [];
+    if (list.isEmpty) return null;
+    return list.first['coreColorCode'] as String?;
+  } catch (e) {
+    Logger().w('memberColorCodeProvider failed id=$memberId', error: e);
+    return null;
+  }
 });

@@ -13,6 +13,7 @@ abstract final class ApiConstants {
 
   // Endpoints — Auth
   static const login = '/api/v1/member/login';
+  static const kakaoLogin = '/api/v1/auth/kakao/login';
   static const logout = '/api/v1/member/logout';
   static const join = '/api/v1/member/join';
   static const me = '/api/v1/member/me';

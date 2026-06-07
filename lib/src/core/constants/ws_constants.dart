@@ -14,7 +14,7 @@ abstract final class WsConstants {
     if (override != null && override.isNotEmpty) return override;
 
     final apiBase = dotenv.env['API_BASE_URL']?.trim() ??
-        'https://equator-swimming-folic.ngrok-free.dev';
+        'http://api.baton-running-app.kro.kr:8080';
     final uri = Uri.parse(apiBase);
     final scheme = uri.scheme == 'https' ? 'wss' : 'ws';
     final port = uri.hasPort ? ':${uri.port}' : '';

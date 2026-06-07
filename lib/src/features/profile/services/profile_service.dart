@@ -6,7 +6,6 @@ import '../../../core/constants/api_constants.dart';
 import '../../../core/constants/error_messages.dart';
 import '../../../core/error/app_exception.dart';
 import '../../../core/network/dio_client.dart';
-import '../../auth/providers/auth_provider.dart';
 
 final _logger = Logger();
 
@@ -106,7 +105,5 @@ final profileServiceProvider = Provider<ProfileService>((ref) {
 });
 
 final profileProvider = FutureProvider<ProfileModel>((ref) {
-  // authProvider watch → 로그인/로그아웃 시 자동 재fetch (캐시 stale 방지)
-  ref.watch(authProvider);
   return ref.watch(profileServiceProvider).getProfile();
 });

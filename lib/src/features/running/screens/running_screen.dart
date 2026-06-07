@@ -562,6 +562,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
         image: bitmap,
         position: pos,
         width: 16,
+        zoomLevel: 17,
         bearing: bearing,
         anchor: const Offset(0.5, 0.5),
         zIndex: 10,

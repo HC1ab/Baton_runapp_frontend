@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 
 import '../../../core/constants/error_messages.dart';
 import '../../../core/error/app_exception.dart';
@@ -83,6 +84,75 @@ class LoginNotifier extends Notifier<LoginState> {
       state = LoginState(status: LoginStatus.error, errorMessage: e.message);
     } catch (e) {
       _logger.e('Unexpected login error', error: e);
+      state = const LoginState(
+        status: LoginStatus.error,
+        errorMessage: ErrorMessages.unknownError,
+      );
+    }
+  }
+
+  // ---------------------------
+  // Kakao Login
+  // ---------------------------
+  Future<void> loginWithKakao() async {
+    state = const LoginState(status: LoginStatus.loading);
+
+    try {
+      OAuthToken token;
+
+      // 카카오톡 설치되어 있으면 카카오톡 로그인, 아니면 계정 로그인으로 fallback
+      if (await isKakaoTalkInstalled()) {
+        try {
+          token = await UserApi.instance.loginWithKakaoTalk();
+        } catch (_) {
+          token = await UserApi.instance.loginWithKakaoAccount();
+        }
+      } else {
+        token = await UserApi.instance.loginWithKakaoAccount();
+      }
+
+      final kakaoAccessToken = token.accessToken;
+      if (kakaoAccessToken.isEmpty) {
+        state = const LoginState(
+          status: LoginStatus.error,
+          errorMessage: ErrorMessages.loginFailed,
+        );
+        return;
+      }
+
+      final service = ref.read(authServiceProvider);
+
+      // ✅ AuthService에 이 메서드 추가 필요:
+      // Future<AuthResult> loginWithKakao({required String kakaoAccessToken});
+      final result = await service.loginWithKakao(kakaoAccessToken: kakaoAccessToken);
+
+      await ref.read(authProvider.notifier).onLoginSuccess(result);
+      state = const LoginState(status: LoginStatus.success);
+    } on KakaoException catch (e) {
+      _logger.e('Kakao login error', error: e);
+      state = const LoginState(
+        status: LoginStatus.error,
+        errorMessage: ErrorMessages.loginFailed,
+      );
+    } on AuthException {
+      state = const LoginState(
+        status: LoginStatus.error,
+        errorMessage: ErrorMessages.loginFailed,
+      );
+    } on NetworkException {
+      state = const LoginState(
+        status: LoginStatus.error,
+        errorMessage: ErrorMessages.networkError,
+      );
+    } on TimeoutException {
+      state = const LoginState(
+        status: LoginStatus.error,
+        errorMessage: ErrorMessages.timeoutError,
+      );
+    } on AppException catch (e) {
+      state = LoginState(status: LoginStatus.error, errorMessage: e.message);
+    } catch (e) {
+      _logger.e('Unexpected kakao login error', error: e);
       state = const LoginState(
         status: LoginStatus.error,
         errorMessage: ErrorMessages.unknownError,

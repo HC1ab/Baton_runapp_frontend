@@ -59,6 +59,9 @@ dependencies:
   #firebase 배포
   firebase_core: ^2.10.0         # ✅ iOS 지원 확인됨
 
+  #kakao
+  kakao_flutter_sdk_user: ^1.9.6 
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -71,6 +74,9 @@ dev_dependencies:
   riverpod_lint: ^3.1.0           # flutter_riverpod 2.x 에 맞는 버전
 
 flutter:
+  config:
+    enable-swift-package-manager: false
+
   uses-material-design: true
   assets:
     - .env.dev

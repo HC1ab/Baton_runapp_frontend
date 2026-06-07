@@ -51,6 +51,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         );
   }
 
+  Future<void> _loginWithKakao() async {
+    FocusScope.of(context).unfocus();
+    await ref.read(loginProvider.notifier).loginWithKakao();
+  }
+
   @override
   Widget build(BuildContext context) {
     final loginState = ref.watch(loginProvider);
@@ -114,6 +119,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     isLoading: loginState.isLoading,
                     onPressed: loginState.isLoading ? null : _submit,
                   ),
+
+                  //  추가: 카카오 로그인 버튼
+                  SizedBox(height: 12.h),
+                  _KakaoLoginButton(
+                    isLoading: loginState.isLoading,
+                    onPressed: loginState.isLoading ? null : _loginWithKakao,
+                  ),
+
                   SizedBox(height: 16.h),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -358,6 +371,59 @@ class _LoginButton extends StatelessWidget {
                   color: Colors.white,
                   fontSize: 16,
                 ),
+              ),
+      ),
+    );
+  }
+}
+
+// 추가: 카카오 버튼 위젯
+class _KakaoLoginButton extends StatelessWidget {
+  const _KakaoLoginButton({
+    required this.isLoading,
+    required this.onPressed,
+  });
+
+  final bool isLoading;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 54.h,
+      child: FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFFFEE500),
+          disabledBackgroundColor: const Color(0xFFFEE500),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+          ),
+          elevation: 0,
+        ),
+        child: isLoading
+            ? SizedBox(
+                width: 22.r,
+                height: 22.r,
+                child: const CircularProgressIndicator(
+                  color: Colors.black,
+                  strokeWidth: 2.5,
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.chat_bubble_rounded, color: Colors.black, size: 18.r),
+                  SizedBox(width: 8.w),
+                  Text(
+                    '카카오로 로그인',
+                    style: AppTextStyles.labelLarge.copyWith(
+                      color: Colors.black,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
       ),
     );

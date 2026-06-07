@@ -26,6 +26,28 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+
+	<!-- ✅ 카카오 iOS: 앱 간 호출 허용 -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>kakaokompassauth</string>
+		<string>kakaolink</string>
+	</array>
+
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>kakao</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>kakao2874b1ddd63704e933c80e7f384c6e6d</string>
+			</array>
+		</dict>
+	</array>
+
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -66,13 +88,16 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+
 	<key>NMFClientId</key>
 	<string>0dz77rdfgy</string>
+
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+
 	<key>NSMotionUsageDescription</key>
 	<string>나침반 방향 표시를 위해 기기 방향 센서를 사용합니다.</string>
 </dict>

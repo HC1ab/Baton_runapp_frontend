@@ -25,12 +25,12 @@ class LoginResult {
 
   final TokenPair tokenPair;
 
-  /// Backend CORE_* code (e.g. CORE_ORANGE) received from LoginResponse.
+  /// Backend CHAR_* code (e.g. CHAR_BLACK / CHAR_RED)
   final String coreColorCode;
 
   final String nickname;
 
-  /// Backend TITLE_* code (e.g. TITLE_001_GOLD) received from LoginResponse.
+  /// Backend TITLE_* code (e.g. TITLE_001_GOLD)
   final String equippedTitleCode;
 }
 
@@ -42,6 +42,9 @@ abstract class AuthServiceBase {
     required String email,
     required String password,
   });
+
+  /// Kakao login: send Kakao access token to backend -> receive our JWT.
+  Future<LoginResult> loginWithKakao({required String kakaoAccessToken});
 
   /// Returns new member id from `{ success: true, data: <id> }`.
   Future<int> join({
@@ -81,31 +84,34 @@ class AuthService implements AuthServiceBase {
         data: {'email': email, 'password': password},
       );
       final data = _unwrap(response.data);
-      if (data is! Map<String, dynamic>) {
-        throw const ServerException(ErrorMessages.invalidResponse);
-      }
-      final access = (data['accessToken'] ?? '').toString();
-      final refresh = (data['refreshToken'] ?? '').toString();
-      final coreColorCode =
-          (data['coreColorCode'] ?? CharacterStylePresets.defaultStyle.code)
-              .toString();
-      final nickname = (data['nickname'] ?? '').toString();
-      final equippedTitleCode = (data['equippedTitleCode'] ?? '').toString();
-      if (access.isEmpty) {
-        throw const ServerException(ErrorMessages.invalidResponse);
-      }
-      return LoginResult(
-        tokenPair: TokenPair(accessToken: access, refreshToken: refresh),
-        coreColorCode: coreColorCode,
-        nickname: nickname,
-        equippedTitleCode: equippedTitleCode,
-      );
+      return _parseLoginResult(data);
     } on AppException {
       rethrow;
     } on DioException catch (e) {
       throw _mapDio(e);
     } catch (e) {
       _logger.e('login error', error: e);
+      throw const UnknownException();
+    }
+  }
+
+  // ── Kakao Login ──────────────────────────────────────────────────────────
+  @override
+  Future<LoginResult> loginWithKakao({required String kakaoAccessToken}) async {
+    try {
+      final response = await _dio.post(
+        ApiConstants.kakaoLogin,
+        data: {'accessToken': kakaoAccessToken},
+      );
+
+      final data = _unwrap(response.data);
+      return _parseLoginResult(data);
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _mapDio(e);
+    } catch (e) {
+      _logger.e('kakao login error', error: e);
       throw const UnknownException();
     }
   }
@@ -208,15 +214,42 @@ class AuthService implements AuthServiceBase {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
+  LoginResult _parseLoginResult(dynamic data) {
+    if (data is! Map<String, dynamic>) {
+      throw const ServerException(ErrorMessages.invalidResponse);
+    }
+
+    final access = (data['accessToken'] ?? '').toString();
+    final refresh = (data['refreshToken'] ?? '').toString();
+
+    // 백엔드가 coreColorCode / nickname / equippedTitleCode 내려주는 기준
+    final coreColorCode =
+        (data['coreColorCode'] ?? CharacterStylePresets.defaultStyle.code)
+            .toString();
+    final nickname = (data['nickname'] ?? '').toString();
+    final equippedTitleCode = (data['equippedTitleCode'] ?? '').toString();
+
+    if (access.isEmpty) {
+      throw const ServerException(ErrorMessages.invalidResponse);
+    }
+
+    return LoginResult(
+      tokenPair: TokenPair(accessToken: access, refreshToken: refresh),
+      coreColorCode: coreColorCode,
+      nickname: nickname,
+      equippedTitleCode: equippedTitleCode,
+    );
+  }
+
   /// Unwraps { success: true, data: ... } envelope.
   /// Also handles { status: 'fail', code: ..., message: ... } format.
   dynamic _unwrap(dynamic raw) {
     if (raw is Map<String, dynamic>) {
-      // 성공 응답: { success: true, data: ... }
       if (raw['success'] == true) return raw['data'];
 
-      // 실패 응답: { status: 'fail', code: ..., message: ... }
-      final msg = (raw['message'] ?? raw['error'] ?? ErrorMessages.serverError).toString();
+      final msg =
+          (raw['message'] ?? raw['error'] ?? ErrorMessages.serverError)
+              .toString();
       throw ServerException(msg);
     }
     throw const ServerException(ErrorMessages.invalidResponse);
@@ -225,6 +258,7 @@ class AuthService implements AuthServiceBase {
   AppException _mapDio(DioException e) {
     final status = e.response?.statusCode;
     final body = e.response?.data;
+
     if (body is Map<String, dynamic>) {
       if (body['status'] == 'fail' || body['success'] == false) {
         final msg =
@@ -233,8 +267,10 @@ class AuthService implements AuthServiceBase {
         return ServerException(msg);
       }
     }
+
     if (status == 401) return const AuthException();
     if (status != null && status >= 500) return const ServerException();
+
     if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.receiveTimeout) {
       return const TimeoutException();
@@ -242,6 +278,7 @@ class AuthService implements AuthServiceBase {
     if (e.type == DioExceptionType.connectionError) {
       return const NetworkException();
     }
+
     return const UnknownException();
   }
 }
@@ -251,13 +288,9 @@ class AuthService implements AuthServiceBase {
 // ---------------------------------------------------------------------------
 
 final authServiceProvider = Provider<AuthServiceBase>((ref) {
-  // dioProvider 재사용 → ApiLogInterceptor 자동 적용
-  // AuthInterceptor가 붙어있지만 login/join은 토큰 없이 호출하므로 문제없음
-  // [iOS 대응] iOS 인증서 문제 발생 시 dio_client.dart의 AuthInterceptor 확인 필요
   return AuthService(ref.watch(dioProvider));
 });
 
-/// changePassword는 인증된 상태에서 호출 → AuthInterceptor가 붙은 Dio 사용
 final authServiceWithTokenProvider = Provider<AuthServiceBase>((ref) {
   return AuthService(ref.watch(dioProvider));
 });

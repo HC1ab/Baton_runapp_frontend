@@ -15,13 +15,14 @@ import '../../core/constants/storage_keys.dart';
 import '../../core/network/api_client.dart';
 import '../../core/shell/tab_providers.dart';
 import '../../core/storage/token_storage.dart';
+import '../../core/utils/app_snack_bar.dart';
 import '../../core/utils/jwt_utils.dart';
 import '../group_running/providers/run_location_provider.dart';
 import 'create_room_screen.dart';
 import 'follow_requests_screen.dart';
 import 'models/run_card_data.dart';
 import 'room_detail_screen.dart';
-import 'services/follow_service.dart';
+import '../../core/follow/providers/follow_providers.dart';
 import 'social_providers.dart';
 import 'widgets/group_run_card.dart';
 
@@ -125,9 +126,7 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
         );
         if (!stillExists) {
           _prevParticipatingGroupId = null;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('참여 중인 방이 종료되었습니다.')),
-          );
+          AppSnackBar.info(context, '참여 중인 방이 종료되었습니다.');
         }
       }
 
@@ -187,9 +186,7 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
   void _openLiveRun(RunCardData card) {
     final groupId = card.groupId;
     if (groupId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('아직 서버 그룹 ID가 없는 데이터입니다.')),
-      );
+      AppSnackBar.error(context, '아직 서버 그룹 ID가 없는 데이터입니다.');
       return;
     }
     // 호스트면 activeHostGroupIdProvider 저장 (로그아웃 시 방 삭제용)
@@ -206,8 +203,12 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
   Future<void> _joinGroup(RunCardData card, {bool enterLiveAfter = false}) async {
     final groupId = card.groupId;
     if (groupId == null) {
+      AppSnackBar.error(context, '아직 서버 그룹 ID가 없는 데이터입니다.');
+      return;
+    }
+    if (card.currentMembers >= card.maxMembers) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('아직 서버 그룹 ID가 없는 데이터입니다.')),
+        const SnackBar(content: Text(ErrorMessages.groupRoomFull)),
       );
       return;
     }

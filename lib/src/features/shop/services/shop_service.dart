@@ -111,6 +111,25 @@ class ShopService {
     }
   }
 
+  /// GET /api/v1/points/me — 보유 포인트 조회
+  Future<int> fetchPoints() async {
+    try {
+      final response = await _dio.get(ApiConstants.pointsMe);
+      final raw = response.data;
+      if (raw is Map<String, dynamic> && raw['success'] == true) {
+        final data = raw['data'] as Map<String, dynamic>?;
+        return (data?['currentTotalPoints'] as num?)?.toInt() ?? 0;
+      }
+      return 0;
+    } on DioException catch (e) {
+      _logger.w('fetchPoints failed', error: e);
+      return 0;
+    } catch (e) {
+      _logger.w('fetchPoints unexpected error', error: e);
+      return 0;
+    }
+  }
+
   /// POST /api/v1/shop/purchases
   Future<PurchaseResult> purchase(int itemId) async {
     try {
@@ -182,9 +201,8 @@ final shopItemsProvider = FutureProvider<List<ShopItem>>((ref) {
 });
 
 /// Current user's total points.
-/// Initialized from GET /api/v1/member/me on first access.
+/// Initialized from GET /api/v1/member/me on first access via ShopService.
 /// Updated after purchase via set().
-/// TODO: replace _fetchPoints() with dedicated points API when available.
 class UserPointsNotifier extends Notifier<int> {
   @override
   int build() {
@@ -193,17 +211,8 @@ class UserPointsNotifier extends Notifier<int> {
   }
 
   Future<void> _fetchPoints() async {
-    try {
-      final dio = ref.read(dioProvider);
-      final response = await dio.get(ApiConstants.me);
-      final raw = response.data;
-      if (raw is Map<String, dynamic> && raw['success'] == true) {
-        final data = raw['data'] as Map<String, dynamic>?;
-        state = (data?['totalPoints'] as int?) ?? 0;
-      }
-    } catch (_) {
-      // /me 미구현 or 비인증 상태 — 0 유지
-    }
+    final points = await ref.read(shopServiceProvider).fetchPoints();
+    if (state != points) state = points;
   }
 
   /// Re-fetch points from server (e.g., after login).

@@ -4,9 +4,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../common/widgets/character_sphere_widget.dart';
 import '../../../core/character/character_style.dart';
-import '../../social/models/follow_member_model.dart';
-import '../../social/services/follow_service.dart';
-import '../providers/friends_providers.dart';
+import '../../../core/follow/models/follow_member_model.dart';
+import '../../../core/follow/providers/follow_providers.dart';
 import 'member_profile_screen.dart';
 import '../services/member_profile_service.dart';
 

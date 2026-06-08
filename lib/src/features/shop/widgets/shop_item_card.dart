@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../../common/widgets/character_sphere_widget.dart';
 import '../../../core/character/character_style.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
@@ -52,8 +53,6 @@ class ShopItemCard extends StatelessWidget {
   // ── Sphere Visual Area ──────────────────────────────────────────────────
 
   Widget _buildSphereArea() {
-    final color = _resolveColor();
-
     return Stack(
       children: [
         // Background
@@ -67,7 +66,10 @@ class ShopItemCard extends StatelessWidget {
         ),
         // Sphere
         Center(
-          child: _buildSphere(color),
+          child: CharacterSphereWidget(
+            style: _resolveStyle(),
+            size: 72.r,
+          ),
         ),
         // Badge
         Positioned(
@@ -120,31 +122,6 @@ class ShopItemCard extends StatelessWidget {
     );
   }
 
-  Widget _buildSphere(Color color) {
-    final highlight = Color.lerp(color, Colors.white, 0.55)!;
-    final shadow = Color.lerp(color, Colors.black, 0.25)!;
-
-    return Container(
-      width: 72.r,
-      height: 72.r,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          center: const Alignment(-0.35, -0.45),
-          radius: 0.9,
-          colors: [highlight, color, shadow],
-          stops: const [0.0, 0.5, 1.0],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.45),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildBadge() {
     if (item.isCoreColor) {
@@ -235,17 +212,19 @@ class ShopItemCard extends StatelessWidget {
 
   // ── Helpers ─────────────────────────────────────────────────────────────
 
-  Color _resolveColor() {
-    // API hex 우선
+  CharacterStyle _resolveStyle() {
+    // API hex 우선 → 동적 CharacterStyle 생성
     if (hexColor != null) {
       final c = _hexToColor(hexColor!);
-      if (c != null) return c;
+      if (c != null) {
+        return CharacterStyle(code: 'custom', name: '', baseColor: c);
+      }
     }
     // CHAR_* → CORE_* 로 변환 후 프리셋 조회 (e.g. CHAR_RED → CORE_RED)
     final presetCode = item.code.startsWith('CHAR_')
         ? item.code.replaceFirst('CHAR_', 'CORE_')
         : item.code;
-    return CharacterStylePresets.fromCode(presetCode).baseColor;
+    return CharacterStylePresets.fromCode(presetCode);
   }
 
   static Color? _hexToColor(String hex) {

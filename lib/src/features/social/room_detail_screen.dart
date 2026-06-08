@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:logger/logger.dart';
 
 import '../../common/widgets/character_sphere_widget.dart';
 import '../../core/character/character_style.dart';
+import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_spacing.dart';
 import '../group_running/services/group_run_api_service.dart';
 import '../profile/screens/member_profile_screen.dart';
 import 'models/run_card_data.dart';
@@ -35,9 +38,6 @@ class RoomDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
-  static const Color _pointOrange = Color(0xFFF7673B);
-  static const Color _pageBg = Color(0xFFF4F4F4);
-
   RunCardData? _detail;
   bool _isJoining = false;
   // nickname → coreColorCode
@@ -58,8 +58,11 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
       _logger.d('[RoomDetail] raw json: $json');
       var detail = RunCardData.fromServerJson(json);
       _logger.d('[RoomDetail] lat=${detail.latitude} lng=${detail.longitude}');
-      // GroupDetail 응답에 isHost 필드 없음 → 목록에서 이미 판별된 값 유지
-      detail = detail.copyWith(isHost: widget.card.isHost);
+      // GroupDetail 응답에 isHost / isParticipating 필드 없음 → 목록 카드 값 유지
+      detail = detail.copyWith(
+        isHost: widget.card.isHost,
+        isParticipating: widget.card.isParticipating,
+      );
       if (mounted) setState(() => _detail = detail);
 
       // 참여자 색상 비동기 로드
@@ -90,21 +93,21 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _pageBg,
+      backgroundColor: AppColors.scaffoldGrey,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: Padding(
-          padding: const EdgeInsets.only(left: 8),
+          padding: EdgeInsets.only(left: AppSpacing.sm),
           child: IconButton(
             onPressed: () => Navigator.of(context).maybePop(),
             style: IconButton.styleFrom(
               backgroundColor: Colors.black.withValues(alpha: 0.35),
               foregroundColor: Colors.white,
             ),
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+            icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18.r),
           ),
         ),
       ),
@@ -116,7 +119,12 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
             child: Transform.translate(
               offset: const Offset(0, -20),
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.screenHorizontal,
+                  0,
+                  AppSpacing.screenHorizontal,
+                  AppSpacing.verticalLg,
+                ),
                 child: _DetailCard(card: _card, colorMap: _participantColors),
               ),
             ),
@@ -124,10 +132,14 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
           SafeArea(
             top: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.screenHorizontal,
+                AppSpacing.sm,
+                AppSpacing.screenHorizontal,
+                AppSpacing.verticalMd,
+              ),
               child: _BottomActions(
                 card: _card,
-                pointOrange: _pointOrange,
                 isJoining: _isJoining,
                 onJoinPressed: widget.onJoinPressed == null
                     ? null
@@ -157,7 +169,6 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
 class _BottomActions extends StatelessWidget {
   const _BottomActions({
     required this.card,
-    required this.pointOrange,
     required this.isJoining,
     required this.onJoinPressed,
     required this.onEnterLivePressed,
@@ -167,7 +178,6 @@ class _BottomActions extends StatelessWidget {
   });
 
   final RunCardData card;
-  final Color pointOrange;
   final bool isJoining;
   final VoidCallback? onJoinPressed;
   final VoidCallback? onEnterLivePressed;
@@ -183,68 +193,68 @@ class _BottomActions extends StatelessWidget {
         children: [
           SizedBox(
             width: double.infinity,
-            height: 52,
+            height: 52.h,
             child: FilledButton(
               onPressed: onEnterLivePressed,
               style: FilledButton.styleFrom(
-                backgroundColor: pointOrange,
+                backgroundColor: AppColors.socialAccent,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 ),
-                textStyle: const TextStyle(
-                  fontSize: 17,
+                textStyle: TextStyle(
+                  fontSize: 17.sp,
                   fontWeight: FontWeight.w800,
                 ),
               ),
               child: const Text('실시간 러닝 입장'),
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10.h),
           Row(
-        children: [
-          Expanded(
-            child: SizedBox(
-              height: 52,
-              child: OutlinedButton(
-                onPressed: onUpdatePressed,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: pointOrange,
-                  side: BorderSide(color: pointOrange),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                child: const Text('수정'),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: SizedBox(
-              height: 52,
-              child: FilledButton(
-                onPressed: onDeletePressed,
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFFD64545),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 52.h,
+                  child: OutlinedButton(
+                    onPressed: onUpdatePressed,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.socialAccent,
+                      side: BorderSide(color: AppColors.socialAccent),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                      ),
+                      textStyle: TextStyle(
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    child: const Text('수정'),
                   ),
                 ),
-                child: const Text('삭제'),
               ),
-            ),
-          ),
-        ],
+              SizedBox(width: 12.w),
+              Expanded(
+                child: SizedBox(
+                  height: 52.h,
+                  child: FilledButton(
+                    onPressed: onDeletePressed,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.error,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                      ),
+                      textStyle: TextStyle(
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    child: const Text('삭제'),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       );
@@ -256,37 +266,37 @@ class _BottomActions extends StatelessWidget {
         children: [
           SizedBox(
             width: double.infinity,
-            height: 52,
+            height: 52.h,
             child: FilledButton(
               onPressed: onEnterLivePressed,
               style: FilledButton.styleFrom(
-                backgroundColor: pointOrange,
+                backgroundColor: AppColors.socialAccent,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 ),
-                textStyle: const TextStyle(
-                  fontSize: 17,
+                textStyle: TextStyle(
+                  fontSize: 17.sp,
                   fontWeight: FontWeight.w800,
                 ),
               ),
               child: const Text('실시간 러닝 입장'),
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10.h),
           SizedBox(
             width: double.infinity,
-            height: 52,
+            height: 52.h,
             child: OutlinedButton(
               onPressed: onLeavePressed,
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF666666),
-                side: const BorderSide(color: Color(0xFFCCCCCC)),
+                foregroundColor: AppColors.textSecondary,
+                side: BorderSide(color: AppColors.divider),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 ),
-                textStyle: const TextStyle(
-                  fontSize: 17,
+                textStyle: TextStyle(
+                  fontSize: 17.sp,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -299,25 +309,25 @@ class _BottomActions extends StatelessWidget {
 
     return SizedBox(
       width: double.infinity,
-      height: 52,
+      height: 52.h,
       child: FilledButton(
         onPressed: isJoining ? null : onJoinPressed,
         style: FilledButton.styleFrom(
-          backgroundColor: pointOrange,
+          backgroundColor: AppColors.socialAccent,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
           ),
-          textStyle: const TextStyle(
-            fontSize: 17,
+          textStyle: TextStyle(
+            fontSize: 17.sp,
             fontWeight: FontWeight.w800,
           ),
         ),
         child: isJoining
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
+            ? SizedBox(
+                width: 20.r,
+                height: 20.r,
+                child: const CircularProgressIndicator(
                   strokeWidth: 2.5,
                   color: Colors.white,
                 ),
@@ -338,7 +348,7 @@ class _RealMiniMap extends StatelessWidget {
   Widget build(BuildContext context) {
     final target = LatLng(card.latitude, card.longitude);
     return SizedBox(
-      height: 250,
+      height: 250.h,
       width: double.infinity,
       child: GoogleMap(
         initialCameraPosition: CameraPosition(
@@ -373,93 +383,91 @@ class _DetailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final timeRange =
-        '${card.time}  ~  ${card.effectiveEndTime}';
+    final timeRange = '${card.time}  ~  ${card.effectiveEndTime}';
 
     return Material(
       color: Colors.white,
       elevation: 6,
       shadowColor: Colors.black.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(AppSpacing.screenHorizontal),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               card.title,
-              style: const TextStyle(
-                fontSize: 22,
+              style: TextStyle(
+                fontSize: 22.sp,
                 fontWeight: FontWeight.w900,
-                color: Color(0xFF1A1A1A),
+                color: AppColors.textPrimary,
                 height: 1.25,
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.verticalMd),
             _InfoRow(
               icon: Icons.schedule_rounded,
               text: timeRange,
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10.h),
             _InfoRow(
               icon: Icons.straighten_rounded,
               text: '목표 거리 ${card.effectiveTargetDistance}',
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10.h),
             _InfoRow(
               icon: Icons.groups_rounded,
-              text:
-                  '현재 참여 인원 ${card.currentMembers} / ${card.maxMembers}명',
+              text: '현재 참여 인원 ${card.currentMembers} / ${card.maxMembers}명',
             ),
-            const SizedBox(height: 20),
-            const Divider(height: 1, color: Color(0xFFEEEEEE)),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.verticalMd + 4.h),
+            Divider(height: 1, color: AppColors.divider),
+            SizedBox(height: AppSpacing.verticalMd),
             _LabeledLine(
               icon: Icons.place_rounded,
               label: '장소명',
               value: card.effectivePlaceName,
-              iconColor: const Color(0xFFB33010),
+              iconColor: AppColors.inputAccent,
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14.h),
             _LabeledLine(
               icon: Icons.location_on_rounded,
               label: '주소',
               value: card.effectiveDetailAddress,
-              iconColor: const Color(0xFFB33010),
+              iconColor: AppColors.inputAccent,
             ),
             if (card.hostNickname != null) ...[
-              const SizedBox(height: 14),
+              SizedBox(height: 14.h),
               _LabeledLine(
                 icon: Icons.person_rounded,
                 label: '호스트',
                 value: card.hostNickname!,
-                iconColor: const Color(0xFFB33010),
+                iconColor: AppColors.inputAccent,
               ),
             ],
             if (card.participantNicknames.isNotEmpty) ...[
-              const SizedBox(height: 14),
+              SizedBox(height: 14.h),
               _ParticipantList(
                 nicknames: card.participantNicknames,
                 hostNickname: card.hostNickname,
                 colorMap: colorMap,
               ),
             ],
-            const SizedBox(height: 20),
-            const Text(
+            SizedBox(height: AppSpacing.verticalMd),
+            Text(
               '모집 내용',
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 15.sp,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF666666),
+                color: AppColors.textSecondary,
               ),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10.h),
             Text(
               card.effectiveBody,
-              style: const TextStyle(
-                fontSize: 16,
+              style: TextStyle(
+                fontSize: 16.sp,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF2C2C2C),
+                color: AppColors.textMuted,
                 height: 1.55,
               ),
             ),
@@ -484,15 +492,15 @@ class _InfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 20, color: const Color(0xFF666666)),
-        const SizedBox(width: 8),
+        Icon(icon, size: 20.r, color: AppColors.textSecondary),
+        SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
-              fontSize: 15,
+            style: TextStyle(
+              fontSize: 15.sp,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF333333),
+              color: AppColors.textPrimary,
             ),
           ),
         ),
@@ -519,27 +527,27 @@ class _LabeledLine extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 22, color: iconColor),
-        const SizedBox(width: 10),
+        Icon(icon, size: 22.r, color: iconColor),
+        SizedBox(width: 10.w),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 13,
+                style: TextStyle(
+                  fontSize: 13.sp,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF888888),
+                  color: AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4.h),
               Text(
                 value,
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: 16.sp,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1F1F1F),
+                  color: AppColors.textPrimary,
                   height: 1.35,
                 ),
               ),
@@ -571,21 +579,21 @@ class _ParticipantList extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(Icons.group_rounded, size: 22, color: Color(0xFFB33010)),
-        const SizedBox(width: 10),
+        Icon(Icons.group_rounded, size: 22.r, color: AppColors.inputAccent),
+        SizedBox(width: 10.w),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 '참여자',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 13.sp,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF888888),
+                  color: AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8.h),
               Wrap(
                 spacing: 12,
                 runSpacing: 10,
@@ -627,34 +635,34 @@ class _ParticipantChip extends StatelessWidget {
         ),
       ),
       child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            CharacterSphereWidget(style: characterStyle, size: 36),
-            if (isHost)
-              Positioned(
-                top: -6,
-                right: -6,
-                child: Icon(
-                  Icons.workspace_premium_rounded,
-                  size: 16,
-                  color: Colors.amber.shade600,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              CharacterSphereWidget(style: characterStyle, size: 36.r),
+              if (isHost)
+                Positioned(
+                  top: -6,
+                  right: -6,
+                  child: Icon(
+                    Icons.workspace_premium_rounded,
+                    size: 16.r,
+                    color: Colors.amber.shade600,
+                  ),
                 ),
-              ),
-          ],
-        ),
-        const SizedBox(width: 6),
-        Text(
-          nickname,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1F1F1F),
+            ],
           ),
-        ),
-      ],
+          SizedBox(width: 6.w),
+          Text(
+            nickname,
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -31,6 +31,7 @@ import '../widgets/countdown_overlay.dart';
 import 'widgets/run_finish_card.dart';
 import 'widgets/running_mock_panel.dart';
 import 'widgets/check_in_result_card.dart';
+import 'widgets/spot_in_range_card.dart';
 import '../../../core/constants/app_env.dart';
 
 final _logger = Logger();
@@ -794,6 +795,20 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
                     northMeters: _mockStepMeters * math.cos(rad),
                   );
                 },
+              ),
+            ),
+
+          // ── 반경 내 스팟 정보 카드 (상단) ───────────────────────────────
+          if (record.spotsInRange.isNotEmpty && record.status != RunStatus.finished)
+            Positioned(
+              top: topPadding + (ref.read(useMockGpsProvider) ? 72.h : 16.h),
+              left: 0,
+              right: 0,
+              child: SpotInRangeCard(
+                spots: record.nearbySpots
+                    .where((s) => record.spotsInRange.contains(s.id))
+                    .toList(),
+                record: record,
               ),
             ),
 

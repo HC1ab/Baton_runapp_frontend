@@ -127,6 +127,16 @@ class RunningNotifier extends Notifier<RunRecordModel> {
       _lapStartDistance = lapStartDist;
       _lapStartDuration = lapStartDur;
 
+      // 반경 내 스팟 계산 (러닝 전/중 모두)
+      final newSpotsInRange = <int>{};
+      for (final spot in state.nearbySpots) {
+        final d = Geolocator.distanceBetween(
+          position.latitude, position.longitude,
+          spot.latitude, spot.longitude,
+        );
+        if (d <= spotCheckInRadiusMeters) newSpotsInRange.add(spot.id);
+      }
+
       state = state.copyWith(
         distanceMeters: newDistance,
         path: newPath,
@@ -134,6 +144,7 @@ class RunningNotifier extends Notifier<RunRecordModel> {
         averagePaceSecondsPerKm:
             RunningUtils.averagePace(newDistance, state.duration),
         laps: newLaps,
+        spotsInRange: newSpotsInRange,
         clearError: true,
       );
 
@@ -213,20 +224,6 @@ class RunningNotifier extends Notifier<RunRecordModel> {
     }
 
     _stopClock();
-
-    // 최소 거리 미달 — 백엔드 미전송, 결과 화면은 표시 (recordedToServer: false)
-    if (state.distanceMeters < 200) {
-      _logger.i('finishRun: distance=${state.distanceMeters.toStringAsFixed(0)}m < 200m — skip server save');
-      state = state.copyWith(
-        status: RunStatus.finished,
-        recordedToServer: false,
-        clearRunId: true,
-        clearGroup: true,
-        clearError: true,
-      );
-      return;
-    }
-
     state = state.copyWith(clearError: true);
 
     try {
@@ -244,6 +241,7 @@ class RunningNotifier extends Notifier<RunRecordModel> {
         clearError: true,
         clearGroup: true,
       );
+      _logger.i('finishRun: SUCCESS distance=${state.distanceMeters.toStringAsFixed(0)}m');
     } catch (e) {
       _logger.e('finishRun error', error: e);
       // AuthException → AuthInterceptor가 forceLogout 처리. 에러 상태 불필요.
@@ -257,8 +255,13 @@ class RunningNotifier extends Notifier<RunRecordModel> {
 
   /// Resets back to idle after viewing the finish summary.
   void resetToIdle() {
+    final savedPos = _lastPosition; // cleanup 전에 저장
     _cleanUp();
     state = RunRecordModel.initial();
+    // 마지막 위치로 스팟 즉시 재조회 — idle 복귀 후 맵에 스팟 표시
+    if (savedPos != null) {
+      _loadNearbySpots(savedPos);
+    }
   }
 
   /// Manually triggers a spot check-in (from map marker tap).
@@ -416,20 +419,21 @@ class RunningNotifier extends Notifier<RunRecordModel> {
 
   void _autoCheckIn(Position pos) {
     if (state.nearbySpots.isEmpty) {
-      _logger.v('autoCheckIn: nearbySpots empty — skipping');
+      _logger.t('autoCheckIn: nearbySpots empty — skipping');
       return;
     }
     for (final spot in state.nearbySpots) {
       if (state.checkedInSpotIds.contains(spot.id)) continue;
-      if (!spot.canCheckIn) continue;
       if (_checkingInSpotIds.contains(spot.id)) continue;
       if (_blockedSpotIds.contains(spot.id)) continue; // C003 수신 스팟 재시도 방지
+      // canCheckIn: false 여도 시도 — 서버가 최종 판단 (C003 응답 시 blockedSpotIds 추가)
 
       final dist = Geolocator.distanceBetween(
         pos.latitude, pos.longitude,
         spot.latitude, spot.longitude,
       );
-      _logger.v('autoCheckIn: spot=${spot.id}(${spot.name}) dist=${dist.toStringAsFixed(1)}m radius=${spotCheckInRadiusMeters}m');
+      // 100m 이내 스팟만 로그 (원거리 스팟 노이즈 방지)
+      if (dist <= 100) _logger.t('autoCheckIn: spot=${spot.id}(${spot.name}) dist=${dist.toStringAsFixed(1)}m radius=${spotCheckInRadiusMeters}m');
       if (dist <= spotCheckInRadiusMeters) {
         _logger.i('autoCheckIn: entering spot=${spot.id}(${spot.name}) dist=${dist.toStringAsFixed(1)}m → checkIn');
         _checkingInSpotIds.add(spot.id);

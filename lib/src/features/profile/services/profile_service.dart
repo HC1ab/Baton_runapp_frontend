@@ -106,7 +106,7 @@ final profileServiceProvider = Provider<ProfileService>((ref) {
 });
 
 final profileProvider = FutureProvider<ProfileModel>((ref) {
-  // authProvider watch → 로그인/로그아웃 시 자동 재fetch (캐시 stale 방지)
-  ref.watch(authProvider);
-  return ref.watch(profileServiceProvider).getProfile();
+  // authProvider watch 제거 — auth_provider.dart에서 login/logout/forceLogout 시
+  // 명시적 ref.invalidate(profileProvider) 호출로 갱신. watch 시 이중 rebuild → CircularDependencyError 발생.
+  return ref.read(profileServiceProvider).getProfile();
 });

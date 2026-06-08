@@ -40,7 +40,7 @@ class SpotCooldownModel {
       lastCheckinAt: DateTime.parse(json['lastCheckinAt'] as String),
       cooldownEndsAt: DateTime.parse(json['cooldownEndsAt'] as String),
       rewardAmount: (json['rewardAmount'] as num).toInt(),
-      expAmount: (json['expAmount'] as num).toInt(),
+      expAmount: (json['expAmount'] as num?)?.toInt() ?? 0,
     );
   }
 }

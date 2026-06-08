@@ -5,8 +5,8 @@ import '../../common/widgets/character_sphere_widget.dart';
 import '../../core/character/character_style.dart';
 import '../group_running/services/group_run_api_service.dart';
 import '../profile/screens/member_profile_screen.dart';
-import 'models/follow_request_model.dart';
-import 'services/follow_service.dart';
+import '../../core/follow/models/follow_request_model.dart';
+import '../../core/follow/providers/follow_providers.dart';
 
 class FollowRequestsScreen extends ConsumerWidget {
   const FollowRequestsScreen({super.key});

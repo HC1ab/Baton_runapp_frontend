@@ -27,6 +27,11 @@ abstract final class ErrorMessages {
   // --- WebSocket / Group Run ---
   static const wsConnectionFailed = '웹소켓 연결에 실패했어요.';
   static const wsMemberInfoUnavailable = '회원 정보를 확인할 수 없어요.';
+  static const groupRoomFull = '방이 꽉 찼습니다. 다른 방에 참여해보세요.';
+
+  // --- Shop ---
+  static const shopLoadError = '상품 목록을 불러오지 못했어요.';
+  static const purchaseFailed = '구매에 실패했어요. 다시 시도해주세요.';
 
   // --- Spot ---
   static const spotRunNotFound = '존재하지 않는 러닝 기록이에요.';

@@ -6,6 +6,7 @@ import 'package:logger/logger.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/constants/error_messages.dart';
 import '../../../core/error/app_exception.dart';
 import '../../../core/myroom/my_room_service.dart';
 import '../services/shop_service.dart';
@@ -138,7 +139,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            '상품 목록을 불러오지 못했어요.',
+            ErrorMessages.shopLoadError,
             style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -154,24 +155,30 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
   }
 
   Widget _buildContent(List<ShopItem> items) {
-    // 전체 아이템 표시 (백엔드 코드: CHAR_*)
-    final colorItems = items;
-
-    return ListView(
+    return ListView.builder(
       padding: EdgeInsets.symmetric(
         horizontal: AppSpacing.screenHorizontal,
         vertical: AppSpacing.verticalMd,
       ),
-      children: [
-        Text(
-          '색상',
-          style: AppTextStyles.headlineSmall.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        SizedBox(height: AppSpacing.verticalMd),
-        _buildItemGrid(colorItems),
-      ],
+      // header(섹션 타이틀) + grid(아이템 한 블록) = 2 슬롯
+      itemCount: 2,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '색상',
+                style: AppTextStyles.headlineSmall.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              SizedBox(height: AppSpacing.verticalMd),
+            ],
+          );
+        }
+        return _buildItemGrid(items);
+      },
     );
   }
 
@@ -275,9 +282,9 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
       _logger.e('purchase unexpected error', error: e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('구매에 실패했어요. 다시 시도해주세요.'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: const Text(ErrorMessages.purchaseFailed),
+            backgroundColor: AppColors.error,
           ),
         );
       }

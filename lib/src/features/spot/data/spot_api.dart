@@ -17,7 +17,9 @@ class SpotApi {
   Future<List<SpotCooldownModel>> getCooldowns() async {
     try {
       final response = await _dio.get(ApiConstants.spotsCooldowns);
+      _logger.d('getCooldowns raw: ${response.data}');
       final unwrapped = unwrapApiResponse(response.data);
+      _logger.d('getCooldowns unwrapped: $unwrapped');
       if (unwrapped is! List<dynamic>) {
         throw const ServerException(ErrorMessages.invalidResponse);
       }

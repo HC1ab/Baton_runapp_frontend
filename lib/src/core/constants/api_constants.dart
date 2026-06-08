@@ -37,6 +37,9 @@ abstract final class ApiConstants {
   static const myRoom = '/api/v1/myroom';
   static const myCoreColor = '/api/v1/myroom/core-color';
 
+  // Endpoints — Points
+  static const pointsMe = '/api/v1/points/me';
+
   // Endpoints — Shop
   static const shopItems = '/api/v1/shop/items';
   static const shopPurchase = '/api/v1/shop/purchases';

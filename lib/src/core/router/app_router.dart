@@ -12,6 +12,7 @@ import '../../features/profile/screens/run_detail_screen.dart';
 import '../../features/settings/screens/account_screen.dart';
 import '../../features/settings/screens/notice_detail_screen.dart';
 import '../../features/settings/screens/notice_list_screen.dart';
+import '../../features/profile/screens/friends_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/shop/screens/shop_screen.dart';
 import '../constants/app_routes.dart';
@@ -74,6 +75,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.history,
         builder: (_, __) => const HistoryScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.friends,
+        builder: (_, __) => const FriendsScreen(),
       ),
       GoRoute(
         path: AppRoutes.settings,

@@ -71,10 +71,13 @@ class GroupApi {
     );
   }
 
-  Future<List<Map<String, dynamic>>> list() {
+  Future<List<Map<String, dynamic>>> list({int page = 0, int size = 20}) {
     return requestJson<List<Map<String, dynamic>>>(
       _dio,
-      () => _dio.get('/api/v1/groups'),
+      () => _dio.get(
+        '/api/v1/groups',
+        queryParameters: {'page': page, 'size': size, 'sort': 'startTime,desc'},
+      ),
       mapper: (json) {
         final list = _extractGroupList(json);
         return list

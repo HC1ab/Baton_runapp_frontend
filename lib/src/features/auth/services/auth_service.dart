@@ -197,7 +197,7 @@ class AuthService implements AuthServiceBase {
     required String newPassword,
   }) async {
     try {
-      await _dio.patch(
+      await _dio.post(
         ApiConstants.password,
         data: {
           'oldPassword': oldPassword,

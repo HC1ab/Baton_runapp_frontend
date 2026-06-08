@@ -38,6 +38,9 @@ abstract final class ApiConstants {
   static const myRoom = '/api/v1/myroom';
   static const myCoreColor = '/api/v1/myroom/core-color';
 
+  // Endpoints — Points
+  static const pointsMe = '/api/v1/points/me';
+
   // Endpoints — Shop
   static const shopItems = '/api/v1/shop/items';
   static const shopPurchase = '/api/v1/shop/purchases';
@@ -51,8 +54,11 @@ abstract final class ApiConstants {
   // Endpoints — Follow
   static const followRequest = '/api/v1/follows/request';
   static const followRequests = '/api/v1/follows/requests';
+  static const followFollowers = '/api/v1/follows/followers';
+  static const followFollowings = '/api/v1/follows/followings';
   static String followAccept(String followId) => '/api/v1/follows/$followId/accept';
   static String followReject(String followId) => '/api/v1/follows/$followId/reject';
+  static String followDelete(String followId) => '/api/v1/follows/$followId';
 
   // Endpoints — Colors
   static const profileColors = '/api/v1/profile/colors';

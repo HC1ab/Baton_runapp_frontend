@@ -20,13 +20,18 @@ abstract final class ErrorMessages {
 
   // --- Running ---
   static const runningOnly = '러닝 중에만 체크인할 수 있어요.';
-  static const runTooShort = '최소 0.2km 이상 달려야 종료할 수 있어요.';
+  static const runTooShortNotice = '0.15km 미만은 러닝 기록에 집계되지 않아요.';
   static const locationDisabled = '위치 서비스가 꺼져 있어요.';
   static const locationPermissionDenied = '위치 권한이 필요해요.';
 
   // --- WebSocket / Group Run ---
   static const wsConnectionFailed = '웹소켓 연결에 실패했어요.';
   static const wsMemberInfoUnavailable = '회원 정보를 확인할 수 없어요.';
+  static const groupRoomFull = '방이 꽉 찼습니다. 다른 방에 참여해보세요.';
+
+  // --- Shop ---
+  static const shopLoadError = '상품 목록을 불러오지 못했어요.';
+  static const purchaseFailed = '구매에 실패했어요. 다시 시도해주세요.';
 
   // --- Spot ---
   static const spotRunNotFound = '존재하지 않는 러닝 기록이에요.';

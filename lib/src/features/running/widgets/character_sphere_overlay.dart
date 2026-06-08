@@ -144,8 +144,6 @@ class _CharacterSphereOverlayState extends State<CharacterSphereOverlay> {
             if (title != null)
               Positioned(
                 bottom: s + 2.h,
-                left: 0,
-                right: 0,
                 child: UnconstrainedBox(
                   child: _LabelBadge(text: title),
                 ),
@@ -154,8 +152,6 @@ class _CharacterSphereOverlayState extends State<CharacterSphereOverlay> {
             if (nickname != null)
               Positioned(
                 bottom: s + 2.h + (title != null ? 18.h : 0),
-                left: 0,
-                right: 0,
                 child: UnconstrainedBox(
                   child: _LabelBadge(
                     text: nickname,

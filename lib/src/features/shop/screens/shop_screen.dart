@@ -6,7 +6,9 @@ import 'package:logger/logger.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/constants/error_messages.dart';
 import '../../../core/error/app_exception.dart';
+import '../../../core/utils/app_snack_bar.dart';
 import '../../../core/myroom/my_room_service.dart';
 import '../services/shop_service.dart';
 import '../widgets/purchase_success_dialog.dart';
@@ -23,6 +25,9 @@ class ShopScreen extends ConsumerStatefulWidget {
 
 class _ShopScreenState extends ConsumerState<ShopScreen> {
   int? _purchasingItemId;
+  int _selectedTab = 0;
+
+  static const List<String> _tabs = ['Colors', 'Auras', 'Inventory'];
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +143,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            '상품 목록을 불러오지 못했어요.',
+            ErrorMessages.shopLoadError,
             style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -154,24 +159,77 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
   }
 
   Widget _buildContent(List<ShopItem> items) {
-    // 전체 아이템 표시 (백엔드 코드: CHAR_*)
-    final colorItems = items;
+    final filtered = switch (_selectedTab) {
+      0 => items.where((i) => i.isCoreColor).toList(),
+      1 => items.where((i) => i.isAura).toList(),
+      _ => items.where((i) => i.isInventory).toList(),
+    };
 
-    return ListView(
+    // itemCount: 2 — [0] 탭 셀렉터, [1] 아이템 그리드
+    return ListView.builder(
       padding: EdgeInsets.symmetric(
         horizontal: AppSpacing.screenHorizontal,
         vertical: AppSpacing.verticalMd,
       ),
-      children: [
-        Text(
-          '색상',
-          style: AppTextStyles.headlineSmall.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        SizedBox(height: AppSpacing.verticalMd),
-        _buildItemGrid(colorItems),
-      ],
+      itemCount: 2,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return Padding(
+            padding: EdgeInsets.only(bottom: AppSpacing.verticalMd),
+            child: _buildTabSelector(),
+          );
+        }
+        return _buildItemGrid(filtered);
+      },
+    );
+  }
+
+  // ── Tab Selector ─────────────────────────────────────────────────────────
+
+  Widget _buildTabSelector() {
+    return Container(
+      padding: EdgeInsets.all(4.r),
+      decoration: BoxDecoration(
+        color: AppColors.divider,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+      ),
+      child: Row(
+        children: List.generate(_tabs.length, (index) {
+          final selected = _selectedTab == index;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedTab = index),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: EdgeInsets.symmetric(vertical: 8.h),
+                decoration: BoxDecoration(
+                  color: selected ? Colors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Text(
+                  _tabs[index],
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
     );
   }
 
@@ -183,7 +241,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
         height: 120.h,
         child: Center(
           child: Text(
-            '판매 중인 색상이 없어요.',
+            '판매 중인 상품이 없어요.',
             style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -264,22 +322,12 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
       }
     } on AppException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        AppSnackBar.error(context, e.message);
       }
     } catch (e) {
       _logger.e('purchase unexpected error', error: e);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('구매에 실패했어요. 다시 시도해주세요.'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackBar.error(context, ErrorMessages.purchaseFailed);
       }
     } finally {
       if (mounted) setState(() => _purchasingItemId = null);

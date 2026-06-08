@@ -43,7 +43,7 @@ class CheckInResult {
   final String spotName;
   final int earnedPoints;
   final int currentTotalPoints;
-  final int visitLogId;
+  final String visitLogId;
   final bool isAlreadyCheckedIn;
 
   /// 이미 체크인한 스팟 알림용 팩토리
@@ -51,7 +51,7 @@ class CheckInResult {
         spotName: spotName,
         earnedPoints: 0,
         currentTotalPoints: 0,
-        visitLogId: 0,
+        visitLogId: '',
         isAlreadyCheckedIn: true,
       );
 }
@@ -133,7 +133,7 @@ class SpotService implements SpotServiceBase {
         spotName: data['spotName']?.toString() ?? '',
         earnedPoints: (data['earnedPoints'] as num?)?.toInt() ?? 0,
         currentTotalPoints: (data['currentTotalPoints'] as num?)?.toInt() ?? 0,
-        visitLogId: (data['visitLogId'] as num?)?.toInt() ?? 0,
+        visitLogId: data['visitLogId']?.toString() ?? '',
       );
     } on AppException {
       rethrow;

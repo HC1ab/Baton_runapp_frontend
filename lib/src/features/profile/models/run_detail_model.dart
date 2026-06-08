@@ -41,13 +41,17 @@ class RunDetailModel {
     return '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
-  factory RunDetailModel.fromJson(Map<String, dynamic> json) => RunDetailModel(
-        runId: (json['runId'] as num? ?? 0).toInt(),
-        totalDistanceKm: (json['totalDistanceKm'] as num? ?? 0.0).toDouble(),
-        totalTimeSeconds: (json['totalTimeSeconds'] as num? ?? 0).toInt(),
-        avgPaceSecPerKm: (json['avgPace'] as num? ?? 0).toInt(),
-        path: (json['path'] as List<dynamic>? ?? [])
-            .map((e) => PathPoint.fromJson(e as Map<String, dynamic>))
-            .toList(),
-      );
+  factory RunDetailModel.fromJson(Map<String, dynamic> json) {
+    // 백엔드는 평균 페이스를 "분 단위 소수"로 전송 (예: 0.97 = 0.97분/km) → 초/km로 환산
+    final rawPace = (json['avgPace'] as num? ?? 0).toDouble();
+    return RunDetailModel(
+      runId: (json['runId'] as num? ?? 0).toInt(),
+      totalDistanceKm: (json['totalDistanceKm'] as num? ?? 0.0).toDouble(),
+      totalTimeSeconds: (json['totalTimeSeconds'] as num? ?? 0).toInt(),
+      avgPaceSecPerKm: (rawPace * 60).round(),
+      path: (json['path'] as List<dynamic>? ?? [])
+          .map((e) => PathPoint.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
 }

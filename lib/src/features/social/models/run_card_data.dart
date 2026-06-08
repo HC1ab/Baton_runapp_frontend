@@ -13,7 +13,7 @@ class RunCardData {
     required this.longitude,
     required this.currentMembers,
     required this.maxMembers,
-    required this.participantImageUrls,
+    this.participantColorCodes = const [],
     this.endTimeLabel,
     this.targetDistance,
     this.placeName,
@@ -33,7 +33,8 @@ class RunCardData {
   final double longitude;
   final int currentMembers;
   final int maxMembers;
-  final List<String> participantImageUrls;
+  /// 참가자 캐릭터 색상 코드 목록 (CORE_* 코드, 최대 3개).
+  final List<String> participantColorCodes;
   final String? hostNickname;
   final List<String> participantNicknames;
 
@@ -206,9 +207,9 @@ class RunCardData {
       longitude: lng,
       currentMembers: currentMembers,
       maxMembers: maxMembers > 0 ? maxMembers : currentMembers,
-      participantImageUrls: List<String>.filled(
-        currentMembers.clamp(0, 3),
-        '',
+      participantColorCodes: _parseParticipantColors(
+        participantsRaw,
+        currentMembers,
       ),
       endTimeLabel: endTime != null ? _formatTimeKo(endTime) : null,
       targetDistance: targetDistance,
@@ -231,7 +232,7 @@ class RunCardData {
     double? longitude,
     int? currentMembers,
     int? maxMembers,
-    List<String>? participantImageUrls,
+    List<String>? participantColorCodes,
     String? endTimeLabel,
     String? targetDistance,
     String? placeName,
@@ -251,7 +252,8 @@ class RunCardData {
       longitude: longitude ?? this.longitude,
       currentMembers: currentMembers ?? this.currentMembers,
       maxMembers: maxMembers ?? this.maxMembers,
-      participantImageUrls: participantImageUrls ?? this.participantImageUrls,
+      participantColorCodes:
+          participantColorCodes ?? this.participantColorCodes,
       endTimeLabel: endTimeLabel ?? this.endTimeLabel,
       targetDistance: targetDistance ?? this.targetDistance,
       placeName: placeName ?? this.placeName,
@@ -324,4 +326,24 @@ String _formatTimeKo(DateTime dt) {
   final hour12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
   final minute = dt.minute.toString().padLeft(2, '0');
   return '${isPm ? '오후' : '오전'} $hour12:$minute';
+}
+
+/// 참가자 목록에서 coreColorCode 추출 (최대 3개).
+/// 서버가 색상 정보를 주지 않으면 기본값 'CORE_ORANGE' 사용.
+List<String> _parseParticipantColors(dynamic participantsRaw, int count) {
+  const defaultCode = 'CORE_ORANGE';
+  final visibleCount = count.clamp(0, 3);
+  if (participantsRaw is List && participantsRaw.isNotEmpty) {
+    return participantsRaw
+        .take(visibleCount)
+        .map((p) {
+          if (p is Map<String, dynamic>) {
+            return (p['coreColorCode'] as String?) ?? defaultCode;
+          }
+          return defaultCode;
+        })
+        .toList();
+  }
+  // 서버가 참가자 목록 없이 숫자만 줄 때 기본 색상으로 채움
+  return List<String>.filled(visibleCount, defaultCode);
 }

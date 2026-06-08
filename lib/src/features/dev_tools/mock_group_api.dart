@@ -38,7 +38,7 @@ class MockGroupApi extends GroupApi {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> list() async {
+  Future<List<Map<String, dynamic>>> list({int page = 0, int size = 20}) async {
     await Future<void>.delayed(const Duration(milliseconds: 200));
     return const [];
   }

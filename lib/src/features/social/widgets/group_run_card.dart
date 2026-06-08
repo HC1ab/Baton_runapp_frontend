@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../../common/widgets/character_sphere_widget.dart';
+import '../../../core/character/character_style.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 
@@ -13,7 +15,8 @@ class GroupRunCard extends StatelessWidget {
     required this.currentMembers,
     required this.maxMembers,
     this.isHighlighted = false,
-    this.participantImageUrls = const [],
+    this.participantColorCodes = const [],
+    this.hostNickname,
     this.roomImageUrl,
     this.onJoinPressed,
   });
@@ -24,7 +27,10 @@ class GroupRunCard extends StatelessWidget {
   final int currentMembers;
   final int maxMembers;
   final bool isHighlighted;
-  final List<String> participantImageUrls;
+  final List<String> participantColorCodes;
+  /// 방장 닉네임. 왼쪽 위 구체 표시용.
+  /// TODO: API에 hostColorCode 추가되면 실제 색상 적용.
+  final String? hostNickname;
   final String? roomImageUrl;
   final VoidCallback? onJoinPressed;
 
@@ -64,7 +70,7 @@ class GroupRunCard extends StatelessWidget {
                 titleColor: primaryTextColor,
                 subtitleColor: secondaryTextColor,
                 time: time,
-                roomImageUrl: roomImageUrl,
+                hostColorCode: 'CORE_ORANGE',
                 isHighlighted: isHighlighted,
               ),
               SizedBox(width: 12.w),
@@ -102,7 +108,14 @@ class GroupRunCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _ParticipantStack(
-                  imageUrls: participantImageUrls,
+                  // 방장은 위쪽 구체로 표시되므로 나머지 참여자만 (currentMembers - 1).
+                  // TODO: API에 participants[{coreColorCode}] 추가되면 실제 색상 반영.
+                  colorCodes: participantColorCodes.isEmpty
+                      ? List.filled((currentMembers - 1).clamp(0, 3), 'CORE_ORANGE')
+                      : participantColorCodes
+                          .skip(1)
+                          .take(3)
+                          .toList(),
                   borderColor: cardBackground,
                 ),
               ),
@@ -141,7 +154,7 @@ class _RoomHeader extends StatelessWidget {
     required this.titleColor,
     required this.subtitleColor,
     required this.time,
-    required this.roomImageUrl,
+    required this.hostColorCode,
     required this.isHighlighted,
   });
 
@@ -149,23 +162,32 @@ class _RoomHeader extends StatelessWidget {
   final Color titleColor;
   final Color subtitleColor;
   final String time;
-  final String? roomImageUrl;
+  /// TODO: API에 hostColorCode 추가되면 실제 값 사용. 현재 항상 'CORE_ORANGE'.
+  final String hostColorCode;
   final bool isHighlighted;
 
   @override
   Widget build(BuildContext context) {
+    final hostStyle = CharacterStylePresets.fromCode(hostColorCode);
     return Expanded(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _CircularImage(
-            size: 34.r,
-            imageUrl: roomImageUrl,
-            fallbackColor: isHighlighted
-                ? Colors.white.withValues(alpha: 0.20)
-                : AppColors.socialAccent,
-            iconColor: Colors.white,
-            iconSize: 14.r,
+          Container(
+            width: 34.r,
+            height: 34.r,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isHighlighted
+                    ? Colors.white.withValues(alpha: 0.40)
+                    : AppColors.divider,
+                width: 1.5,
+              ),
+            ),
+            child: ClipOval(
+              child: CharacterSphereWidget(style: hostStyle, size: 34.r),
+            ),
           ),
           SizedBox(width: 10.w),
           Expanded(
@@ -246,16 +268,16 @@ class _MemberBadge extends StatelessWidget {
 
 class _ParticipantStack extends StatelessWidget {
   const _ParticipantStack({
-    required this.imageUrls,
+    required this.colorCodes,
     required this.borderColor,
   });
 
-  final List<String> imageUrls;
+  final List<String> colorCodes;
   final Color borderColor;
 
   @override
   Widget build(BuildContext context) {
-    final visibleCount = imageUrls.length.clamp(0, 3);
+    final visibleCount = colorCodes.length.clamp(0, 3);
     if (visibleCount == 0) {
       return SizedBox(height: 22.h);
     }
@@ -265,15 +287,23 @@ class _ParticipantStack extends StatelessWidget {
       width: 22.r + ((visibleCount - 1) * 13.r),
       child: Stack(
         children: List.generate(visibleCount, (index) {
+          final style =
+              CharacterStylePresets.fromCode(colorCodes[index]);
           return Positioned(
             left: index * 13.r,
-            child: _CircularImage(
-              size: 22.r,
-              imageUrl: imageUrls[index],
-              fallbackColor: AppColors.scaffoldGrey,
-              iconColor: AppColors.iconNeutral,
-              iconSize: 11.r,
-              borderColor: borderColor,
+            child: Container(
+              width: 22.r,
+              height: 22.r,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: borderColor, width: 1.5),
+              ),
+              child: ClipOval(
+                child: CharacterSphereWidget(
+                  style: style,
+                  size: 22.r,
+                ),
+              ),
             ),
           );
         }),
@@ -282,50 +312,3 @@ class _ParticipantStack extends StatelessWidget {
   }
 }
 
-class _CircularImage extends StatelessWidget {
-  const _CircularImage({
-    required this.size,
-    required this.imageUrl,
-    required this.fallbackColor,
-    required this.iconColor,
-    required this.iconSize,
-    this.borderColor,
-  });
-
-  final double size;
-  final String? imageUrl;
-  final Color fallbackColor;
-  final Color iconColor;
-  final double iconSize;
-  final Color? borderColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasImage = imageUrl != null && imageUrl!.trim().isNotEmpty;
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: borderColor != null ? Border.all(color: borderColor!, width: 1.5) : null,
-      ),
-      child: ClipOval(
-        child: hasImage
-            ? Image.network(
-                imageUrl!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _fallback(),
-              )
-            : _fallback(),
-      ),
-    );
-  }
-
-  Widget _fallback() {
-    return Container(
-      color: fallbackColor,
-      alignment: Alignment.center,
-      child: Icon(Icons.person_rounded, color: iconColor, size: iconSize),
-    );
-  }
-}

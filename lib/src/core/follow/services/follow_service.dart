@@ -2,10 +2,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
-import '../../../core/constants/api_constants.dart';
-import '../../../core/constants/error_messages.dart';
-import '../../../core/error/app_exception.dart';
-import '../../../core/network/dio_client.dart';
+import '../../constants/api_constants.dart';
+import '../../constants/error_messages.dart';
+import '../../error/app_exception.dart';
+import '../../network/dio_client.dart';
+import '../models/follow_member_model.dart';
 import '../models/follow_request_model.dart';
 
 final _logger = Logger();
@@ -14,12 +15,19 @@ class FollowService {
   const FollowService(this._dio);
   final Dio _dio;
 
-  Future<void> sendRequest(String targetNickname) async {
+  /// 팔로우 신청. 성공 시 followId(UUID) 반환 — 신청 취소 시 사용.
+  Future<String> sendRequest(String targetNickname) async {
     try {
-      await _dio.post(
+      final res = await _dio.post(
         ApiConstants.followRequest,
         data: {'targetNickname': targetNickname},
       );
+      final raw = res.data;
+      if (raw is Map<String, dynamic> && raw['success'] == true) {
+        final data = raw['data'] as Map<String, dynamic>?;
+        return (data?['followId'] as String?) ?? '';
+      }
+      return '';
     } on AppException {
       rethrow;
     } on DioException catch (e) {
@@ -78,6 +86,64 @@ class FollowService {
     }
   }
 
+  Future<List<FollowMemberModel>> getFollowers() async {
+    try {
+      final response = await _dio.get(ApiConstants.followFollowers);
+      final raw = response.data;
+      if (raw is Map<String, dynamic> && raw['success'] == true) {
+        final list = (raw['data'] as List<dynamic>? ?? []);
+        return list
+            .cast<Map<String, dynamic>>()
+            .map(FollowMemberModel.fromJson)
+            .toList();
+      }
+      throw const ServerException(ErrorMessages.invalidResponse);
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _mapDio(e);
+    } catch (e) {
+      _logger.e('getFollowers error', error: e);
+      throw const UnknownException();
+    }
+  }
+
+  Future<List<FollowMemberModel>> getFollowings() async {
+    try {
+      final response = await _dio.get(ApiConstants.followFollowings);
+      final raw = response.data;
+      if (raw is Map<String, dynamic> && raw['success'] == true) {
+        final list = (raw['data'] as List<dynamic>? ?? []);
+        return list
+            .cast<Map<String, dynamic>>()
+            .map(FollowMemberModel.fromJson)
+            .toList();
+      }
+      throw const ServerException(ErrorMessages.invalidResponse);
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _mapDio(e);
+    } catch (e) {
+      _logger.e('getFollowings error', error: e);
+      throw const UnknownException();
+    }
+  }
+
+  /// 팔로잉 삭제 (내가 팔로우한 관계 제거).
+  Future<void> deleteFollow(String followId) async {
+    try {
+      await _dio.delete(ApiConstants.followDelete(followId));
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _mapDio(e);
+    } catch (e) {
+      _logger.e('deleteFollow error', error: e);
+      throw const UnknownException();
+    }
+  }
+
   AppException _mapDio(DioException e) {
     final status = e.response?.statusCode;
     if (status == 401) return const AuthException();
@@ -93,9 +159,4 @@ class FollowService {
 
 final followServiceProvider = Provider<FollowService>((ref) {
   return FollowService(ref.watch(dioProvider));
-});
-
-final pendingFollowRequestsProvider =
-    FutureProvider<List<FollowRequestModel>>((ref) {
-  return ref.watch(followServiceProvider).getRequests();
 });

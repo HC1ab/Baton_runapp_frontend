@@ -109,33 +109,55 @@ class AuthNotifier extends Notifier<AuthState> {
   /// 토큰 만료/무효 시 API 호출 없이 즉시 로그아웃.
   /// AuthInterceptor에서 A001/A002/A003 감지 시 호출.
   Future<void> forceLogout() async {
-    // 토큰이 이미 만료 상태이므로 API 호출 없이 로컬 상태만 정리.
-    await _cleanupLocalState();
-    await ref.read(tokenStorageProvider).clear();
-    ref.invalidate(profileProvider);
-    ref.invalidate(myRoomProvider);
-    ref.invalidate(monthlySummaryProvider);
-    ref.invalidate(myRunsProvider);
+    try {
+      await _cleanupLocalState();
+    } catch (e) {
+      _logger.w('forceLogout cleanupLocalState failed (best-effort)', error: e);
+    }
+    try {
+      await ref.read(tokenStorageProvider).clear();
+    } catch (e) {
+      _logger.w('forceLogout tokenStorage.clear failed (best-effort)', error: e);
+    }
+    try {
+      ref.invalidate(profileProvider);
+      ref.invalidate(myRoomProvider);
+      ref.invalidate(monthlySummaryProvider);
+      ref.invalidate(myRunsProvider);
+    } catch (e) {
+      _logger.w('forceLogout invalidate failed (best-effort)', error: e);
+    }
     state = const AuthStateUnauthenticated();
     _logger.w('Force logout — auth token invalid/expired');
   }
 
   /// Clears token and returns to unauthenticated state.
   Future<void> logout() async {
-    await _cleanupActiveGroup();
+    try {
+      await _cleanupActiveGroup();
+    } catch (e) {
+      _logger.w('logout cleanupActiveGroup failed (best-effort)', error: e);
+    }
 
     try {
       await ref.read(authServiceProvider).logout();
     } catch (e) {
       _logger.w('Logout API call failed', error: e);
-    } finally {
+    }
+    try {
       await ref.read(tokenStorageProvider).clear();
+    } catch (e) {
+      _logger.w('logout tokenStorage.clear failed (best-effort)', error: e);
+    }
+    try {
       ref.invalidate(profileProvider);
       ref.invalidate(myRoomProvider);
       ref.invalidate(monthlySummaryProvider);
       ref.invalidate(myRunsProvider);
-      state = const AuthStateUnauthenticated();
+    } catch (e) {
+      _logger.w('logout invalidate failed (best-effort)', error: e);
     }
+    state = const AuthStateUnauthenticated();
   }
 
   /// 활성 그룹 러닝 정리 — host는 방 삭제, 참가자는 나가기, WS 해제.

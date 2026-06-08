@@ -99,6 +99,13 @@ class RunService implements RunServiceBase {
           : '권한이 없습니다.';
       return ServerException(msg);
     }
+    if (status == 400) {
+      final data = e.response?.data;
+      final msg = data is Map<String, dynamic>
+          ? (data['message'] as String? ?? '잘못된 요청입니다.')
+          : '잘못된 요청입니다.';
+      return ServerException(msg);
+    }
     if (status != null && status >= 500) {
       return const ServerException();
     }

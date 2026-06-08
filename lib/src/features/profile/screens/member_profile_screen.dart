@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../common/widgets/character_sphere_widget.dart';
 import '../../../core/character/character_style.dart';
-import '../../social/services/follow_service.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_spacing.dart';
+import '../../../core/constants/app_text_styles.dart';
+import '../../../core/follow/providers/follow_providers.dart';
+import '../../../core/utils/app_snack_bar.dart';
 import '../models/member_profile_model.dart';
 import '../services/member_profile_service.dart';
 
@@ -12,40 +17,35 @@ class MemberProfileScreen extends ConsumerWidget {
 
   final String nickname;
 
-  static const Color _bg = Color(0xFFFBF1EC);
-  static const Color _primary = Color(0xFFDD6A3E);
-  static const Color _textPrimary = Color(0xFF1F1A17);
-  static const Color _textSub = Color(0xFF8C857F);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(memberProfileProvider(nickname));
 
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
-        backgroundColor: _bg,
+        backgroundColor: AppColors.backgroundLight,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.of(context).maybePop(),
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-          color: _primary,
+          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20.r),
+          color: AppColors.primary,
         ),
-        title: const Text(
+        title: Text(
           '멤버 프로필',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 18.sp,
             fontWeight: FontWeight.w800,
-            color: _textPrimary,
+            color: AppColors.textPrimary,
           ),
         ),
         centerTitle: true,
       ),
       body: SafeArea(
         child: profileAsync.when(
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: _primary),
+          loading: () => Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
           ),
           error: (e, _) => _buildError(ref),
           data: (profile) => _buildBody(context, ref, profile),
@@ -59,17 +59,17 @@ class MemberProfileScreen extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
+          Text(
             '프로필을 불러오지 못했어요.',
-            style: TextStyle(color: _textSub, fontSize: 14),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 14.sp),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           ElevatedButton(
             onPressed: () => ref.invalidate(memberProfileProvider(nickname)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _primary,
+              backgroundColor: AppColors.primary,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
             ),
             child: const Text('다시 시도', style: TextStyle(color: Colors.white)),
@@ -82,61 +82,89 @@ class MemberProfileScreen extends ConsumerWidget {
   Widget _buildBody(
       BuildContext context, WidgetRef ref, MemberProfileModel profile) {
     return RefreshIndicator(
-      color: _primary,
+      color: AppColors.primary,
       onRefresh: () async => ref.invalidate(memberProfileProvider(nickname)),
-      child: ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-      children: [
-        const SizedBox(height: 12),
-        _buildHeroAvatar(ref, profile.memberId),
-        const SizedBox(height: 20),
-        Text(
-          profile.nickname,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            color: _textPrimary,
-          ),
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.screenHorizontal,
+          AppSpacing.sm,
+          AppSpacing.screenHorizontal,
+          28.h,
         ),
-        const SizedBox(height: 4),
-        Text(
-          profile.equippedTitleName.isEmpty
-              ? 'No Title'
-              : profile.equippedTitleName,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 15,
-            color: _primary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 16),
-        _FollowSection(profile: profile),
-        const SizedBox(height: 20),
-        _buildLevelCard(profile.level),
-        const SizedBox(height: 14),
-        Row(
-          children: [
-            Expanded(
-              child: _MetricCard(
-                icon: Icons.straighten_rounded,
-                label: '총 거리',
-                value: '${profile.totalDistance.toStringAsFixed(1)} km',
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _MetricCard(
-                icon: Icons.speed_rounded,
-                label: '평균 페이스',
-                value: profile.avgPaceText,
-              ),
-            ),
-          ],
-        ),
-      ],
+        itemCount: 6,
+        itemBuilder: (context, index) {
+          switch (index) {
+            case 0:
+              return SizedBox(height: 12.h);
+            case 1:
+              return _buildHeroAvatar(ref, profile.memberId);
+            case 2:
+              return Padding(
+                padding: EdgeInsets.only(top: 20.h),
+                child: Column(
+                  children: [
+                    Text(
+                      profile.nickname,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      profile.equippedTitleName.isEmpty
+                          ? 'No Title'
+                          : profile.equippedTitleName,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15.sp,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            case 3:
+              return Padding(
+                padding: EdgeInsets.only(top: 16.h),
+                child: _FollowSection(profile: profile),
+              );
+            case 4:
+              return Padding(
+                padding: EdgeInsets.only(top: 20.h),
+                child: _buildLevelCard(profile.level),
+              );
+            case 5:
+              return Padding(
+                padding: EdgeInsets.only(top: 14.h),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _MetricCard(
+                        icon: Icons.straighten_rounded,
+                        label: '총 거리',
+                        value: '${profile.totalDistance.toStringAsFixed(1)} km',
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: _MetricCard(
+                        icon: Icons.speed_rounded,
+                        label: '평균 페이스',
+                        value: profile.avgPaceText,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            default:
+              return const SizedBox.shrink();
+          }
+        },
       ),
     );
   }
@@ -151,43 +179,43 @@ class MemberProfileScreen extends ConsumerWidget {
     return Center(
       child: CharacterSphereWidget(
         style: CharacterStylePresets.fromCode(colorCode),
-        size: 120,
+        size: 120.r,
       ),
     );
   }
 
   Widget _buildLevelCard(int level) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      padding: EdgeInsets.fromLTRB(20.w, 18.h, 20.w, 20.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x14000000),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 16,
-            offset: Offset(0, 4),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '러닝 레벨',
             style: TextStyle(
-              fontSize: 14,
-              color: _textSub,
+              fontSize: 14.sp,
+              color: AppColors.textSecondary,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6.h),
           Text(
             'Lv.$level',
-            style: const TextStyle(
-              fontSize: 38,
+            style: TextStyle(
+              fontSize: 38.sp,
               fontWeight: FontWeight.w900,
-              color: _primary,
+              color: AppColors.primary,
               height: 1.0,
             ),
           ),
@@ -212,25 +240,110 @@ class _FollowSection extends ConsumerStatefulWidget {
 class _FollowSectionState extends ConsumerState<_FollowSection> {
   bool _isLoading = false;
 
-  static const Color _primary = Color(0xFFDD6A3E);
+  /// pendingSent 상태에서 신청 취소에 필요한 followId
+  /// sendRequest() 응답에서 저장
+  String? _pendingFollowId;
 
   Future<void> _sendFollowRequest() async {
     if (_isLoading) return;
     setState(() => _isLoading = true);
     try {
-      await ref
+      final followId = await ref
           .read(followServiceProvider)
           .sendRequest(widget.profile.nickname);
+      if (followId.isNotEmpty) {
+        _pendingFollowId = followId;
+      }
       ref.invalidate(memberProfileProvider(widget.profile.nickname));
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('팔로우 신청 중 오류가 발생했어요.')),
-        );
+        AppSnackBar.error(context, '팔로우 신청 중 오류가 발생했어요.');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _cancelFollowRequest() async {
+    if (_isLoading) return;
+    final followId = _pendingFollowId;
+    if (followId == null || followId.isEmpty) {
+      // followId 없으면 취소 불가 안내
+      if (mounted) {
+        AppSnackBar.error(context, '앱을 재시작한 뒤 다시 시도해주세요.');
+      }
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      await ref.read(followServiceProvider).deleteFollow(followId);
+      _pendingFollowId = null;
+      ref.invalidate(memberProfileProvider(widget.profile.nickname));
+    } catch (e) {
+      if (mounted) {
+        AppSnackBar.error(context, '신청 취소 중 오류가 발생했어요.');
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _deleteFollow() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    try {
+      // followId는 followings(내가 팔로우) OR followers(나를 팔로우) 어느 쪽에든 있을 수 있음.
+      // OpenAPI: DELETE /follows/{followId} — 양쪽 모두 사용 가능.
+      final followId = await _resolveFollowId();
+      if (followId == null) {
+        if (mounted) {
+          AppSnackBar.error(context, '팔로우 정보를 찾을 수 없어요.');
+        }
+        return;
+      }
+      await ref.read(followServiceProvider).deleteFollow(followId);
+      ref.invalidate(followingsProvider);
+      ref.invalidate(followersProvider);
+      ref.invalidate(memberProfileProvider(widget.profile.nickname));
+    } catch (e) {
+      if (mounted) {
+        AppSnackBar.error(context, '팔로우 삭제 중 오류가 발생했어요.');
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  /// followings → followers 순서로 nickname 매칭해 followId 반환.
+  /// 둘 다 없으면 강제 새로고침 후 재시도. 그래도 없으면 null.
+  Future<String?> _resolveFollowId() async {
+    final nickname = widget.profile.nickname;
+
+    String? _findIn(List list) {
+      for (final m in list) {
+        if (m.nickname == nickname) return m.followId as String;
+      }
+      return null;
+    }
+
+    final followings = await ref.read(followingsProvider.future);
+    final id1 = _findIn(followings);
+    if (id1 != null) return id1;
+
+    final followers = await ref.read(followersProvider.future);
+    final id2 = _findIn(followers);
+    if (id2 != null) return id2;
+
+    // 캐시 miss 가능성 → 강제 새로고침
+    ref.invalidate(followingsProvider);
+    ref.invalidate(followersProvider);
+
+    final freshFollowings = await ref.read(followingsProvider.future);
+    final id3 = _findIn(freshFollowings);
+    if (id3 != null) return id3;
+
+    final freshFollowers = await ref.read(followersProvider.future);
+    return _findIn(freshFollowers);
   }
 
   Future<void> _handleRequest(Future<void> Function() action) async {
@@ -242,9 +355,7 @@ class _FollowSectionState extends ConsumerState<_FollowSection> {
       ref.invalidate(pendingFollowRequestsProvider);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('처리 중 오류가 발생했어요.')),
-        );
+        AppSnackBar.error(context, '처리 중 오류가 발생했어요.');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -254,103 +365,177 @@ class _FollowSectionState extends ConsumerState<_FollowSection> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(
+      return Center(
         child: SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(strokeWidth: 2.5, color: _primary),
+          width: 24.r,
+          height: 24.r,
+          child: CircularProgressIndicator(
+              strokeWidth: 2.5, color: AppColors.primary),
         ),
       );
     }
 
-    switch (widget.profile.relationStatus) {
+    // 백엔드 follow는 대칭 시스템:
+    //   A→B ACCEPTED 후 B→A 신청 시 400 ("이미 관계가 있음")
+    //   → effectiveStatus는 항상 서버 값 신뢰 (none 오버라이드 제거 — 팔로우 신청 400 유발)
+    //   → iActuallyFollow / theyFollowMe 는 FRIEND 케이스 배지 라벨 구분용으로만 사용.
+    final followingsAsync = ref.watch(followingsProvider);
+    final followersAsync = ref.watch(followersProvider);
+
+    final iActuallyFollow = followingsAsync.whenOrNull(
+          data: (list) =>
+              list.any((m) => m.memberId == widget.profile.memberId),
+        ) ??
+        false;
+    final theyFollowMe = followersAsync.whenOrNull(
+          data: (list) =>
+              list.any((m) => m.memberId == widget.profile.memberId),
+        ) ??
+        false;
+
+    // 서버 값 그대로 사용 — 절대 none으로 강제 변환하지 않음
+    final effectiveStatus = widget.profile.relationStatus;
+
+    switch (effectiveStatus) {
+      // ── 관계 없음 → 팔로우 신청 ──────────────────────────────────────────
       case RelationStatus.none:
         return Center(
           child: FilledButton.icon(
             onPressed: _sendFollowRequest,
-            icon: const Icon(Icons.person_add_rounded, size: 18),
+            icon: Icon(Icons.person_add_rounded, size: 18.r),
             label: const Text('팔로우 신청'),
             style: FilledButton.styleFrom(
-              backgroundColor: _primary,
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
-              textStyle: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-              ),
+              textStyle: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w700),
             ),
           ),
         );
 
+      // ── 신청 보냄 → 신청 취소 ────────────────────────────────────────────
       case RelationStatus.pendingSent:
         return Center(
-          child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0F0F0),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.schedule_rounded, size: 16, color: Color(0xFF999999)),
-                SizedBox(width: 6),
-                Text(
-                  '신청 보냄',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF888888),
-                  ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+                decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 ),
-              ],
-            ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.schedule_rounded,
+                        size: 16.r, color: AppColors.textSecondary),
+                    SizedBox(width: 6.w),
+                    Text(
+                      '신청 보냄',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8.w),
+              OutlinedButton(
+                onPressed: _pendingFollowId != null
+                    ? _cancelFollowRequest
+                    : null,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  side: BorderSide(color: AppColors.error),
+                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                  ),
+                  textStyle:
+                      TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700),
+                ),
+                child: const Text('신청 취소'),
+              ),
+            ],
           ),
         );
 
+      // ── 신청 받음 → 수락 / 거절 ──────────────────────────────────────────
       case RelationStatus.pendingReceived:
         return _PendingReceivedActions(
           nickname: widget.profile.nickname,
           onHandle: _handleRequest,
         );
 
+      // ── 친구 → 팔로잉/팔로워 배지 + 삭제 ──────────────────────────────
+      // iActuallyFollow=true  → 내가 팔로우 중 → "팔로잉"
+      // theyFollowMe=true     → 상대가 나를 팔로우 중 → "팔로워"
+      // 둘 다 false = 캐시 로딩 중 → "팔로잉"(서버 FRIEND 신뢰)
       case RelationStatus.friend:
+        final badgeLabel = iActuallyFollow
+            ? '팔로잉'
+            : theyFollowMe
+                ? '팔로워'
+                : '팔로잉';
         return Center(
-          child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFF4CAF50),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.check_circle_rounded,
-                    size: 16, color: Colors.white),
-                SizedBox(width: 6),
-                Text(
-                  '친구',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+                decoration: BoxDecoration(
+                  color: AppColors.success,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 ),
-              ],
-            ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check_circle_rounded,
+                        size: 16.r, color: Colors.white),
+                    SizedBox(width: 6.w),
+                    Text(
+                      badgeLabel,
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8.w),
+              OutlinedButton(
+                onPressed: _deleteFollow,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textSecondary,
+                  side: BorderSide(color: AppColors.divider),
+                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                  ),
+                  textStyle:
+                      TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700),
+                ),
+                child: const Text('삭제'),
+              ),
+            ],
           ),
         );
     }
   }
 }
 
-// PENDING_RECEIVED: requests 목록에서 followId 찾아 수락/거절 버튼 표시
+// ---------------------------------------------------------------------------
+// _PendingReceivedActions — 받은 신청 수락/거절
+// ---------------------------------------------------------------------------
+
 class _PendingReceivedActions extends ConsumerWidget {
   const _PendingReceivedActions({
     required this.nickname,
@@ -360,33 +545,34 @@ class _PendingReceivedActions extends ConsumerWidget {
   final String nickname;
   final Future<void> Function(Future<void> Function()) onHandle;
 
-  static const Color _primary = Color(0xFFDD6A3E);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final requestsAsync = ref.watch(pendingFollowRequestsProvider);
 
     return requestsAsync.when(
-      loading: () => const Center(
+      loading: () => Center(
         child: SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2, color: _primary),
+          width: 20.r,
+          height: 20.r,
+          child: CircularProgressIndicator(
+              strokeWidth: 2, color: AppColors.primary),
         ),
       ),
-      error: (_, __) => const Center(
+      error: (_, __) => Center(
         child: Text(
           '신청 정보를 불러오지 못했어요.',
-          style: TextStyle(fontSize: 13, color: Color(0xFF999999)),
+          style: TextStyle(fontSize: 13.sp, color: AppColors.textSecondary),
         ),
       ),
       data: (requests) {
-        final matched = requests.where((r) => r.nickname == nickname).toList();
+        final matched =
+            requests.where((r) => r.nickname == nickname).toList();
         if (matched.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
               '신청 정보를 찾을 수 없어요.',
-              style: TextStyle(fontSize: 13, color: Color(0xFF999999)),
+              style:
+                  TextStyle(fontSize: 13.sp, color: AppColors.textSecondary),
             ),
           );
         }
@@ -395,15 +581,15 @@ class _PendingReceivedActions extends ConsumerWidget {
         return Center(
           child: Column(
             children: [
-              const Text(
+              Text(
                 '이 멤버가 팔로우를 신청했어요.',
                 style: TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF8C857F),
+                  fontSize: 13.sp,
+                  color: AppColors.textSecondary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: 10.h),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -411,30 +597,32 @@ class _PendingReceivedActions extends ConsumerWidget {
                     onPressed: () =>
                         onHandle(() => service.accept(followId)),
                     style: FilledButton.styleFrom(
-                      backgroundColor: _primary,
+                      backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 10),
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 20.w, vertical: 10.h),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      textStyle: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w700),
+                          borderRadius:
+                              BorderRadius.circular(AppSpacing.radiusMd)),
+                      textStyle: TextStyle(
+                          fontSize: 14.sp, fontWeight: FontWeight.w700),
                     ),
                     child: const Text('수락'),
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10.w),
                   OutlinedButton(
                     onPressed: () =>
                         onHandle(() => service.reject(followId)),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF666666),
-                      side: const BorderSide(color: Color(0xFFCCCCCC)),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 10),
+                      foregroundColor: AppColors.textSecondary,
+                      side: BorderSide(color: AppColors.divider),
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 20.w, vertical: 10.h),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      textStyle: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w700),
+                          borderRadius:
+                              BorderRadius.circular(AppSpacing.radiusMd)),
+                      textStyle: TextStyle(
+                          fontSize: 14.sp, fontWeight: FontWeight.w700),
                     ),
                     child: const Text('거절'),
                   ),
@@ -466,32 +654,31 @@ class _MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 16.h),
       decoration: BoxDecoration(
-        color: const Color(0xFFFBF1EC),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFEBD9CC)),
+        color: AppColors.backgroundLight,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        border: Border.all(color: AppColors.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: const Color(0xFFDD6A3E), size: 22),
-          const SizedBox(height: 12),
+          Icon(icon, color: AppColors.primary, size: 22.r),
+          SizedBox(height: 12.h),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF8C857F),
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4.h),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 18,
+            style: AppTextStyles.headlineSmall.copyWith(
               fontWeight: FontWeight.w800,
-              color: Color(0xFF1F1A17),
+              color: AppColors.textPrimary,
             ),
           ),
         ],

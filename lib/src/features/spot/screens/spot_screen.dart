@@ -87,24 +87,33 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
                 child: CircularProgressIndicator(color: AppColors.primary),
               ),
               error: (e, _) => _buildError(),
-              data: (spots) => spots.isEmpty
-                  ? _buildEmpty()
-                  : RefreshIndicator(
-                      color: AppColors.primary,
-                      onRefresh: () async =>
-                          ref.invalidate(spotCooldownsProvider),
-                      child: ListView.separated(
+              data: (spots) => RefreshIndicator(
+                color: AppColors.primary,
+                onRefresh: () async => ref.invalidate(spotCooldownsProvider),
+                child: spots.isEmpty
+                    ? ListView(
+                        // 빈 상태에서도 pull-to-refresh 가능하도록 ListView로 감쌈
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.5,
+                            child: _buildEmpty(),
+                          ),
+                        ],
+                      )
+                    : ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
                         padding: EdgeInsets.fromLTRB(
                           AppSpacing.screenHorizontal,
                           0,
                           AppSpacing.screenHorizontal,
-                          AppSpacing.xxl + 20.h, // nav bar 여유
+                          AppSpacing.xxl + 20.h,
                         ),
                         itemCount: spots.length,
                         separatorBuilder: (_, __) => SizedBox(height: 12.h),
                         itemBuilder: (_, i) => _SpotCooldownCard(spot: spots[i]),
                       ),
-                    ),
+              ),
             ),
           ),
         ],
@@ -197,17 +206,19 @@ class _SpotCooldownCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // 스팟 아이콘
+              // 스팟 아이콘 — 쿨타임 중: 주황, 체크인 가능: 흰색 아이콘+primary 배경
               Container(
                 width: 44.r,
                 height: 44.r,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
+                  color: isAvailable
+                      ? AppColors.primary
+                      : AppColors.warning.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Icon(
                   Icons.location_on_rounded,
-                  color: AppColors.primary,
+                  color: isAvailable ? Colors.white : AppColors.warning,
                   size: 22.r,
                 ),
               ),

@@ -13,6 +13,7 @@ abstract final class AppRoutes {
   static const account = '/account';
   static const noticeList = '/notices';
   static const noticeDetail = '/notices/:noticeId';
+  static const friends = '/friends';
 }
 
 /// Bottom navigation tab index constants.

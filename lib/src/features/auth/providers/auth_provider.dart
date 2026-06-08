@@ -93,6 +93,7 @@ class AuthNotifier extends Notifier<AuthState> {
     await ref.read(selectedCharacterStyleProvider.notifier).setStyle(style);
 
     // 이전 유저 캐시 초기화 — 새 토큰으로 데이터 재조회
+    ref.invalidate(myEquippedTitleNameProvider); // equippedTitleCode prefs 갱신 반영
     ref.invalidate(profileProvider);
     ref.invalidate(myRoomProvider);
     ref.invalidate(monthlySummaryProvider);

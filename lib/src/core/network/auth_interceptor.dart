@@ -1,9 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
 import '../../features/auth/providers/auth_provider.dart';
 import '../storage/token_storage.dart';
+
 final _logger = Logger();
 
 /// 토큰 인증 실패 코드 (A001/A002/A003) → forceLogout.

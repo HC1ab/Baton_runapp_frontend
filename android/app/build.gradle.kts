@@ -46,6 +46,7 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
+        manifestPlaceholders["kakaoScheme"] = "kakao2874b1ddd63704e933c80e7f384c6e6d"
     }
 
     signingConfigs {

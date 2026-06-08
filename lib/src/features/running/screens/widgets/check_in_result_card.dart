@@ -79,7 +79,7 @@ class CheckInResultCard extends StatelessWidget {
                 Text(
                   isAlready
                       ? ErrorMessages.spotAlreadyCheckedInCard
-                      : '체크인 완료! 현재 ${result.currentTotalPoints}P 보유',
+                      : ErrorMessages.spotCheckedInCard(result.currentTotalPoints),
                   style: AppTextStyles.labelSmall.copyWith(
                     color: AppColors.textSecondary,
                   ),

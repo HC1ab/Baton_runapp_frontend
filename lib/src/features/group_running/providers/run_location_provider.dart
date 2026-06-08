@@ -137,6 +137,25 @@ class RunLocationNotifier extends Notifier<RunLocationState> {
       final apiService = ref.read(groupRunApiServiceProvider);
       final map = await apiService.fetchGroupMemberColors(groupId);
       map.remove(myMemberId);
+
+      // nickname → profile search로 titleName 보완 (그룹 최대 5명이라 N+1 허용)
+      for (final entry in map.entries) {
+        final nickname = entry.value.nickname;
+        if (nickname.isEmpty) continue;
+        try {
+          final info = await apiService.getParticipantInfoByNickname(nickname);
+          if (info?.titleName != null) {
+            map[entry.key] = ParticipantInfo(
+              nickname: entry.value.nickname,
+              titleName: info!.titleName,
+              coreColorCode: entry.value.coreColorCode,
+            );
+          }
+        } catch (e) {
+          _logger.w('titleName fetch failed for $nickname', error: e);
+        }
+      }
+
       _infoCache = map;
       // 이미 수신된 participants에 정보 주입
       if (state.participants.isNotEmpty) {

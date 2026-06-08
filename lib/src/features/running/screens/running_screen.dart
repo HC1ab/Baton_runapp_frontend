@@ -508,12 +508,12 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
         center: LatLng(spot.latitude, spot.longitude),
         radius: spotCheckInRadiusMeters,
         fillColor: checked
-            ? AppColors.primary.withValues(alpha: 0.25)
-            : AppColors.spotNeutral.withValues(alpha: 0.15),
+            ? AppColors.spotNeutral.withValues(alpha: 0.15)
+            : AppColors.primary.withValues(alpha: 0.25),
         strokeColor: checked
-            ? AppColors.primary.withValues(alpha: 0.6)
-            : AppColors.spotNeutral.withValues(alpha: 0.4),
-        strokeWidth: checked ? 2 : 1,
+            ? AppColors.spotNeutral.withValues(alpha: 0.4)
+            : AppColors.primary.withValues(alpha: 0.6),
+        strokeWidth: checked ? 1 : 2,
       ));
     }
     return result;

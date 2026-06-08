@@ -8,8 +8,8 @@ import '../storage/token_storage.dart';
 final _logger = Logger();
 
 /// 토큰 인증 실패 코드 (A001/A002/A003) → forceLogout.
-/// code 없는 401 (Spring Security 레벨 거부)도 forceLogout.
-/// C002/G002/G003 등 권한 부족 401은 forceLogout 대상 아님.
+/// code 없는 401은 forceLogout 대상 아님 — 정원 초과·권한 부족 등
+/// 비즈니스 로직 401도 code 없이 올 수 있으므로 명시적 코드만 처리.
 const _tokenAuthCodes = {'A001', 'A002', 'A003'};
 
 /// Attaches Bearer token to every request.
@@ -49,9 +49,8 @@ class AuthInterceptor extends Interceptor {
       final code = _extractErrorCode(err.response);
       _logger.w('401 received (code: $code) — ${err.requestOptions.method} ${err.requestOptions.path}');
 
-      // A001/A002/A003 또는 code 없는 401(Spring Security 필터 레벨 거부) → forceLogout
-      // C002/G002/G003 등 권한 부족 코드는 해당 없음 → handler.next로 에러 전파
-      final isTokenAuthFailure = code == null || _tokenAuthCodes.contains(code);
+      // A001/A002/A003만 forceLogout — code 없는 401은 비즈니스 로직 에러일 수 있음
+      final isTokenAuthFailure = _tokenAuthCodes.contains(code);
       if (isTokenAuthFailure) {
         // 이미 로그아웃 상태면 중복 호출 방지
         if (_ref.read(authProvider) is AuthStateUnauthenticated) {

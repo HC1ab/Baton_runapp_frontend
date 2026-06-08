@@ -104,8 +104,10 @@ class _CharacterSphereOverlayState extends State<CharacterSphereOverlay> {
       if (!mounted) return;
       setState(() => _screenCoord = coord);
     } on PlatformException catch (e) {
-      if (e.code == 'channel-error') return; // 맵 초기화 전 일시적 에러
+      if (e.code == 'channel-error') return;
       _logger.w('[Overlay] getScreenCoordinate failed', error: e);
+    } on UnsupportedError {
+      return; // 맵 초기화 전 NaN/Infinity 좌표 — 다음 tick에서 재시도
     } catch (e) {
       _logger.w('[Overlay] getScreenCoordinate failed', error: e);
     }

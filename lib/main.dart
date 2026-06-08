@@ -6,6 +6,7 @@ import 'package:google_maps_flutter_android/google_maps_flutter_android.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 
 import 'firebase_options.dart';
 import 'src/app.dart';
@@ -41,6 +42,14 @@ void main() async {
   final apiKey = dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
   if (apiKey.isEmpty) {
     _logger.e('GOOGLE_MAPS_API_KEY is missing in .env.$_env');
+  }
+
+  // ✅ Kakao SDK 초기화 (추가)
+  final kakaoNativeAppKey = dotenv.env['KAKAO_NATIVE_APP_KEY'] ?? '';
+  if (kakaoNativeAppKey.isEmpty) {
+    _logger.e('KAKAO_NATIVE_APP_KEY is missing in .env.$_env');
+  } else {
+    KakaoSdk.init(nativeAppKey: kakaoNativeAppKey);
   }
 
   final prefs = await SharedPreferences.getInstance();

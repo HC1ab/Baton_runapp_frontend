@@ -28,7 +28,7 @@ final socialDioProvider = Provider<Dio>((ref) {
   final dio = Dio(
     BaseOptions(
       baseUrl: dotenv.env['API_BASE_URL'] ??
-          'https://equator-swimming-folic.ngrok-free.dev',
+          'http://api.baton-running-app.kro.kr:8080',
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 15),
       sendTimeout: const Duration(seconds: 15),

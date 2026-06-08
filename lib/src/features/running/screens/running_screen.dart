@@ -121,6 +121,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
 
   // GroundOverlay 캐시 — 위치 변경 시만 재생성
   // Set도 캐시: 클럭 틱마다 동일 참조 반환 → GoogleMap.didUpdateWidget에서 변경 없음 판정
+  bool _isMapReadyForOverlays = false;
   GroundOverlay? _cachedGroundOverlay;
   LatLng? _cachedGroundOverlayPos;
   double? _cachedGroundOverlayBearing;
@@ -561,6 +562,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
         image: bitmap,
         position: pos,
         width: 16,
+        zoomLevel: _defaultZoom,
         bearing: bearing,
         anchor: const Offset(0.5, 0.5),
         zIndex: 10,
@@ -651,9 +653,9 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       _prevTrailColor = characterStyle.baseColor;
       _cachedPolylines = _buildPolylines(record, characterStyle.baseColor);
     }
-    final groundOverlays = _buildGroundOverlays(
-      bearing: _currentHeading ?? 0.0,
-    );
+    final groundOverlays = _isMapReadyForOverlays
+        ? _buildGroundOverlays(bearing: _currentHeading ?? 0.0)
+        : const <GroundOverlay>{};
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -695,6 +697,9 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
                 if (!mounted) return;
                 final pos = _mockPos;
                 if (pos != null) await _updateCamera(pos);
+                await Future<void>.delayed(const Duration(milliseconds: 300));
+                if (!mounted) return;
+                setState(() => _isMapReadyForOverlays = true);
               },
               onTap: (_) => FocusManager.instance.primaryFocus?.unfocus(),
             ),

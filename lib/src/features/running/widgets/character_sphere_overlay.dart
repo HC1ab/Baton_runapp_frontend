@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:logger/logger.dart';
@@ -102,6 +103,9 @@ class _CharacterSphereOverlayState extends State<CharacterSphereOverlay> {
       final coord = await widget.mapController.getScreenCoordinate(pos);
       if (!mounted) return;
       setState(() => _screenCoord = coord);
+    } on PlatformException catch (e) {
+      if (e.code == 'channel-error') return; // 맵 초기화 전 일시적 에러
+      _logger.w('[Overlay] getScreenCoordinate failed', error: e);
     } catch (e) {
       _logger.w('[Overlay] getScreenCoordinate failed', error: e);
     }

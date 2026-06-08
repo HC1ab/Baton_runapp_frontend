@@ -6,7 +6,6 @@ import '../../../core/constants/api_constants.dart';
 import '../../../core/constants/error_messages.dart';
 import '../../../core/error/app_exception.dart';
 import '../../../core/network/dio_client.dart';
-import '../../auth/providers/auth_provider.dart';
 
 final _logger = Logger();
 

@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:logger/logger.dart';
 
 import '../../common/widgets/character_sphere_widget.dart';
+import '../../common/widgets/notification_bell_widget.dart';
 import '../../core/character/character_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_routes.dart';
@@ -19,10 +20,8 @@ import '../../core/utils/app_snack_bar.dart';
 import '../../core/utils/jwt_utils.dart';
 import '../group_running/providers/run_location_provider.dart';
 import 'create_room_screen.dart';
-import 'follow_requests_screen.dart';
 import 'models/run_card_data.dart';
 import 'room_detail_screen.dart';
-import '../../core/follow/providers/follow_providers.dart';
 import 'social_providers.dart';
 import 'widgets/group_run_card.dart';
 
@@ -101,7 +100,12 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
       _logger.i('[SocialFeed] _loadCards() start — myMemberId=$_myMemberId myNickname=$myNickname');
       final raw = await ref.read(groupApiProvider).list();
       _logger.i('[SocialFeed] raw group list (${raw.length}): $raw');
+      // RECRUITING 상태만 표시. COMPLETED/CANCELED는 제외.
       final cards = raw
+          .where((e) {
+            final status = e['status'] as String?;
+            return status == null || status == 'RECRUITING' || status == 'RUNNING';
+          })
           .map((e) => RunCardData.fromServerJson(e, myMemberId: _myMemberId, myNickname: myNickname))
           .toList();
       _logger.i('[SocialFeed] parsed cards: ${cards.map((c) => 'id=${c.groupId} isHost=${c.isHost} isParticipating=${c.isParticipating}').toList()}');
@@ -137,7 +141,6 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
           title: '', time: '', location: '',
           latitude: 0, longitude: 0,
           currentMembers: 0, maxMembers: 0,
-          participantImageUrls: [],
         ) : cards.first,
       );
       if (participating.isHost || participating.isParticipating) {
@@ -207,17 +210,13 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
       return;
     }
     if (card.currentMembers >= card.maxMembers) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(ErrorMessages.groupRoomFull)),
-      );
+      AppSnackBar.error(context, ErrorMessages.groupRoomFull);
       return;
     }
     try {
       await ref.read(groupApiProvider).join(groupId: groupId);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('그룹 참여가 완료됐습니다.')),
-      );
+      AppSnackBar.success(context, '그룹 참여가 완료됐습니다.');
       // 서버 기준으로 정렬/하이라이트 다시 계산.
       await _loadCards();
       if (enterLiveAfter && mounted) {
@@ -230,9 +229,7 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
       }
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(formatApiErrorMessage(e))),
-      );
+      AppSnackBar.error(context, formatApiErrorMessage(e));
     }
   }
 
@@ -243,15 +240,11 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
       await ref.read(groupApiProvider).leave(groupId: groupId);
       await ref.read(runLocationProvider.notifier).leaveRoom();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('그룹에서 나갔습니다.')),
-      );
+      AppSnackBar.success(context, '그룹에서 나갔습니다.');
       Navigator.of(context).maybePop();
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(formatApiErrorMessage(e))),
-      );
+      AppSnackBar.error(context, formatApiErrorMessage(e));
     }
   }
 
@@ -280,16 +273,12 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
       await ref.read(groupApiProvider).delete(groupId: groupId);
       await ref.read(runLocationProvider.notifier).leaveRoom();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('그룹이 삭제됐습니다.')),
-      );
+      AppSnackBar.success(context, '그룹이 삭제됐습니다.');
       Navigator.of(context).maybePop();
       await _loadCards();
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(formatApiErrorMessage(e))),
-      );
+      AppSnackBar.error(context, formatApiErrorMessage(e));
     }
   }
 
@@ -326,9 +315,7 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
     );
     if (value == null || value < 2 || value > 30 || !mounted) {
       if (value != null && mounted && (value < 2 || value > 30)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('최대 인원은 2~30명으로 입력해 주세요.')),
-        );
+        AppSnackBar.error(context, '최대 인원은 2~30명으로 입력해 주세요.');
       }
       return;
     }
@@ -338,15 +325,11 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
             maxParticipants: value,
           );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('그룹 정보가 수정됐습니다.')),
-      );
+      AppSnackBar.success(context, '그룹 정보가 수정됐습니다.');
       await _loadCards();
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(formatApiErrorMessage(e))),
-      );
+      AppSnackBar.error(context, formatApiErrorMessage(e));
     }
   }
 
@@ -398,7 +381,7 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
                       ],
                     ),
                   ),
-                  _NotificationBell(),
+                  const NotificationBellWidget(),
                   SizedBox(width: 12.w),
                   _MyAvatar(),
                 ],
@@ -542,7 +525,8 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
                 currentMembers: card.currentMembers,
                 maxMembers: card.maxMembers,
                 isHighlighted: isMine,
-                participantImageUrls: card.participantImageUrls,
+                participantColorCodes: card.participantColorCodes,
+                hostNickname: card.hostNickname,
                 onJoinPressed: isMine ? null : () => _joinGroup(card),
               ),
             ),
@@ -564,57 +548,3 @@ class _MyAvatar extends ConsumerWidget {
   }
 }
 
-class _NotificationBell extends ConsumerWidget {
-  // ignore: prefer_const_constructors_in_immutables
-  _NotificationBell();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final requestsAsync = ref.watch(pendingFollowRequestsProvider);
-    final count = requestsAsync.when(
-      data: (list) => list.length,
-      loading: () => 0,
-      error: (_, __) => 0,
-    );
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.of(context)
-            .push(MaterialPageRoute<void>(
-              builder: (_) => const FollowRequestsScreen(),
-            ))
-            .then((_) => ref.invalidate(pendingFollowRequestsProvider));
-      },
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Icon(Icons.notifications_rounded,
-              color: AppColors.iconNeutral, size: 22.r),
-          if (count > 0)
-            Positioned(
-              top: -4,
-              right: -4,
-              child: Container(
-                width: 16,
-                height: 16,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFE53935),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    count > 9 ? '9+' : '$count',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}

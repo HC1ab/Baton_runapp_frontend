@@ -11,6 +11,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/error_messages.dart';
 import '../../core/network/api_client.dart';
+import '../../core/utils/app_snack_bar.dart';
 import 'location_picker_screen.dart';
 import 'models/run_card_data.dart';
 import 'social_providers.dart';
@@ -205,9 +206,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     final address = _addressController.text.trim();
 
     if (title.isEmpty || content.isEmpty || placeName.isEmpty || address.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('제목, 내용, 장소명, 주소를 모두 입력해 주세요.')),
-      );
+      AppSnackBar.error(context, '제목, 내용, 장소명, 주소를 모두 입력해 주세요.');
       return;
     }
 
@@ -251,7 +250,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           longitude: _selectedLatLng?.longitude ?? 129.0536,
           currentMembers: 1,
           maxMembers: _memberCount,
-          participantImageUrls: const [''],
+          participantColorCodes: const ['CORE_ORANGE'],
           endTimeLabel: _formatTimeKo(_endTime),
           targetDistance: distanceText,
           placeName: placeName,
@@ -261,14 +260,10 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       );
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(formatApiErrorMessage(e))),
-      );
+      AppSnackBar.error(context, formatApiErrorMessage(e));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(ErrorMessages.unknownError)),
-      );
+      AppSnackBar.error(context, ErrorMessages.unknownError);
     } finally {
       if (mounted) {
         setState(() {

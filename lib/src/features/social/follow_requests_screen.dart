@@ -7,6 +7,7 @@ import '../group_running/services/group_run_api_service.dart';
 import '../profile/screens/member_profile_screen.dart';
 import '../../core/follow/models/follow_request_model.dart';
 import '../../core/follow/providers/follow_providers.dart';
+import '../../core/utils/app_snack_bar.dart';
 
 class FollowRequestsScreen extends ConsumerWidget {
   const FollowRequestsScreen({super.key});
@@ -169,9 +170,7 @@ class _FollowRequestTileState extends ConsumerState<_FollowRequestTile> {
       ref.invalidate(pendingFollowRequestsProvider);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('처리 중 오류가 발생했어요.')),
-        );
+        AppSnackBar.error(context, '처리 중 오류가 발생했어요.');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

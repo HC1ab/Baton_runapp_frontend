@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
+import '../../../core/utils/app_snack_bar.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../auth/providers/auth_provider.dart';
 
@@ -113,9 +114,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('준비 중이에요.')),
-    );
+    AppSnackBar.info(context, '준비 중이에요.');
   }
 
   void _confirmLogout(BuildContext context, WidgetRef ref) {

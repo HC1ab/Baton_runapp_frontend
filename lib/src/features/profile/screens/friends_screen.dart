@@ -4,8 +4,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../common/widgets/character_sphere_widget.dart';
 import '../../../core/character/character_style.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_spacing.dart';
+import '../../../core/constants/app_text_styles.dart';
 import '../../../core/follow/models/follow_member_model.dart';
 import '../../../core/follow/providers/follow_providers.dart';
+import '../../../core/utils/app_snack_bar.dart';
 import 'member_profile_screen.dart';
 import '../services/member_profile_service.dart';
 
@@ -19,11 +23,6 @@ class FriendsScreen extends ConsumerStatefulWidget {
 class _FriendsScreenState extends ConsumerState<FriendsScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
-
-  static const Color _primary = Color(0xFFDD6A3E);
-  static const Color _bg = Color(0xFFF4F4F4);
-  static const Color _textPrimary = Color(0xFF1F1A17);
-  static const Color _textSub = Color(0xFF8C857F);
 
   @override
   void initState() {
@@ -40,39 +39,34 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: AppColors.scaffoldGrey,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.of(context).maybePop(),
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-          color: _primary,
+          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20.r),
+          color: AppColors.primary,
         ),
-        title: const Text(
+        title: Text(
           '친구',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 18.sp,
             fontWeight: FontWeight.w800,
-            color: _textPrimary,
+            color: AppColors.textPrimary,
           ),
         ),
         centerTitle: true,
         bottom: TabBar(
           controller: _tabController,
-          labelColor: _primary,
-          unselectedLabelColor: _textSub,
-          indicatorColor: _primary,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: AppColors.textSecondary,
+          indicatorColor: AppColors.primary,
           indicatorWeight: 2.5,
-          labelStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-          ),
+          labelStyle: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w700),
+          unselectedLabelStyle:
+              TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w500),
           tabs: const [
             Tab(text: '팔로워'),
             Tab(text: '팔로잉'),
@@ -81,9 +75,9 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _FollowerTab(primary: _primary, bg: _bg, textSub: _textSub),
-          _FollowingTab(primary: _primary, bg: _bg, textSub: _textSub),
+        children: const [
+          _FollowerTab(),
+          _FollowingTab(),
         ],
       ),
     );
@@ -95,36 +89,27 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
 // ---------------------------------------------------------------------------
 
 class _FollowerTab extends ConsumerWidget {
-  const _FollowerTab({
-    required this.primary,
-    required this.bg,
-    required this.textSub,
-  });
-
-  final Color primary;
-  final Color bg;
-  final Color textSub;
+  const _FollowerTab();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final followersAsync = ref.watch(followersProvider);
     final followingsAsync = ref.watch(followingsProvider);
 
-    // followings 로딩 중이어도 팔로워 목록은 표시. followingIds만 비어있을 뿐.
     final followingIds = followingsAsync.whenOrNull(
           data: (list) => list.map((m) => m.memberId).toSet(),
         ) ??
         const <int>{};
 
     return RefreshIndicator(
-      color: primary,
+      color: AppColors.primary,
       onRefresh: () async {
         ref.invalidate(followersProvider);
         ref.invalidate(followingsProvider);
       },
       child: followersAsync.when(
         loading: () => const Center(
-          child: CircularProgressIndicator(color: Color(0xFFDD6A3E)),
+          child: CircularProgressIndicator(color: AppColors.primary),
         ),
         error: (e, _) => _buildError(
           ref,
@@ -136,6 +121,7 @@ class _FollowerTab extends ConsumerWidget {
         data: (list) => list.isEmpty
             ? _buildEmpty('아직 팔로워가 없어요.')
             : ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: EdgeInsets.symmetric(vertical: 8.h),
                 itemCount: list.length,
                 itemBuilder: (context, i) {
@@ -161,26 +147,18 @@ class _FollowerTab extends ConsumerWidget {
 // ---------------------------------------------------------------------------
 
 class _FollowingTab extends ConsumerWidget {
-  const _FollowingTab({
-    required this.primary,
-    required this.bg,
-    required this.textSub,
-  });
-
-  final Color primary;
-  final Color bg;
-  final Color textSub;
+  const _FollowingTab();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final followingsAsync = ref.watch(followingsProvider);
 
     return RefreshIndicator(
-      color: primary,
+      color: AppColors.primary,
       onRefresh: () async => ref.invalidate(followingsProvider),
       child: followingsAsync.when(
         loading: () => const Center(
-          child: CircularProgressIndicator(color: Color(0xFFDD6A3E)),
+          child: CircularProgressIndicator(color: AppColors.primary),
         ),
         error: (e, _) => _buildError(
           ref,
@@ -189,6 +167,7 @@ class _FollowingTab extends ConsumerWidget {
         data: (list) => list.isEmpty
             ? _buildEmpty('팔로잉하는 친구가 없어요.')
             : ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: EdgeInsets.symmetric(vertical: 8.h),
                 itemCount: list.length,
                 itemBuilder: (context, i) => _FriendTile(
@@ -218,8 +197,7 @@ class _FollowingTab extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFFD64545)),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('삭제'),
           ),
         ],
@@ -234,9 +212,7 @@ class _FollowingTab extends ConsumerWidget {
       ref.invalidate(followingsProvider);
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('삭제에 실패했어요. 다시 시도해주세요.')),
-      );
+      AppSnackBar.error(context, '삭제에 실패했어요. 다시 시도해주세요.');
     }
   }
 }
@@ -270,9 +246,6 @@ class _FriendTileState extends ConsumerState<_FriendTile> {
   bool _requestSent = false;
   bool _requesting = false;
 
-  static const Color _primary = Color(0xFFDD6A3E);
-  static const Color _textSub = Color(0xFF8C857F);
-
   Future<void> _sendFollowRequest() async {
     if (_requesting || _requestSent) return;
     setState(() => _requesting = true);
@@ -286,14 +259,11 @@ class _FriendTileState extends ConsumerState<_FriendTile> {
         _requesting = false;
         _requestSent = true;
       });
-      // followings 목록 갱신 — 신청 수락 전이므로 실제 반영은 수락 후
       ref.invalidate(followingsProvider);
     } catch (e) {
       if (!mounted) return;
       setState(() => _requesting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('팔로우 신청에 실패했어요. 다시 시도해주세요.')),
-      );
+      AppSnackBar.error(context, '팔로우 신청에 실패했어요. 다시 시도해주세요.');
     }
   }
 
@@ -331,7 +301,7 @@ class _FriendTileState extends ConsumerState<_FriendTile> {
           style: TextStyle(
             fontSize: 16.sp,
             fontWeight: FontWeight.w700,
-            color: const Color(0xFF1F1A17),
+            color: AppColors.textPrimary,
           ),
         ),
       ),
@@ -345,7 +315,7 @@ class _FriendTileState extends ConsumerState<_FriendTile> {
         return IconButton(
           onPressed: widget.onDelete,
           icon: const Icon(Icons.person_remove_rounded),
-          color: _textSub,
+          color: AppColors.textSecondary,
           tooltip: '팔로잉 삭제',
         );
 
@@ -353,15 +323,15 @@ class _FriendTileState extends ConsumerState<_FriendTile> {
         return Container(
           padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
           decoration: BoxDecoration(
-            color: _primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20.r),
+            color: AppColors.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
           ),
           child: Text(
             '맞팔',
             style: TextStyle(
               fontSize: 12.sp,
               fontWeight: FontWeight.w700,
-              color: _primary,
+              color: AppColors.primary,
             ),
           ),
         );
@@ -371,15 +341,15 @@ class _FriendTileState extends ConsumerState<_FriendTile> {
           return Container(
             padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
             decoration: BoxDecoration(
-              color: const Color(0xFFEEEEEE),
-              borderRadius: BorderRadius.circular(20.r),
+              color: AppColors.divider,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
             ),
             child: Text(
               '신청됨',
               style: TextStyle(
                 fontSize: 12.sp,
                 fontWeight: FontWeight.w600,
-                color: _textSub,
+                color: AppColors.textSecondary,
               ),
             ),
           );
@@ -389,21 +359,22 @@ class _FriendTileState extends ConsumerState<_FriendTile> {
                 width: 20.r,
                 height: 20.r,
                 child: const CircularProgressIndicator(
-                  color: _primary,
+                  color: AppColors.primary,
                   strokeWidth: 2,
                 ),
               )
             : TextButton(
                 onPressed: _sendFollowRequest,
                 style: TextButton.styleFrom(
-                  foregroundColor: _primary,
+                  foregroundColor: AppColors.primary,
                   padding:
                       EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20.r),
-                    side: const BorderSide(color: _primary),
+                    borderRadius:
+                        BorderRadius.circular(AppSpacing.radiusFull),
+                    side: const BorderSide(color: AppColors.primary),
                   ),
                   textStyle: TextStyle(
                     fontSize: 12.sp,
@@ -421,50 +392,65 @@ class _FriendTileState extends ConsumerState<_FriendTile> {
 // ---------------------------------------------------------------------------
 
 Widget _buildError(WidgetRef ref, {required VoidCallback onRetry}) {
-  return Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Text(
-          '목록을 불러오지 못했어요.',
-          style: TextStyle(color: Color(0xFF8C857F), fontSize: 14),
-        ),
-        const SizedBox(height: 12),
-        ElevatedButton(
-          onPressed: onRetry,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFDD6A3E),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+  return ListView(
+    physics: const AlwaysScrollableScrollPhysics(),
+    children: [
+      SizedBox(height: 160.h),
+      Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '목록을 불러오지 못했어요.',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 14.sp,
+              ),
             ),
-          ),
-          child: const Text('다시 시도', style: TextStyle(color: Colors.white)),
+            SizedBox(height: 12.h),
+            ElevatedButton(
+              onPressed: onRetry,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                ),
+              ),
+              child: const Text('다시 시도',
+                  style: TextStyle(color: Colors.white)),
+            ),
+          ],
         ),
-      ],
-    ),
+      ),
+    ],
   );
 }
 
 Widget _buildEmpty(String message) {
-  return Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(
-          Icons.people_outline_rounded,
-          size: 48,
-          color: Color(0xFFCCCCCC),
+  return ListView(
+    physics: const AlwaysScrollableScrollPhysics(),
+    children: [
+      SizedBox(height: 160.h),
+      Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.people_outline_rounded,
+              size: 48.r,
+              color: AppColors.divider,
+            ),
+            SizedBox(height: 12.h),
+            Text(
+              message,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
-        Text(
-          message,
-          style: const TextStyle(
-            color: Color(0xFF8C857F),
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    ),
+      ),
+    ],
   );
 }

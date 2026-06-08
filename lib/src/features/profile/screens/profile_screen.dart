@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../common/widgets/character_sphere_widget.dart';
+import '../../../common/widgets/notification_bell_widget.dart';
 import '../../../core/character/character_provider.dart';
 import '../../../core/character/character_style.dart';
 import '../../../core/constants/app_routes.dart';
@@ -174,6 +175,8 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ),
         const Spacer(),
+        const NotificationBellWidget(),
+        SizedBox(width: 4.w),
         IconButton(
           onPressed: () => context.push(AppRoutes.settings),
           icon: const Icon(Icons.settings_rounded, color: _primary, size: 24),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/app_snack_bar.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/services/auth_service.dart';
@@ -235,17 +236,12 @@ class AccountScreen extends ConsumerWidget {
                                   );
                               if (ctx.mounted) {
                                 Navigator.of(ctx).pop();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('비밀번호가 변경되었어요.')),
-                                );
+                                AppSnackBar.success(context, '비밀번호가 변경되었어요.');
                               }
                             } catch (e) {
                               setSheetState(() => isLoading = false);
                               if (ctx.mounted) {
-                                ScaffoldMessenger.of(ctx).showSnackBar(
-                                  SnackBar(content: Text(e.toString())),
-                                );
+                                AppSnackBar.error(ctx, e.toString());
                               }
                             }
                           },
@@ -324,9 +320,7 @@ class AccountScreen extends ConsumerWidget {
                 await ref.read(authProvider.notifier).forceLogout();
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(e.toString())),
-                  );
+                  AppSnackBar.error(context, e.toString());
                 }
               }
             },

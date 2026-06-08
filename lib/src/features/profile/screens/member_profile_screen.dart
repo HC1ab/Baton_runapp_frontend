@@ -8,6 +8,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/follow/providers/follow_providers.dart';
+import '../../../core/utils/app_snack_bar.dart';
 import '../models/member_profile_model.dart';
 import '../services/member_profile_service.dart';
 
@@ -256,9 +257,7 @@ class _FollowSectionState extends ConsumerState<_FollowSection> {
       ref.invalidate(memberProfileProvider(widget.profile.nickname));
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('팔로우 신청 중 오류가 발생했어요.')),
-        );
+        AppSnackBar.error(context, '팔로우 신청 중 오류가 발생했어요.');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -271,9 +270,7 @@ class _FollowSectionState extends ConsumerState<_FollowSection> {
     if (followId == null || followId.isEmpty) {
       // followId 없으면 취소 불가 안내
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('앱을 재시작한 뒤 다시 시도해주세요.')),
-        );
+        AppSnackBar.error(context, '앱을 재시작한 뒤 다시 시도해주세요.');
       }
       return;
     }
@@ -284,9 +281,7 @@ class _FollowSectionState extends ConsumerState<_FollowSection> {
       ref.invalidate(memberProfileProvider(widget.profile.nickname));
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('신청 취소 중 오류가 발생했어요.')),
-        );
+        AppSnackBar.error(context, '신청 취소 중 오류가 발생했어요.');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -302,9 +297,7 @@ class _FollowSectionState extends ConsumerState<_FollowSection> {
       final followId = await _resolveFollowId();
       if (followId == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('팔로우 정보를 찾을 수 없어요.')),
-          );
+          AppSnackBar.error(context, '팔로우 정보를 찾을 수 없어요.');
         }
         return;
       }
@@ -314,9 +307,7 @@ class _FollowSectionState extends ConsumerState<_FollowSection> {
       ref.invalidate(memberProfileProvider(widget.profile.nickname));
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('팔로우 삭제 중 오류가 발생했어요.')),
-        );
+        AppSnackBar.error(context, '팔로우 삭제 중 오류가 발생했어요.');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -364,9 +355,7 @@ class _FollowSectionState extends ConsumerState<_FollowSection> {
       ref.invalidate(pendingFollowRequestsProvider);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('처리 중 오류가 발생했어요.')),
-        );
+        AppSnackBar.error(context, '처리 중 오류가 발생했어요.');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -386,7 +375,28 @@ class _FollowSectionState extends ConsumerState<_FollowSection> {
       );
     }
 
-    switch (widget.profile.relationStatus) {
+    // 백엔드 follow는 대칭 시스템:
+    //   A→B ACCEPTED 후 B→A 신청 시 400 ("이미 관계가 있음")
+    //   → effectiveStatus는 항상 서버 값 신뢰 (none 오버라이드 제거 — 팔로우 신청 400 유발)
+    //   → iActuallyFollow / theyFollowMe 는 FRIEND 케이스 배지 라벨 구분용으로만 사용.
+    final followingsAsync = ref.watch(followingsProvider);
+    final followersAsync = ref.watch(followersProvider);
+
+    final iActuallyFollow = followingsAsync.whenOrNull(
+          data: (list) =>
+              list.any((m) => m.memberId == widget.profile.memberId),
+        ) ??
+        false;
+    final theyFollowMe = followersAsync.whenOrNull(
+          data: (list) =>
+              list.any((m) => m.memberId == widget.profile.memberId),
+        ) ??
+        false;
+
+    // 서버 값 그대로 사용 — 절대 none으로 강제 변환하지 않음
+    final effectiveStatus = widget.profile.relationStatus;
+
+    switch (effectiveStatus) {
       // ── 관계 없음 → 팔로우 신청 ──────────────────────────────────────────
       case RelationStatus.none:
         return Center(
@@ -463,8 +473,16 @@ class _FollowSectionState extends ConsumerState<_FollowSection> {
           onHandle: _handleRequest,
         );
 
-      // ── 친구 → 팔로잉 배지 + 삭제 ───────────────────────────────────────
+      // ── 친구 → 팔로잉/팔로워 배지 + 삭제 ──────────────────────────────
+      // iActuallyFollow=true  → 내가 팔로우 중 → "팔로잉"
+      // theyFollowMe=true     → 상대가 나를 팔로우 중 → "팔로워"
+      // 둘 다 false = 캐시 로딩 중 → "팔로잉"(서버 FRIEND 신뢰)
       case RelationStatus.friend:
+        final badgeLabel = iActuallyFollow
+            ? '팔로잉'
+            : theyFollowMe
+                ? '팔로워'
+                : '팔로잉';
         return Center(
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -482,7 +500,7 @@ class _FollowSectionState extends ConsumerState<_FollowSection> {
                         size: 16.r, color: Colors.white),
                     SizedBox(width: 6.w),
                     Text(
-                      '팔로잉',
+                      badgeLabel,
                       style: TextStyle(
                         fontSize: 14.sp,
                         fontWeight: FontWeight.w700,

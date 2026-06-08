@@ -8,6 +8,7 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/error_messages.dart';
 import '../../../core/error/app_exception.dart';
+import '../../../core/utils/app_snack_bar.dart';
 import '../../../core/myroom/my_room_service.dart';
 import '../services/shop_service.dart';
 import '../widgets/purchase_success_dialog.dart';
@@ -271,22 +272,12 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
       }
     } on AppException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        AppSnackBar.error(context, e.message);
       }
     } catch (e) {
       _logger.e('purchase unexpected error', error: e);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(ErrorMessages.purchaseFailed),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        AppSnackBar.error(context, ErrorMessages.purchaseFailed);
       }
     } finally {
       if (mounted) setState(() => _purchasingItemId = null);

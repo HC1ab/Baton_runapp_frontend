@@ -12,6 +12,7 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/error/app_exception.dart';
+import '../../../core/utils/app_snack_bar.dart';
 import '../services/my_room_service.dart';
 import '../services/profile_service.dart';
 import '../services/title_service.dart';
@@ -362,16 +363,12 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
       _logger.i('Core color changed: $confirmedCode');
     } on AppException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message)),
-        );
+        AppSnackBar.error(context, e.message);
       }
     } catch (e) {
       _logger.e('changeCoreColor unexpected error', error: e);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('색상 변경에 실패했어요. 다시 시도해주세요.')),
-        );
+        AppSnackBar.error(context, '색상 변경에 실패했어요. 다시 시도해주세요.');
       }
     } finally {
       if (mounted) setState(() => _isChangingColor = false);
@@ -379,9 +376,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
   }
 
   void _showLockedMessage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Baton Shop에서 구매 후 사용할 수 있어요.')),
-    );
+    AppSnackBar.info(context, 'Baton Shop에서 구매 후 사용할 수 있어요.');
   }
 
   // ── Titles Tab ───────────────────────────────────────────────────────────
@@ -572,16 +567,12 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
       _logger.i('Title equipped: ${title.name}');
     } on AppException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message)),
-        );
+        AppSnackBar.error(context, e.message);
       }
     } catch (e) {
       _logger.e('equipTitle unexpected error', error: e);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('칭호 장착에 실패했어요. 다시 시도해주세요.')),
-        );
+        AppSnackBar.error(context, '칭호 장착에 실패했어요. 다시 시도해주세요.');
       }
     } finally {
       if (mounted) setState(() => _isEquippingTitle = false);

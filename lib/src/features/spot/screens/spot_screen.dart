@@ -206,19 +206,19 @@ class _SpotCooldownCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // 스팟 아이콘 — 쿨타임 중: 주황, 체크인 가능: 흰색 아이콘+primary 배경
+              // 스팟 아이콘 — 체크인 가능: 주황(primary), 쿨타임 중: 회색(spotNeutral)
               Container(
                 width: 44.r,
                 height: 44.r,
                 decoration: BoxDecoration(
                   color: isAvailable
                       ? AppColors.primary
-                      : AppColors.warning.withValues(alpha: 0.12),
+                      : AppColors.spotNeutral.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Icon(
                   Icons.location_on_rounded,
-                  color: isAvailable ? Colors.white : AppColors.warning,
+                  color: isAvailable ? Colors.white : AppColors.spotNeutral,
                   size: 22.r,
                 ),
               ),
@@ -274,17 +274,17 @@ class _SpotCooldownCard extends StatelessWidget {
               _RewardBadge(
                 icon: Icons.bolt_rounded,
                 label: '+${spot.expAmount} EXP',
-                iconColor: const Color(0xFFFF8C42),
-                bgColor: const Color(0xFFFFF3EC),
-                textColor: const Color(0xFFCC5500),
+                iconColor: AppColors.rewardExpIcon,
+                bgColor: AppColors.rewardExpBg,
+                textColor: AppColors.rewardExpText,
               ),
               SizedBox(width: 8.w),
               _RewardBadge(
                 icon: Icons.monetization_on_rounded,
                 label: '${spot.rewardAmount}P',
-                iconColor: const Color(0xFFE8A800),
-                bgColor: const Color(0xFFFFF8E1),
-                textColor: const Color(0xFFB07800),
+                iconColor: AppColors.rewardPointIcon,
+                bgColor: AppColors.rewardPointBg,
+                textColor: AppColors.rewardPointText,
               ),
             ],
           ),

@@ -21,8 +21,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:launchMode="singleTop"
-            android:taskAffinity=""
+            android:launchMode="singleTask"
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
@@ -37,22 +36,12 @@
             </intent-filter>
         </activity>
 
-        <!-- Kakao Login Redirect Handler -->
-        <activity
-            android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <!-- 여기 네이티브 앱 키 숫자로 바꿔 -->
-                <data android:scheme="kakao2874b1ddd63704e933c80e7f384c6e6d" android:host="oauth" />
-            </intent-filter>
-        </activity>
 
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+
     </application>
 
     <queries>

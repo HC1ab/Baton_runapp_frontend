@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:logger/logger.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+import 'package:logger/logger.dart';
 
 import '../../../core/constants/error_messages.dart';
 import '../../../core/error/app_exception.dart';
@@ -96,23 +96,42 @@ class LoginNotifier extends Notifier<LoginState> {
   // ---------------------------
   Future<void> loginWithKakao() async {
     state = const LoginState(status: LoginStatus.loading);
+    _logger.d('[Kakao] loginWithKakao() start');
 
     try {
       OAuthToken token;
 
-      // 카카오톡 설치되어 있으면 카카오톡 로그인, 아니면 계정 로그인으로 fallback
-      if (await isKakaoTalkInstalled()) {
+      // 1. 기존 유효 토큰 재사용 — 있으면 동의 화면 스킵
+      final hasToken = await AuthApi.instance.hasToken();
+      _logger.d('[Kakao] hasToken=$hasToken');
+
+      if (hasToken) {
         try {
-          token = await UserApi.instance.loginWithKakaoTalk();
-        } catch (_) {
-          token = await UserApi.instance.loginWithKakaoAccount();
+          final info = await UserApi.instance.accessTokenInfo();
+          _logger.d('[Kakao] accessTokenInfo OK — expiresIn=${info.expiresIn}');
+          final stored =
+              await TokenManagerProvider.instance.manager.getToken();
+          if (stored != null) {
+            _logger.d('[Kakao] reusing existing token');
+            token = stored;
+          } else {
+            _logger.d('[Kakao] stored token null → fresh login');
+            token = await _kakaoFreshLogin();
+          }
+        } catch (e) {
+          _logger.w('[Kakao] accessTokenInfo failed → fresh login', error: e);
+          token = await _kakaoFreshLogin();
         }
       } else {
-        token = await UserApi.instance.loginWithKakaoAccount();
+        _logger.d('[Kakao] no token → fresh login');
+        token = await _kakaoFreshLogin();
       }
 
       final kakaoAccessToken = token.accessToken;
+      _logger.d('[Kakao] accessToken length=${kakaoAccessToken.length}');
+
       if (kakaoAccessToken.isEmpty) {
+        _logger.w('[Kakao] accessToken empty → error');
         state = const LoginState(
           status: LoginStatus.error,
           errorMessage: ErrorMessages.loginFailed,
@@ -120,43 +139,72 @@ class LoginNotifier extends Notifier<LoginState> {
         return;
       }
 
+      _logger.d('[Kakao] calling backend loginWithKakao');
       final service = ref.read(authServiceProvider);
-
-      // ✅ AuthService에 이 메서드 추가 필요:
-      // Future<AuthResult> loginWithKakao({required String kakaoAccessToken});
       final result = await service.loginWithKakao(kakaoAccessToken: kakaoAccessToken);
+      _logger.i('[Kakao] backend login success — nickname=${result.nickname}');
 
       await ref.read(authProvider.notifier).onLoginSuccess(result);
       state = const LoginState(status: LoginStatus.success);
     } on KakaoException catch (e) {
-      _logger.e('Kakao login error', error: e);
+      _logger.e('[Kakao] KakaoException', error: e);
       state = const LoginState(
         status: LoginStatus.error,
         errorMessage: ErrorMessages.loginFailed,
       );
-    } on AuthException {
+    } on AuthException catch (e) {
+      _logger.e('[Kakao] AuthException', error: e);
       state = const LoginState(
         status: LoginStatus.error,
         errorMessage: ErrorMessages.loginFailed,
       );
-    } on NetworkException {
+    } on NetworkException catch (e) {
+      _logger.e('[Kakao] NetworkException', error: e);
       state = const LoginState(
         status: LoginStatus.error,
         errorMessage: ErrorMessages.networkError,
       );
-    } on TimeoutException {
+    } on TimeoutException catch (e) {
+      _logger.e('[Kakao] TimeoutException', error: e);
       state = const LoginState(
         status: LoginStatus.error,
         errorMessage: ErrorMessages.timeoutError,
       );
     } on AppException catch (e) {
+      _logger.e('[Kakao] AppException', error: e);
       state = LoginState(status: LoginStatus.error, errorMessage: e.message);
-    } catch (e) {
-      _logger.e('Unexpected kakao login error', error: e);
+    } catch (e, st) {
+      _logger.e('[Kakao] Unexpected error', error: e, stackTrace: st);
       state = const LoginState(
         status: LoginStatus.error,
         errorMessage: ErrorMessages.unknownError,
       );
+    }
+  }
+
+  /// 카카오톡 앱 → 카카오 계정 순 fallback 로그인 (동의 화면 포함).
+  Future<OAuthToken> _kakaoFreshLogin() async {
+    final talkInstalled = await isKakaoTalkInstalled();
+    _logger.d('[Kakao] _kakaoFreshLogin — talkInstalled=$talkInstalled');
+
+    if (talkInstalled) {
+      try {
+        _logger.d('[Kakao] calling loginWithKakaoTalk()');
+        final token = await UserApi.instance.loginWithKakaoTalk();
+        _logger.d('[Kakao] loginWithKakaoTalk() returned');
+        return token;
+      } catch (e) {
+        _logger.w('[Kakao] loginWithKakaoTalk() failed → fallback account', error: e);
+        _logger.d('[Kakao] calling loginWithKakaoAccount() fallback');
+        final token = await UserApi.instance.loginWithKakaoAccount();
+        _logger.d('[Kakao] loginWithKakaoAccount() fallback returned');
+        return token;
+      }
+    } else {
+      _logger.d('[Kakao] calling loginWithKakaoAccount()');
+      final token = await UserApi.instance.loginWithKakaoAccount();
+      _logger.d('[Kakao] loginWithKakaoAccount() returned');
+      return token;
     }
   }
 

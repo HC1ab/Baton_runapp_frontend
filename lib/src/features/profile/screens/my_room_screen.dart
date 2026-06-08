@@ -12,6 +12,8 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/app_routes.dart';
+import '../../../core/constants/storage_keys.dart';
+import '../constants/title_presets.dart';
 import '../../../core/error/app_exception.dart';
 import '../../../core/utils/app_snack_bar.dart';
 import '../services/my_room_service.dart';
@@ -567,9 +569,16 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
     try {
       await ref.read(titleServiceProvider).equipTitle(title.titleId);
       if (!mounted) return;
+      // titleId → titleCode 변환 (TitlePresets는 id와 1:1 대응)
+      final preset = TitlePresets.all.where((t) => t.id == title.titleId).firstOrNull;
+      if (preset != null) {
+        final prefs = ref.read(sharedPreferencesProvider);
+        await prefs.setString(StorageKeys.equippedTitleCode, preset.titleCode);
+        ref.invalidate(myEquippedTitleNameProvider);
+      }
       ref.invalidate(myRoomProvider);
       ref.invalidate(profileProvider);
-      _logger.i('Title equipped: ${title.name}');
+      _logger.i('Title equipped: ${title.name} (id=${title.titleId})');
     } on AppException catch (e) {
       if (mounted) {
         AppSnackBar.error(context, e.message);

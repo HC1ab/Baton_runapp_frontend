@@ -9,7 +9,10 @@ import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/shell/shell_providers.dart';
 import '../../core/shell/tab_providers.dart';
+import '../auth/providers/auth_provider.dart';
 import '../group_running/providers/run_location_provider.dart';
+
+const _isDev = String.fromEnvironment('ENV', defaultValue: 'dev') == 'dev';
 
 /// Root shell: owns the bottom nav + IndexedStack.
 /// Does NOT import any feature directly — tabs are registered via [TabRegistry].
@@ -59,6 +62,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
         ],
       ),
+      floatingActionButton: _isDev
+          ? FloatingActionButton.small(
+              heroTag: 'dev_logout',
+              backgroundColor: Colors.red.shade700,
+              onPressed: () => ref.read(authProvider.notifier).forceLogout(),
+              tooltip: '[DEV] 강제 로그아웃',
+              child: const Icon(Icons.logout, color: Colors.white, size: 18),
+            )
+          : null,
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: currentTab,
         onTap: _onTabTap,

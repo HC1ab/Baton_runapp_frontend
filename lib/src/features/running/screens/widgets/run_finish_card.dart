@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_routes.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/error_messages.dart';
+import '../../../run_share/models/run_share_data.dart';
 import '../../models/run_record_model.dart';
 
 class RunFinishCard extends StatelessWidget {
@@ -194,6 +197,34 @@ class RunFinishCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: 24.h),
+
+          // 공유 카드 버튼
+          SizedBox(
+            width: double.infinity,
+            height: 48.h,
+            child: OutlinedButton.icon(
+              onPressed: () => context.push(
+                AppRoutes.runShare,
+                extra: RunShareData.fromRecord(record),
+              ),
+              icon: Icon(Icons.share_rounded,
+                  size: 18.r, color: AppColors.primary),
+              label: Text(
+                '공유 카드 만들기',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: AppColors.primary, width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: 10.h),
 
           // 확인 버튼
           SizedBox(

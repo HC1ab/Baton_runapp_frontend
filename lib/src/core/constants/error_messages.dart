@@ -40,4 +40,6 @@ abstract final class ErrorMessages {
   static const spotOutOfRange = '반경 30m 밖에서는 체크인할 수 없어요.';
   static const spotNotFound = '존재하지 않는 스팟이에요.';
   static const spotAlreadyCheckedInCard = '24시간 이내 이미 체크인한 스팟이에요.';
+  static String spotCheckedInCard(int totalPoints) =>
+      '체크인 완료! 현재 ${totalPoints}P 보유';
 }

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_routes.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../run_share/models/run_share_data.dart';
 import '../providers/history_providers.dart';
 
 class RunDetailScreen extends ConsumerStatefulWidget {
@@ -77,6 +80,19 @@ class _RunDetailScreenState extends ConsumerState<RunDetailScreen> {
           ),
         ),
         centerTitle: false,
+        actions: [
+          detailAsync.whenOrNull(
+            data: (detail) => IconButton(
+              icon: Icon(Icons.share_rounded,
+                  color: AppColors.textPrimary, size: 22.r),
+              tooltip: '공유 카드',
+              onPressed: () => context.push(
+                AppRoutes.runShare,
+                extra: RunShareData.fromDetail(detail),
+              ),
+            ),
+          ) ?? const SizedBox.shrink(),
+        ],
       ),
       body: detailAsync.when(
         loading: () => const Center(

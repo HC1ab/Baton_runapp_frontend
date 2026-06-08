@@ -43,6 +43,14 @@ abstract final class AppColors {
   // --- Map overlays ---
   static const spotNeutral = Color(0xFF888888);
 
+  // --- Reward badges (EXP / Point) ---
+  static const rewardExpIcon    = Color(0xFFFF8C42); // EXP 아이콘
+  static const rewardExpBg      = Color(0xFFFFF3EC); // EXP 배지 배경
+  static const rewardExpText    = Color(0xFFCC5500); // EXP 텍스트
+  static const rewardPointIcon  = Color(0xFFE8A800); // 포인트 아이콘
+  static const rewardPointBg    = Color(0xFFFFF8E1); // 포인트 배지 배경
+  static const rewardPointText  = Color(0xFFB07800); // 포인트 텍스트
+
   // --- Social ---
   static const socialAccent = Color(0xFFF7673B);    // point orange (social feed / FAB)
   static const scaffoldGrey = Color(0xFFF4F4F4);    // light grey scaffold bg

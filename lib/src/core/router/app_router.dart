@@ -14,6 +14,8 @@ import '../../features/settings/screens/notice_detail_screen.dart';
 import '../../features/settings/screens/notice_list_screen.dart';
 import '../../features/profile/screens/friends_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
+import '../../features/run_share/models/run_share_data.dart';
+import '../../features/run_share/screens/run_share_screen.dart';
 import '../../features/shop/screens/shop_screen.dart';
 import '../constants/app_routes.dart';
 
@@ -103,6 +105,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '${AppRoutes.runDetail}/:runId',
         builder: (_, state) => RunDetailScreen(
           runId: int.parse(state.pathParameters['runId']!),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.runShare,
+        builder: (_, state) => RunShareScreen(
+          data: state.extra as RunShareData,
         ),
       ),
       // RunningScreen은 HomeScreen의 IndexedStack 안에 포함됨

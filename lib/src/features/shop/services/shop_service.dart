@@ -41,6 +41,13 @@ class ShopItem {
   /// True for Title items.
   bool get isTitle => code.startsWith('TITLE_');
 
+  /// True for Aura items.
+  bool get isAura => code.startsWith('AURA_');
+
+  /// True for miscellaneous equip items shown in the Inventory tab
+  /// (anything that isn't a color, title, or aura).
+  bool get isInventory => !isCoreColor && !isTitle && !isAura;
+
   factory ShopItem.fromJson(Map<String, dynamic> json) {
     return ShopItem(
       itemId: json['itemId'] as int,
@@ -182,9 +189,8 @@ final shopItemsProvider = FutureProvider<List<ShopItem>>((ref) {
 });
 
 /// Current user's total points.
-/// Initialized from GET /api/v1/member/me on first access.
+/// Initialized from GET /api/v1/points/me on first access.
 /// Updated after purchase via set().
-/// TODO: replace _fetchPoints() with dedicated points API when available.
 class UserPointsNotifier extends Notifier<int> {
   @override
   int build() {
@@ -195,14 +201,14 @@ class UserPointsNotifier extends Notifier<int> {
   Future<void> _fetchPoints() async {
     try {
       final dio = ref.read(dioProvider);
-      final response = await dio.get(ApiConstants.me);
+      final response = await dio.get(ApiConstants.pointsMe);
       final raw = response.data;
       if (raw is Map<String, dynamic> && raw['success'] == true) {
         final data = raw['data'] as Map<String, dynamic>?;
-        state = (data?['totalPoints'] as int?) ?? 0;
+        state = (data?['currentTotalPoints'] as num?)?.toInt() ?? 0;
       }
     } catch (_) {
-      // /me 미구현 or 비인증 상태 — 0 유지
+      // 비인증 상태 등 — 0 유지
     }
   }
 

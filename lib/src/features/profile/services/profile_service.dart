@@ -34,12 +34,13 @@ class ProfileModel {
 
   final String equippedTitleName;
 
-  /// "M'SS\"" 형식으로 변환 (예: 5.42분/km → "5'42\"")
+  /// 백엔드가 "분 단위 소수"로 내려주므로(예: 0.97 = 0.97분/km) 60을 곱해 총 초로 환산 후 분/초로 분해
   String get avgPaceText {
     if (avgPace <= 0) return "0'00\"";
-    final min = avgPace.truncate();
-    final sec = ((avgPace * 100) % 100).round();
-    return "$min'${sec.toString().padLeft(2, '0')}\"";
+    final totalSec = (avgPace * 60).round();
+    final m = totalSec ~/ 60;
+    final s = totalSec % 60;
+    return "$m'${s.toString().padLeft(2, '0')}\"";
   }
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) {

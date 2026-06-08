@@ -23,8 +23,10 @@ class MonthlySummaryModel {
   final int earnedPoints;
 
   factory MonthlySummaryModel.fromJson(Map<String, dynamic> json) {
-    // 백엔드는 'avgPace'로 전송 (avgPaceSecPerKm 필드 없음)
-    final paceSec = (json['avgPaceSecPerKm'] ?? json['avgPace'] as num? ?? 0).toInt();
+    // 백엔드는 'avgPace'를 "분 단위 소수"로 전송 (예: 0.97 = 0.97분/km) → 초/km로 환산
+    final rawPace =
+        (json['avgPaceSecPerKm'] ?? json['avgPace'] as num? ?? 0).toDouble();
+    final paceSec = (rawPace * 60).round();
     final paceText = json['avgPaceText'] as String? ?? _formatPace(paceSec);
     return MonthlySummaryModel(
       year: json['year'] as int? ?? 0,

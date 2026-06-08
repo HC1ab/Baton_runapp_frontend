@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../common/widgets/character_sphere_widget.dart';
+import '../../../common/widgets/rarity_title_badge.dart';
+import '../../../core/character/character_provider.dart';
 import '../../../core/constants/app_routes.dart';
+import '../../../core/myroom/my_room_service.dart';
 import '../../../core/shell/tab_providers.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../services/profile_service.dart';
@@ -34,7 +38,7 @@ class ProfileScreen extends ConsumerWidget {
             children: [
               _buildAppBar(context, ref),
               const SizedBox(height: 12),
-              _buildHeroAvatar(),
+              _buildHeroAvatar(ref),
               const SizedBox(height: 20),
               Text(
                 profile.nickname,
@@ -45,18 +49,8 @@ class ProfileScreen extends ConsumerWidget {
                   color: _textPrimary,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                profile.equippedTitleName.isEmpty
-                    ? 'No Title'
-                    : profile.equippedTitleName,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: _primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              const SizedBox(height: 6),
+              _buildEquippedTitleBadge(ref, profile.equippedTitleName),
               const SizedBox(height: 20),
               _buildLevelCard(profile.level),
               const SizedBox(height: 14),
@@ -109,6 +103,38 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildEquippedTitleBadge(WidgetRef ref, String equippedTitleName) {
+    if (equippedTitleName.isEmpty) {
+      return Text(
+        'No Title',
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontSize: 15,
+          color: _primary,
+          fontWeight: FontWeight.w600,
+        ),
+      );
+    }
+
+    final rarity = ref.watch(myRoomProvider).maybeWhen(
+          data: (myRoom) => myRoom.titles
+              .cast<MyRoomTitleItem?>()
+              .firstWhere(
+                (t) => t?.name == equippedTitleName,
+                orElse: () => null,
+              )
+              ?.rarity,
+          orElse: () => null,
+        ) ??
+        'NORMAL';
+
+    return RarityTitleBadge(
+      title: equippedTitleName,
+      rarity: rarity,
+      fontSize: 15,
     );
   }
 
@@ -170,32 +196,10 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeroAvatar() {
+  Widget _buildHeroAvatar(WidgetRef ref) {
+    final style = ref.watch(selectedCharacterStyleProvider);
     return Center(
-      child: Container(
-        width: 180,
-        height: 180,
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            center: Alignment(-0.2, -0.3),
-            radius: 0.95,
-            colors: [
-              Color(0xFFF5A57E),
-              Color(0xFFD96A3F),
-              Color(0xFF8E3A1E),
-            ],
-            stops: [0.0, 0.55, 1.0],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x33D96A3F),
-              blurRadius: 30,
-              offset: Offset(0, 12),
-            ),
-          ],
-        ),
-      ),
+      child: CharacterSphereWidget(style: style, size: 180),
     );
   }
 

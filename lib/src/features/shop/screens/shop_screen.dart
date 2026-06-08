@@ -23,6 +23,9 @@ class ShopScreen extends ConsumerStatefulWidget {
 
 class _ShopScreenState extends ConsumerState<ShopScreen> {
   int? _purchasingItemId;
+  int _selectedTab = 0;
+
+  static const List<String> _tabs = ['Colors', 'Auras', 'Inventory'];
 
   @override
   Widget build(BuildContext context) {
@@ -154,8 +157,11 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
   }
 
   Widget _buildContent(List<ShopItem> items) {
-    // 전체 아이템 표시 (백엔드 코드: CHAR_*)
-    final colorItems = items;
+    final filtered = switch (_selectedTab) {
+      0 => items.where((i) => i.isCoreColor).toList(),
+      1 => items.where((i) => i.isAura).toList(),
+      _ => items.where((i) => i.isInventory).toList(),
+    };
 
     return ListView(
       padding: EdgeInsets.symmetric(
@@ -163,15 +169,59 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
         vertical: AppSpacing.verticalMd,
       ),
       children: [
-        Text(
-          '색상',
-          style: AppTextStyles.headlineSmall.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
+        _buildTabSelector(),
         SizedBox(height: AppSpacing.verticalMd),
-        _buildItemGrid(colorItems),
+        _buildItemGrid(filtered),
       ],
+    );
+  }
+
+  // ── Tab Selector ─────────────────────────────────────────────────────────
+
+  Widget _buildTabSelector() {
+    return Container(
+      padding: EdgeInsets.all(4.r),
+      decoration: BoxDecoration(
+        color: AppColors.divider,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+      ),
+      child: Row(
+        children: List.generate(_tabs.length, (index) {
+          final selected = _selectedTab == index;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedTab = index),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: EdgeInsets.symmetric(vertical: 8.h),
+                decoration: BoxDecoration(
+                  color: selected ? Colors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Text(
+                  _tabs[index],
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
     );
   }
 
@@ -183,7 +233,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
         height: 120.h,
         child: Center(
           child: Text(
-            '판매 중인 색상이 없어요.',
+            '판매 중인 상품이 없어요.',
             style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.textSecondary,
             ),

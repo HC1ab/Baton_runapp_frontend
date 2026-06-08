@@ -9,7 +9,6 @@ import '../../../core/storage/token_storage.dart';
 import '../../group_running/providers/run_location_provider.dart';
 import '../../group_running/services/group_run_api_service.dart';
 import '../../profile/providers/history_providers.dart';
-import '../../profile/services/profile_service.dart';
 import '../../running/providers/running_provider.dart';
 import '../../social/social_providers.dart';
 import '../services/auth_service.dart';
@@ -93,7 +92,7 @@ class AuthNotifier extends Notifier<AuthState> {
     await ref.read(selectedCharacterStyleProvider.notifier).setStyle(style);
 
     // 이전 유저 캐시 초기화 — 새 토큰으로 데이터 재조회
-    ref.invalidate(profileProvider);
+    // profileProvider는 authProvider를 watch하므로 state 변경 시 자동 재요청됨 (invalidate 시 순환 의존성 발생)
     ref.invalidate(myRoomProvider);
     ref.invalidate(monthlySummaryProvider);
     ref.invalidate(myRunsProvider);
@@ -112,7 +111,7 @@ class AuthNotifier extends Notifier<AuthState> {
     // 토큰이 이미 만료 상태이므로 API 호출 없이 로컬 상태만 정리.
     await _cleanupLocalState();
     await ref.read(tokenStorageProvider).clear();
-    ref.invalidate(profileProvider);
+    // profileProvider는 authProvider를 watch하므로 state 변경 시 자동 재요청됨 (invalidate 시 순환 의존성 발생)
     ref.invalidate(myRoomProvider);
     ref.invalidate(monthlySummaryProvider);
     ref.invalidate(myRunsProvider);
@@ -130,7 +129,7 @@ class AuthNotifier extends Notifier<AuthState> {
       _logger.w('Logout API call failed', error: e);
     } finally {
       await ref.read(tokenStorageProvider).clear();
-      ref.invalidate(profileProvider);
+      // profileProvider는 authProvider를 watch하므로 state 변경 시 자동 재요청됨 (invalidate 시 순환 의존성 발생)
       ref.invalidate(myRoomProvider);
       ref.invalidate(monthlySummaryProvider);
       ref.invalidate(myRunsProvider);

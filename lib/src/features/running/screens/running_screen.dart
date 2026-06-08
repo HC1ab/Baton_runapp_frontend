@@ -315,15 +315,8 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       if (!mounted) return;
 
       if (useMockGps) {
-        // 실제 GPS로 초기 위치 설정 — 실패 시 기본값(구석역) 사용
-        double initLat = 35.2475, initLng = 129.0914;
-        try {
-          final realPos = await Geolocator.getCurrentPosition(
-            locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
-          );
-          initLat = realPos.latitude;
-          initLng = realPos.longitude;
-        } catch (_) {}
+        // Mock 모드: 시뮬레이터 기본 GPS(샌프란시스코)를 피해 구서역 고정 사용
+        const initLat = 35.2475, initLng = 129.0914;
         _mockPos = _makeMockPos(lat: initLat, lng: initLng, speed: 0);
         _myLatLng = LatLng(_mockPos!.latitude, _mockPos!.longitude);
         ref.read(runLocationProvider.notifier).updateMockPosition(initLat, initLng);

@@ -41,6 +41,13 @@ class ShopItem {
   /// True for Title items.
   bool get isTitle => code.startsWith('TITLE_');
 
+  /// True for Aura items.
+  bool get isAura => code.startsWith('AURA_');
+
+  /// True for miscellaneous equip items shown in the Inventory tab
+  /// (anything that isn't a color, title, or aura).
+  bool get isInventory => !isCoreColor && !isTitle && !isAura;
+
   factory ShopItem.fromJson(Map<String, dynamic> json) {
     return ShopItem(
       itemId: json['itemId'] as int,
@@ -201,7 +208,7 @@ final shopItemsProvider = FutureProvider<List<ShopItem>>((ref) {
 });
 
 /// Current user's total points.
-/// Initialized from GET /api/v1/member/me on first access via ShopService.
+/// Initialized from GET /api/v1/points/me on first access via ShopService.
 /// Updated after purchase via set().
 class UserPointsNotifier extends Notifier<int> {
   @override

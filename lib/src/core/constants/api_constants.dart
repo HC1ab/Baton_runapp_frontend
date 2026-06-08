@@ -44,6 +44,9 @@ abstract final class ApiConstants {
   static const shopItems = '/api/v1/shop/items';
   static const shopPurchase = '/api/v1/shop/purchases';
 
+  // Endpoints — Points
+  static const pointsMe = '/api/v1/points/me';
+
   // Endpoints — Title / Profile
   static const titleAll = '/api/v1/title/all';
   static const profileEquip = '/api/v1/profile/equip';

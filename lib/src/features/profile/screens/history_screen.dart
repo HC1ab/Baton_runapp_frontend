@@ -435,7 +435,8 @@ class HistoryScreen extends ConsumerWidget {
   }
 
   Widget _buildRunCard(BuildContext context, RunListItem run) {
-    final dateLabel = DateFormat('MMM d, yyyy').format(run.startTime);
+    final dateLabel =
+        '${DateFormat('MMM d, yyyy').format(run.startTime)} · ${DateFormat('h:mm a').format(run.startTime)}';
     final title = _runTitle(run.startTime);
     final distanceStr = run.totalDistanceKm.toStringAsFixed(2);
 

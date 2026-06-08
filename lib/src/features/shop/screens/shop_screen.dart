@@ -25,6 +25,9 @@ class ShopScreen extends ConsumerStatefulWidget {
 
 class _ShopScreenState extends ConsumerState<ShopScreen> {
   int? _purchasingItemId;
+  int _selectedTab = 0;
+
+  static const List<String> _tabs = ['Colors', 'Auras', 'Inventory'];
 
   @override
   Widget build(BuildContext context) {
@@ -156,30 +159,77 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
   }
 
   Widget _buildContent(List<ShopItem> items) {
+    final filtered = switch (_selectedTab) {
+      0 => items.where((i) => i.isCoreColor).toList(),
+      1 => items.where((i) => i.isAura).toList(),
+      _ => items.where((i) => i.isInventory).toList(),
+    };
+
+    // itemCount: 2 — [0] 탭 셀렉터, [1] 아이템 그리드
     return ListView.builder(
       padding: EdgeInsets.symmetric(
         horizontal: AppSpacing.screenHorizontal,
         vertical: AppSpacing.verticalMd,
       ),
-      // header(섹션 타이틀) + grid(아이템 한 블록) = 2 슬롯
       itemCount: 2,
       itemBuilder: (context, index) {
         if (index == 0) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '색상',
-                style: AppTextStyles.headlineSmall.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              SizedBox(height: AppSpacing.verticalMd),
-            ],
+          return Padding(
+            padding: EdgeInsets.only(bottom: AppSpacing.verticalMd),
+            child: _buildTabSelector(),
           );
         }
-        return _buildItemGrid(items);
+        return _buildItemGrid(filtered);
       },
+    );
+  }
+
+  // ── Tab Selector ─────────────────────────────────────────────────────────
+
+  Widget _buildTabSelector() {
+    return Container(
+      padding: EdgeInsets.all(4.r),
+      decoration: BoxDecoration(
+        color: AppColors.divider,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+      ),
+      child: Row(
+        children: List.generate(_tabs.length, (index) {
+          final selected = _selectedTab == index;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedTab = index),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: EdgeInsets.symmetric(vertical: 8.h),
+                decoration: BoxDecoration(
+                  color: selected ? Colors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Text(
+                  _tabs[index],
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
     );
   }
 
@@ -191,7 +241,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
         height: 120.h,
         child: Center(
           child: Text(
-            '판매 중인 색상이 없어요.',
+            '판매 중인 상품이 없어요.',
             style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.textSecondary,
             ),

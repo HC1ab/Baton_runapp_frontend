@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
 
 import '../../../common/widgets/character_sphere_widget.dart';
+import '../../../common/widgets/rarity_title_badge.dart';
 import '../../../core/character/character_provider.dart';
 import '../../../core/character/character_style.dart';
 import '../../../core/constants/app_colors.dart';
@@ -31,7 +32,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
   bool _isChangingColor = false;
   bool _isEquippingTitle = false;
 
-  static const List<String> _tabs = ['Core Colors', 'Aura', 'Titles'];
+  static const List<String> _tabs = ['Core Colors', 'Aura', 'Titles', 'Inventory'];
 
   @override
   Widget build(BuildContext context) {
@@ -104,27 +105,31 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
     return ref.watch(myRoomProvider).when(
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
-      data: (myRoom) => Column(
-        children: [
-          Text(
-            'EQUIPPED TITLE',
-            textAlign: TextAlign.center,
-            style: AppTextStyles.labelSmall.copyWith(
-              color: AppColors.textSecondary,
-              letterSpacing: 1.4,
-              fontWeight: FontWeight.w600,
+      data: (myRoom) {
+        final equipped = myRoom.titles.cast<MyRoomTitleItem?>().firstWhere(
+              (t) => t?.name == myRoom.equippedTitle,
+              orElse: () => null,
+            );
+        return Column(
+          children: [
+            Text(
+              'EQUIPPED TITLE',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.labelSmall.copyWith(
+                color: AppColors.textSecondary,
+                letterSpacing: 1.4,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-          SizedBox(height: 4.h),
-          Text(
-            myRoom.equippedTitle.isEmpty ? 'No Title' : myRoom.equippedTitle,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.headlineLarge.copyWith(
-              fontWeight: FontWeight.w800,
+            SizedBox(height: 8.h),
+            RarityTitleBadge(
+              title: myRoom.equippedTitle,
+              rarity: equipped?.rarity ?? 'NORMAL',
+              fontSize: 18.sp,
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
     );
   }
 

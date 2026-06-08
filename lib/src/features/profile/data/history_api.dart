@@ -13,12 +13,16 @@ class RunListItem {
   const RunListItem({
     required this.runId,
     required this.startTime,
+    this.endTime,
     required this.totalDistanceKm,
     required this.avgPace,
   });
 
   final int runId;
   final DateTime startTime;
+
+  /// 러닝 종료 시각. 진행 중(미종료) 기록은 null.
+  final DateTime? endTime;
   final double totalDistanceKm;
 
   /// 평균 페이스 (초/km). avgPace * totalDistanceKm = 총 소요 시간(초).
@@ -36,10 +40,16 @@ class RunListItem {
   int get durationSeconds => (avgPace * totalDistanceKm).round();
 
   factory RunListItem.fromJson(Map<String, dynamic> json) {
-    final pace = (json['avgPaceSecPerKm'] ?? json['avgPace'] as num? ?? 0).toInt();
+    // 백엔드는 평균 페이스를 "분 단위 소수"로 전송 (예: 0.97 = 0.97분/km) → 초/km로 환산
+    final rawPace =
+        (json['avgPaceSecPerKm'] ?? json['avgPace'] as num? ?? 0).toDouble();
+    final pace = (rawPace * 60).round();
+    final rawEndTime = json['endTime'] as String?;
     return RunListItem(
       runId: (json['runId'] ?? json['id'] as num? ?? 0).toInt(),
-      startTime: DateTime.parse(json['startTime'] as String),
+      // 서버가 UTC(offset 포함)로 내려줄 수 있으므로 기기 로컬 시간으로 통일해서 표시/정렬
+      startTime: DateTime.parse(json['startTime'] as String).toLocal(),
+      endTime: rawEndTime == null ? null : DateTime.parse(rawEndTime).toLocal(),
       totalDistanceKm: (json['totalDistanceKm'] as num? ?? 0.0).toDouble(),
       avgPace: pace,
     );
@@ -80,6 +90,8 @@ class HistoryApi {
     }
     return unwrapped
         .map((e) => RunListItem.fromJson(e as Map<String, dynamic>))
+        // 종료되지 않은(진행 중) 기록은 거리가 0으로 내려오므로 목록에서 제외
+        .where((run) => run.totalDistanceKm > 0)
         .toList();
   }
 

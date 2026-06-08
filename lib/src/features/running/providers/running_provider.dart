@@ -208,13 +208,8 @@ class RunningNotifier extends Notifier<RunRecordModel> {
 
   /// Finishes the current running session.
   /// 그룹 러닝 + 호스트면 group/run/finish API 추가 호출.
-  // TODO(backend): 백엔드가 0.15km 미달 시 400을 반환해 run 레코드가 RUNNING 상태로 방치됨.
-  //   백엔드 수정 방향: 거리 미달도 finish 처리 후 응답에 saved:false 플래그 추가.
-  //   프론트 수정 방향:
-  //   1) finishRun() 진입 시 distanceMeters < 200 이면 API 스킵 + recordedToServer:false + RunStatus.finished
-  //   2) catch 블록에서 ServerException(400) 수신 시 RunStatus.running 유지 대신
-  //      RunStatus.finished + recordedToServer:false 로 전환 → 결과 화면 표시.
-  //   관련 UI: run_finish_card.dart:68 — !recordedToServer 배너 이미 구현됨.
+  /// 거리 미달(0.15km 미만) 시 백엔드가 400 + success:false 반환 →
+  /// recordedToServer:false + RunStatus.finished 로 결과 화면 표시.
   Future<void> finishRun() async {
     final runId = state.runId;
     if (runId == null || !state.isRunning) return;
@@ -253,9 +248,14 @@ class RunningNotifier extends Notifier<RunRecordModel> {
       _logger.e('finishRun error', error: e);
       // AuthException → AuthInterceptor가 forceLogout 처리. 에러 상태 불필요.
       if (e is AuthException) return;
+      // 거리 미달(400 success:false) 포함 모든 에러 → 종료 처리, 기록 미저장으로 결과 화면 표시.
+      _logger.w('finishRun: recordedToServer=false (${_toMessage(e)})');
       state = state.copyWith(
-        status: RunStatus.running,
-        errorMessage: _toMessage(e),
+        status: RunStatus.finished,
+        recordedToServer: false,
+        clearRunId: true,
+        clearError: true,
+        clearGroup: true,
       );
     }
   }

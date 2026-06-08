@@ -54,7 +54,7 @@ class RunRecordModel {
   final Set<int> spotsInRange;
 
   /// 백엔드에 러닝 기록이 저장되었는지 여부.
-  /// false = 0.2km 미만 종료 등으로 미저장. 결과 화면에서 "기록 안 됨" 표시.
+  /// false = 0.15km 미만 종료 등으로 미저장. 결과 화면에서 "기록 안 됨" 표시.
   final bool recordedToServer;
 
   final int spotPoints;

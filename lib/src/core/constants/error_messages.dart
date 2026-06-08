@@ -20,7 +20,7 @@ abstract final class ErrorMessages {
 
   // --- Running ---
   static const runningOnly = '러닝 중에만 체크인할 수 있어요.';
-  static const runTooShortNotice = '0.2km 미만은 러닝 기록에 집계되지 않아요.';
+  static const runTooShortNotice = '0.15km 미만은 러닝 기록에 집계되지 않아요.';
   static const locationDisabled = '위치 서비스가 꺼져 있어요.';
   static const locationPermissionDenied = '위치 권한이 필요해요.';
 

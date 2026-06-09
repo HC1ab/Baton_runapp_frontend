@@ -2,6 +2,14 @@ import 'package:flutter/material.dart';
 
 import 'stat_item_config.dart';
 
+enum CardStyle {
+  /// 개별 드래그/리사이즈/색상 자유 배치
+  freestyle,
+
+  /// NRC 스타일 — 하단 고정 바 (아이콘 + 값 + 단위)
+  nrc,
+}
+
 /// 공유 카드 오버레이 전체 설정.
 /// 각 스탯은 독립적 위치/크기/색상을 가짐.
 class ShareOverlayConfig {
@@ -10,6 +18,7 @@ class ShareOverlayConfig {
     required this.durationStat,
     required this.paceStat,
     this.selectedStatId,
+    this.cardStyle = CardStyle.freestyle,
   });
 
   final StatItemConfig distanceStat;
@@ -19,6 +28,8 @@ class ShareOverlayConfig {
   /// 현재 선택된 스탯 id — 리사이즈 핸들/선택 테두리 표시 여부 결정.
   /// 저장 전 null로 초기화해 핸들이 이미지에 포함되지 않도록 함.
   final String? selectedStatId;
+
+  final CardStyle cardStyle;
 
   List<StatItemConfig> get stats => [distanceStat, durationStat, paceStat];
 
@@ -42,6 +53,7 @@ class ShareOverlayConfig {
     StatItemConfig? durationStat,
     StatItemConfig? paceStat,
     Object? selectedStatId = _sentinel,
+    CardStyle? cardStyle,
   }) {
     return ShareOverlayConfig(
       distanceStat: distanceStat ?? this.distanceStat,
@@ -50,6 +62,7 @@ class ShareOverlayConfig {
       selectedStatId: selectedStatId == _sentinel
           ? this.selectedStatId
           : selectedStatId as String?,
+      cardStyle: cardStyle ?? this.cardStyle,
     );
   }
 

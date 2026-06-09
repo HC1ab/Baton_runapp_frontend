@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/share_overlay_config.dart';
+export '../models/share_overlay_config.dart' show CardStyle;
 
 class RunShareNotifier extends Notifier<ShareOverlayConfig> {
   @override
@@ -35,6 +36,13 @@ class RunShareNotifier extends Notifier<ShareOverlayConfig> {
 
   void setStatColor(String id, Color color) {
     state = state.updateStat(state.getStat(id).copyWith(color: color));
+  }
+
+  // ── 카드 스타일 전환 ──────────────────────────────────────────────────────
+
+  void setCardStyle(CardStyle style) {
+    // 스타일 전환 시 선택 해제
+    state = state.copyWith(cardStyle: style, selectedStatId: null);
   }
 
   // ── 표시 여부 ─────────────────────────────────────────────────────────────

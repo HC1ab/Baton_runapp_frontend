@@ -179,6 +179,14 @@ class _RunShareScreenState extends ConsumerState<RunShareScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // ── 스타일 전환 토글 ─────────────────────────────────────
+                  _StyleToggle(
+                    current: config.cardStyle,
+                    onChanged: (style) =>
+                        ref.read(runShareProvider.notifier).setCardStyle(style),
+                  ),
+                  SizedBox(height: 12.h),
+
                   // 배경 이미지 + 커스텀 버튼
                   Row(
                     children: [
@@ -286,6 +294,83 @@ class _OutlineButton extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── _StyleToggle ──────────────────────────────────────────────────────────────
+
+class _StyleToggle extends StatelessWidget {
+  const _StyleToggle({
+    required this.current,
+    required this.onChanged,
+  });
+
+  final CardStyle current;
+  final ValueChanged<CardStyle> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 38.h,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+      ),
+      child: Row(
+        children: [
+          _Tab(
+            label: '자유 배치',
+            selected: current == CardStyle.freestyle,
+            onTap: () => onChanged(CardStyle.freestyle),
+          ),
+          _Tab(
+            label: 'NRC 스타일',
+            selected: current == CardStyle.nrc,
+            onTap: () => onChanged(CardStyle.nrc),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Tab extends StatelessWidget {
+  const _Tab({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          margin: EdgeInsets.all(3.r),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w700,
+              color: selected
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.5),
+            ),
+          ),
         ),
       ),
     );

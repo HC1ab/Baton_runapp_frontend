@@ -10,6 +10,7 @@ import '../models/share_overlay_config.dart';
 import '../models/stat_item_config.dart';
 import '../providers/run_share_provider.dart';
 import 'draggable_stat_widget.dart';
+import 'share_nrc_bar_widget.dart';
 
 /// 공유 카드 캔버스.
 /// [repaintKey]로 RepaintBoundary를 캡처해 이미지 저장에 사용.
@@ -61,10 +62,18 @@ class ShareCanvasWidget extends ConsumerWidget {
                     ),
                   ),
 
-                  // ── 스탯 ──────────────────────────────────────────────────
-                  for (final stat in config.stats)
-                    if (stat.visible)
-                      _buildStatItem(stat, canvasSize, config),
+                  // ── 스탯 (스타일 분기) ────────────────────────────────────
+                  if (config.cardStyle == CardStyle.nrc)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: ShareNrcBarWidget(data: data, config: config),
+                    )
+                  else
+                    for (final stat in config.stats)
+                      if (stat.visible)
+                        _buildStatItem(stat, canvasSize, config),
                 ],
               );
             },

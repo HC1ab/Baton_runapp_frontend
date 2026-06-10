@@ -19,7 +19,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.32.0'
+          flutter-version: '3.44.0'
           channel: stable
           cache: true
 
@@ -42,7 +42,7 @@ jobs:
           echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}" | base64 --decode > ios/Runner/GoogleService-Info.plist
 
       - name: Flutter pub get
-        run: flutter pub get
+        run: flutter pub get --no-example
 
       - name: Build APK (release)
         run: flutter build apk --release --dart-define=ENV=prod

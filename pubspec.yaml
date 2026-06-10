@@ -74,8 +74,6 @@ dev_dependencies:
   freezed: ^3.0.0                 # freezed_annotation 3.x 에 맞는 버전
   json_serializable: ^6.9.5
   riverpod_generator: ^4.0.0+1      # flutter_riverpod 3.x 에 맞는 버전
-  custom_lint: ^0.8.1
-  riverpod_lint: ^3.1.0           # flutter_riverpod 3.x 에 맞는 버전
 
 flutter:
   uses-material-design: true

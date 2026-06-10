@@ -312,6 +312,22 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
             .read(runningProvider.notifier)
             .onPositionUpdate(_mockPos!, isDev: true);
       } else {
+        // 스트림 첫 이벤트 전에 현재 위치 즉시 확보 → 구서역 대신 실제 위치에서 카메라 시작
+        try {
+          final initPos = await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.low,
+            ),
+          );
+          if (mounted) {
+            _myLatLng = LatLng(initPos.latitude, initPos.longitude);
+            if (_mapCtrl != null) await _updateCameraToLatLng(_myLatLng!);
+            setState(() {});
+          }
+        } catch (e) {
+          _logger.w('Initial GPS position failed — will use first stream event', error: e);
+        }
+
         _gpsSub = Geolocator.getPositionStream(
           locationSettings: const LocationSettings(
             accuracy: LocationAccuracy.high,
@@ -443,6 +459,10 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   // -------------------------------------------------------------------------
 
   Future<void> _updateCamera(Position pos) async {
+    await _updateCameraToLatLng(LatLng(pos.latitude, pos.longitude));
+  }
+
+  Future<void> _updateCameraToLatLng(LatLng latLng) async {
     final ctrl = _mapCtrl;
     if (ctrl == null || !mounted) return;
 
@@ -450,10 +470,9 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       await ctrl.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
-            target: LatLng(pos.latitude, pos.longitude),
+            target: latLng,
             zoom: _defaultZoom,
             tilt: _defaultTilt,
-            // 나침반 값 우선, 미수신 시 GPS heading 폴백
             bearing: _normalizeBearing(_currentHeading ?? 0.0),
           ),
         ),
@@ -587,6 +606,17 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       });
     }
 
+    // 러닝 시작/종료 시 padding 변경 후 카메라 재센터링
+    ref.listen<RunRecordModel>(runningProvider, (prev, next) {
+      if (prev?.isRunning != next.isRunning) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final latLng = _myLatLng;
+          if (latLng != null) unawaited(_updateCameraToLatLng(latLng));
+        });
+      }
+    });
+
     // identical() 체크 — 소스 ref 바뀔 때만 재계산
     // copyWith(duration:...) 는 nearbySpots/checkedInSpotIds/path ref 유지 → 클럭 틱에서 재계산 없음
     if (!identical(_prevNearbySpots, record.nearbySpots) ||
@@ -625,11 +655,11 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
               compassEnabled: false,
               zoomControlsEnabled: false,
               mapToolbarEnabled: false,
-              // 맵 영역 기준 10% 패딩 → 카메라 중심 위로 이동 → 캐릭터 하단 10% 위치
-              // 구글 로고도 함께 위로 이동해 BottomPanel 뒤로 자연스럽게 숨겨짐
-              // top 패딩 → 카메라 중심 아래로 이동 → 캐릭터 하단 10% 위치
-              // 구글 로고는 bottom 기준 유지되므로 BottomPanel과 함께 자연스럽게 가려짐
-              padding: EdgeInsets.only(top: mapHeight * 0.3),
+              // 러닝 전/후: top 30% → 카메라 중심을 아래로 → 구체 하단 영역에 위치
+              // 러닝 중:    bottom 10% → 카메라 중심을 위로 → 구체가 화면 중앙 근처로 이동
+              padding: record.isRunning
+                  ? EdgeInsets.only(bottom: mapHeight * 0.1)
+                  : EdgeInsets.only(top: mapHeight * 0.3),
               scrollGesturesEnabled: false,
               zoomGesturesEnabled: false,
               rotateGesturesEnabled: false,
@@ -644,7 +674,13 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
                 setState(() => _mapCtrl = ctrl);
                 if (!mounted) return;
                 final pos = _mockPos;
-                if (pos != null) await _updateCamera(pos);
+                if (pos != null) {
+                  await _updateCamera(pos);
+                } else {
+                  // GPS 모드: getCurrentPosition에서 이미 확보된 위치로 즉시 이동
+                  final latLng = _myLatLng;
+                  if (latLng != null) await _updateCameraToLatLng(latLng);
+                }
                 await Future<void>.delayed(const Duration(milliseconds: 300));
                 if (!mounted) return;
               },

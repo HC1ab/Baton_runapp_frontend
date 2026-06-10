@@ -23,6 +23,16 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Create .env.dev (dummy for asset bundling)
+        run: |
+          {
+            echo "IS_DEV=false"
+            echo "USE_MOCK_GPS=false"
+            echo "API_BASE_URL="
+            echo "GOOGLE_MAPS_API_KEY="
+            echo "KAKAO_NATIVE_APP_KEY="
+          } > .env.dev
+
       - name: Restore .env.prod
         run: |
           {

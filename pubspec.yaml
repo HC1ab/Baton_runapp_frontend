@@ -5,7 +5,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.5.0
+  sdk: ^3.8.0
 
 dependencies:
   flutter:
@@ -53,11 +53,9 @@ dependencies:
   intl: ^0.20.2                   # ✅ iOS 지원 확인됨
   blurhash_dart: ^1.2.1           # ✅ iOS 지원 확인됨
   stomp_dart_client: ^3.0.1
-  model_viewer_plus: 1.10.0          # ✅ Android/iOS — GLB 3D 렌더 (WebView)
-  webview_flutter: ^4.10.0           # model_viewer_plus WebViewController 직접 참조용
 
   #firebase 배포
-  firebase_core: ^2.10.0         # ✅ iOS 지원 확인됨
+  firebase_core: ^3.6.0          # ✅ iOS 지원 확인됨
 
   #kakao
   kakao_flutter_sdk_user: ^1.9.6
@@ -75,9 +73,9 @@ dev_dependencies:
   build_runner: ^2.4.15
   freezed: ^3.0.0                 # freezed_annotation 3.x 에 맞는 버전
   json_serializable: ^6.9.5
-  riverpod_generator: ^4.0.0+1      # flutter_riverpod 2.x 에 맞는 버전
+  riverpod_generator: ^4.0.0+1      # flutter_riverpod 3.x 에 맞는 버전
   custom_lint: ^0.8.1
-  riverpod_lint: ^3.1.0           # flutter_riverpod 2.x 에 맞는 버전
+  riverpod_lint: ^3.1.0           # flutter_riverpod 3.x 에 맞는 버전
 
 flutter:
   uses-material-design: true

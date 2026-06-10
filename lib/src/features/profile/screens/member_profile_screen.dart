@@ -22,22 +22,22 @@ class MemberProfileScreen extends ConsumerWidget {
     final profileAsync = ref.watch(memberProfileProvider(nickname));
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: AppColors.dScreen,
       appBar: AppBar(
-        backgroundColor: AppColors.backgroundLight,
+        backgroundColor: AppColors.dScreen,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.of(context).maybePop(),
           icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20.r),
-          color: AppColors.primary,
+          color: AppColors.dAccent,
         ),
         title: Text(
           '멤버 프로필',
           style: TextStyle(
             fontSize: 18.sp,
             fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
+            color: AppColors.dText,
           ),
         ),
         centerTitle: true,
@@ -61,7 +61,7 @@ class MemberProfileScreen extends ConsumerWidget {
         children: [
           Text(
             '프로필을 불러오지 못했어요.',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14.sp),
+            style: TextStyle(color: AppColors.dMuted, fontSize: 14.sp),
           ),
           SizedBox(height: 12.h),
           ElevatedButton(
@@ -110,7 +110,7 @@ class MemberProfileScreen extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 24.sp,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
+                        color: AppColors.dText,
                       ),
                     ),
                     SizedBox(height: 4.h),
@@ -188,15 +188,9 @@ class MemberProfileScreen extends ConsumerWidget {
     return Container(
       padding: EdgeInsets.fromLTRB(20.w, 18.h, 20.w, 20.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.dCard,
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: AppColors.dLine, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,7 +199,7 @@ class MemberProfileScreen extends ConsumerWidget {
             '러닝 레벨',
             style: TextStyle(
               fontSize: 14.sp,
-              color: AppColors.textSecondary,
+              color: AppColors.dMuted,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -425,21 +419,21 @@ class _FollowSectionState extends ConsumerState<_FollowSection> {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
                 decoration: BoxDecoration(
-                  color: AppColors.divider,
+                  color: AppColors.dCard2,
                   borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.schedule_rounded,
-                        size: 16.r, color: AppColors.textSecondary),
+                        size: 16.r, color: AppColors.dMuted),
                     SizedBox(width: 6.w),
                     Text(
                       '신청 보냄',
                       style: TextStyle(
                         fontSize: 14.sp,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary,
+                        color: AppColors.dMuted,
                       ),
                     ),
                   ],
@@ -514,8 +508,8 @@ class _FollowSectionState extends ConsumerState<_FollowSection> {
               OutlinedButton(
                 onPressed: _deleteFollow,
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.textSecondary,
-                  side: BorderSide(color: AppColors.divider),
+                  foregroundColor: AppColors.dMuted,
+                  side: BorderSide(color: AppColors.dLine2),
                   padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -561,7 +555,7 @@ class _PendingReceivedActions extends ConsumerWidget {
       error: (_, __) => Center(
         child: Text(
           '신청 정보를 불러오지 못했어요.',
-          style: TextStyle(fontSize: 13.sp, color: AppColors.textSecondary),
+          style: TextStyle(fontSize: 13.sp, color: AppColors.dMuted),
         ),
       ),
       data: (requests) {
@@ -572,7 +566,7 @@ class _PendingReceivedActions extends ConsumerWidget {
             child: Text(
               '신청 정보를 찾을 수 없어요.',
               style:
-                  TextStyle(fontSize: 13.sp, color: AppColors.textSecondary),
+                  TextStyle(fontSize: 13.sp, color: AppColors.dMuted),
             ),
           );
         }
@@ -585,7 +579,7 @@ class _PendingReceivedActions extends ConsumerWidget {
                 '이 멤버가 팔로우를 신청했어요.',
                 style: TextStyle(
                   fontSize: 13.sp,
-                  color: AppColors.textSecondary,
+                  color: AppColors.dMuted,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -614,8 +608,8 @@ class _PendingReceivedActions extends ConsumerWidget {
                     onPressed: () =>
                         onHandle(() => service.reject(followId)),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.textSecondary,
-                      side: BorderSide(color: AppColors.divider),
+                      foregroundColor: AppColors.dMuted,
+                      side: BorderSide(color: AppColors.dLine2),
                       padding: EdgeInsets.symmetric(
                           horizontal: 20.w, vertical: 10.h),
                       shape: RoundedRectangleBorder(
@@ -656,9 +650,9 @@ class _MetricCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 16.h),
       decoration: BoxDecoration(
-        color: AppColors.backgroundLight,
+        color: AppColors.dCard2,
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: AppColors.dLine),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -669,7 +663,7 @@ class _MetricCard extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 12.sp,
-              color: AppColors.textSecondary,
+              color: AppColors.dMuted,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -678,7 +672,7 @@ class _MetricCard extends StatelessWidget {
             value,
             style: AppTextStyles.headlineSmall.copyWith(
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+              color: AppColors.dText,
             ),
           ),
         ],

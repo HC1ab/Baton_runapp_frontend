@@ -34,7 +34,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
     final points = ref.watch(userPointsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: AppColors.dScreen,
       body: SafeArea(
         child: Column(
           children: [
@@ -68,20 +68,14 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
               width: 36.r,
               height: 36.r,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.dCard2,
                 shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                border: Border.all(color: AppColors.dLine, width: 1),
               ),
               child: Icon(
                 Icons.arrow_back_ios_rounded,
                 size: 16.r,
-                color: AppColors.textPrimary,
+                color: AppColors.dText,
               ),
             ),
           ),
@@ -145,7 +139,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
           Text(
             ErrorMessages.shopLoadError,
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+              color: AppColors.dMuted,
             ),
           ),
           SizedBox(height: 12.h),
@@ -188,10 +182,11 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
 
   Widget _buildTabSelector() {
     return Container(
-      padding: EdgeInsets.all(4.r),
+      padding: EdgeInsets.all(5.r),
       decoration: BoxDecoration(
-        color: AppColors.divider,
+        color: AppColors.dCard,
         borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+        border: Border.all(color: AppColors.dLine, width: 1),
       ),
       child: Row(
         children: List.generate(_tabs.length, (index) {
@@ -203,17 +198,8 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                 duration: const Duration(milliseconds: 200),
                 padding: EdgeInsets.symmetric(vertical: 8.h),
                 decoration: BoxDecoration(
-                  color: selected ? Colors.white : Colors.transparent,
+                  color: selected ? AppColors.dAccent : Colors.transparent,
                   borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-                  boxShadow: selected
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
                 ),
                 child: Text(
                   _tabs[index],
@@ -221,8 +207,8 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                   style: AppTextStyles.labelSmall.copyWith(
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                     color: selected
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
+                        ? const Color(0xFF160D06)
+                        : AppColors.dMuted,
                   ),
                 ),
               ),
@@ -243,7 +229,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
           child: Text(
             '판매 중인 상품이 없어요.',
             style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
+              color: AppColors.dMuted,
             ),
           ),
         ),

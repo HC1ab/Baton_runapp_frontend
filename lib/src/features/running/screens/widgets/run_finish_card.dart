@@ -23,7 +23,7 @@ class RunFinishCard extends StatelessWidget {
       width: double.infinity,
       margin: EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
+        color: AppColors.dCard,
         borderRadius: BorderRadius.circular(28.r),
         boxShadow: [
           BoxShadow(
@@ -48,15 +48,15 @@ class RunFinishCard extends StatelessWidget {
                     ? Icons.check_circle_rounded
                     : Icons.info_outline_rounded,
                 color: record.recordedToServer
-                    ? AppColors.primary
-                    : AppColors.textSecondary,
+                    ? AppColors.dAccent
+                    : AppColors.dMuted,
                 size: 22.r,
               ),
               SizedBox(width: 8.w),
               Text(
                 record.recordedToServer ? '러닝 완료!' : '러닝 종료',
                 style: AppTextStyles.headlineMedium.copyWith(
-                  color: AppColors.textPrimary,
+                  color: AppColors.dText,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -73,19 +73,19 @@ class RunFinishCard extends StatelessWidget {
                 vertical: 10.h,
               ),
               decoration: BoxDecoration(
-                color: AppColors.textSecondary.withValues(alpha: 0.08),
+                color: AppColors.dMuted.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
               child: Row(
                 children: [
                   Icon(Icons.warning_amber_rounded,
-                      color: AppColors.textSecondary, size: 16.r),
+                      color: AppColors.dMuted, size: 16.r),
                   SizedBox(width: 8.w),
                   Expanded(
                     child: Text(
                       ErrorMessages.runTooShortNotice,
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
+                        color: AppColors.dMuted,
                       ),
                     ),
                   ),
@@ -102,7 +102,7 @@ class RunFinishCard extends StatelessWidget {
               Text(
                 '총 거리',
                 style: AppTextStyles.labelSmall.copyWith(
-                  color: AppColors.primary,
+                  color: AppColors.dAccent,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
                 ),
@@ -116,7 +116,7 @@ class RunFinishCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 52.sp,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: AppColors.dText,
                         letterSpacing: -2,
                         height: 1.0,
                       ),
@@ -126,7 +126,7 @@ class RunFinishCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 20.sp,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary,
+                        color: AppColors.dMuted,
                       ),
                     ),
                   ],
@@ -137,7 +137,7 @@ class RunFinishCard extends StatelessWidget {
           SizedBox(height: 24.h),
 
           // 구분선
-          Divider(color: AppColors.textSecondary.withValues(alpha: 0.12)),
+          Divider(color: AppColors.dMuted.withValues(alpha: 0.12)),
           SizedBox(height: 16.h),
 
           // 페이스 + 시간
@@ -168,7 +168,7 @@ class RunFinishCard extends StatelessWidget {
               vertical: 14.h,
             ),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.06),
+              color: AppColors.dAccent.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
             ),
             child: Row(
@@ -177,7 +177,7 @@ class RunFinishCard extends StatelessWidget {
                   child: _MetricCell(
                     label: '획득 포인트',
                     value: '+${record.totalPoints}P',
-                    valueColor: AppColors.primary,
+                    valueColor: AppColors.dAccent,
                   ),
                 ),
                 _VerticalDivider(),
@@ -186,8 +186,8 @@ class RunFinishCard extends StatelessWidget {
                     label: '체크인 스팟',
                     value: '${record.checkedInSpotIds.length}개',
                     valueColor: record.checkedInSpotIds.isNotEmpty
-                        ? AppColors.primary
-                        : AppColors.textPrimary,
+                        ? AppColors.dAccent
+                        : AppColors.dText,
                   ),
                 ),
               ],
@@ -202,7 +202,7 @@ class RunFinishCard extends StatelessWidget {
             child: ElevatedButton(
               onPressed: onConfirm,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.dAccent,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -245,7 +245,7 @@ class _MetricCell extends StatelessWidget {
         Text(
           label,
           style: AppTextStyles.labelSmall.copyWith(
-            color: AppColors.textSecondary,
+            color: AppColors.dMuted,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.3,
           ),
@@ -259,7 +259,7 @@ class _MetricCell extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 22.sp,
                   fontWeight: FontWeight.bold,
-                  color: valueColor ?? AppColors.textPrimary,
+                  color: valueColor ?? AppColors.dText,
                   letterSpacing: -0.5,
                   height: 1.1,
                 ),
@@ -269,7 +269,7 @@ class _MetricCell extends StatelessWidget {
                   text: unit,
                   style: TextStyle(
                     fontSize: 12.sp,
-                    color: AppColors.textSecondary,
+                    color: AppColors.dMuted,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -287,7 +287,7 @@ class _VerticalDivider extends StatelessWidget {
     return Container(
       width: 1,
       height: 36.h,
-      color: AppColors.textSecondary.withValues(alpha: 0.15),
+      color: AppColors.dMuted.withValues(alpha: 0.15),
     );
   }
 }

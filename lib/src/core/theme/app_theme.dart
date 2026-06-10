@@ -94,21 +94,26 @@ class AppTheme {
     );
   }
 
+  /// Redesign — Modern Dark UI (warm near-black). Matches README Design Tokens.
   static ThemeData dark() {
     final base = ThemeData.dark(useMaterial3: true);
     final scheme = ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
+      seedColor: AppColors.dAccent,
       brightness: Brightness.dark,
     ).copyWith(
-      primary: AppColors.primary,
-      onPrimary: AppColors.textOnPrimary,
-      surface: AppColors.surfaceDark,
-      onSurface: const Color(0xFFF5F0EB),
+      primary: AppColors.dAccent,
+      onPrimary: const Color(0xFF1A0E06),
+      surface: AppColors.dCard,
+      onSurface: AppColors.dText,
+      surfaceContainerHigh: AppColors.dCard2,
+      surfaceContainerHighest: AppColors.dCard3,
+      onSurfaceVariant: AppColors.dMuted,
+      outline: AppColors.dLine2,
     );
 
     return base.copyWith(
       colorScheme: scheme,
-      scaffoldBackgroundColor: AppColors.backgroundDark,
+      scaffoldBackgroundColor: AppColors.dScreen,
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -117,36 +122,57 @@ class AppTheme {
           statusBarColor: Colors.transparent,
           statusBarIconBrightness: Brightness.light,
         ),
+        iconTheme: IconThemeData(color: AppColors.dText),
+        titleTextStyle: TextStyle(
+          color: AppColors.dText,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
       ),
       textTheme: base.textTheme.apply(
-        bodyColor: const Color(0xFFF5F0EB),
-        displayColor: const Color(0xFFF5F0EB),
+        bodyColor: AppColors.dText,
+        displayColor: AppColors.dText,
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.textOnPrimary,
+          backgroundColor: AppColors.dAccent,
+          foregroundColor: const Color(0xFF1A0E06),
           shape: const StadiumBorder(),
           elevation: 0,
         ),
       ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.dAccentBright,
+        ),
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surfaceDark,
+        fillColor: AppColors.dCard2,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF3A3430), width: 1.5),
+          borderSide: const BorderSide(color: AppColors.dLine2, width: 1),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF3A3430), width: 1.5),
+          borderSide: const BorderSide(color: AppColors.dLine2, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: const BorderSide(color: AppColors.dAccent, width: 2),
         ),
-        labelStyle: const TextStyle(color: Color(0xFF8A8480)),
+        hintStyle: const TextStyle(color: AppColors.dFaint),
+        labelStyle: const TextStyle(color: AppColors.dMuted),
+        prefixIconColor: AppColors.dMuted,
       ),
+      cardTheme: CardThemeData(
+        color: AppColors.dCard,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(26),
+        ),
+      ),
+      dividerColor: AppColors.dLine,
     );
   }
 }

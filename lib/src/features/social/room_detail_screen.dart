@@ -7,6 +7,7 @@ import 'package:logger/logger.dart';
 import '../../common/widgets/character_sphere_widget.dart';
 import '../../core/character/character_style.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_map_styles.dart';
 import '../../core/constants/app_spacing.dart';
 import '../group_running/services/group_run_api_service.dart';
 import '../profile/screens/member_profile_screen.dart';
@@ -93,7 +94,7 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.scaffoldGrey,
+      backgroundColor: AppColors.dScreen,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -290,8 +291,8 @@ class _BottomActions extends StatelessWidget {
             child: OutlinedButton(
               onPressed: onLeavePressed,
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textSecondary,
-                side: BorderSide(color: AppColors.divider),
+                foregroundColor: AppColors.dMuted,
+                side: BorderSide(color: AppColors.dLine2),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 ),
@@ -351,6 +352,7 @@ class _RealMiniMap extends StatelessWidget {
       height: 250.h,
       width: double.infinity,
       child: GoogleMap(
+        style: AppMapStyles.darkWarm,
         initialCameraPosition: CameraPosition(
           target: target,
           zoom: 15,
@@ -386,10 +388,13 @@ class _DetailCard extends StatelessWidget {
     final timeRange = '${card.time}  ~  ${card.effectiveEndTime}';
 
     return Material(
-      color: Colors.white,
-      elevation: 6,
-      shadowColor: Colors.black.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+      color: AppColors.dCard,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        side: const BorderSide(color: AppColors.dLine, width: 1),
+      ),
+      shadowColor: Colors.black.withValues(alpha: 0.4),
       child: Padding(
         padding: EdgeInsets.all(AppSpacing.screenHorizontal),
         child: Column(
@@ -400,7 +405,7 @@ class _DetailCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 22.sp,
                 fontWeight: FontWeight.w900,
-                color: AppColors.textPrimary,
+                color: AppColors.dText,
                 height: 1.25,
               ),
             ),
@@ -420,20 +425,20 @@ class _DetailCard extends StatelessWidget {
               text: '현재 참여 인원 ${card.currentMembers} / ${card.maxMembers}명',
             ),
             SizedBox(height: AppSpacing.verticalMd + 4.h),
-            Divider(height: 1, color: AppColors.divider),
+            Divider(height: 1, color: AppColors.dLine),
             SizedBox(height: AppSpacing.verticalMd),
             _LabeledLine(
               icon: Icons.place_rounded,
               label: '장소명',
               value: card.effectivePlaceName,
-              iconColor: AppColors.inputAccent,
+              iconColor: AppColors.dAccent,
             ),
             SizedBox(height: 14.h),
             _LabeledLine(
               icon: Icons.location_on_rounded,
               label: '주소',
               value: card.effectiveDetailAddress,
-              iconColor: AppColors.inputAccent,
+              iconColor: AppColors.dAccent,
             ),
             if (card.hostNickname != null) ...[
               SizedBox(height: 14.h),
@@ -441,7 +446,7 @@ class _DetailCard extends StatelessWidget {
                 icon: Icons.person_rounded,
                 label: '호스트',
                 value: card.hostNickname!,
-                iconColor: AppColors.inputAccent,
+                iconColor: AppColors.dAccent,
               ),
             ],
             if (card.participantNicknames.isNotEmpty) ...[
@@ -458,7 +463,7 @@ class _DetailCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15.sp,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textSecondary,
+                color: AppColors.dMuted,
               ),
             ),
             SizedBox(height: 10.h),
@@ -467,7 +472,7 @@ class _DetailCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 16.sp,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textMuted,
+                color: AppColors.dMuted,
                 height: 1.55,
               ),
             ),
@@ -492,7 +497,7 @@ class _InfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 20.r, color: AppColors.textSecondary),
+        Icon(icon, size: 20.r, color: AppColors.dMuted),
         SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Text(
@@ -500,7 +505,7 @@ class _InfoRow extends StatelessWidget {
             style: TextStyle(
               fontSize: 15.sp,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: AppColors.dText,
             ),
           ),
         ),
@@ -538,7 +543,7 @@ class _LabeledLine extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13.sp,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
+                  color: AppColors.dMuted,
                 ),
               ),
               SizedBox(height: 4.h),
@@ -547,7 +552,7 @@ class _LabeledLine extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16.sp,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: AppColors.dText,
                   height: 1.35,
                 ),
               ),
@@ -579,7 +584,7 @@ class _ParticipantList extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(Icons.group_rounded, size: 22.r, color: AppColors.inputAccent),
+        Icon(Icons.group_rounded, size: 22.r, color: AppColors.dAccent),
         SizedBox(width: 10.w),
         Expanded(
           child: Column(
@@ -590,7 +595,7 @@ class _ParticipantList extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13.sp,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
+                  color: AppColors.dMuted,
                 ),
               ),
               SizedBox(height: 8.h),
@@ -659,7 +664,7 @@ class _ParticipantChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 14.sp,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: AppColors.dText,
             ),
           ),
         ],

@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_map_styles.dart';
 import '../../core/shell/tab_providers.dart';
 import '../../core/constants/app_routes.dart';
 import '../group_running/providers/run_location_provider.dart';
@@ -25,7 +26,7 @@ class ActiveRoomScreen extends ConsumerWidget {
   final VoidCallback? onDeletePressed;
   final VoidCallback? onLeavePressed;
 
-  static const Color _pageBg = Color(0xFFF4F4F4);
+  static const Color _pageBg = AppColors.dScreen;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -90,6 +91,7 @@ class _ActiveMiniMap extends StatelessWidget {
       height: 220.h,
       width: double.infinity,
       child: GoogleMap(
+        style: AppMapStyles.darkWarm,
         initialCameraPosition: CameraPosition(target: target, zoom: 15),
         zoomGesturesEnabled: false,
         scrollGesturesEnabled: false,
@@ -135,10 +137,13 @@ class _ActiveDetailCard extends StatelessWidget {
     };
 
     return Material(
-      color: Colors.white,
-      elevation: 6,
-      shadowColor: Colors.black.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(24.r),
+      color: AppColors.dCard,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24.r),
+        side: const BorderSide(color: AppColors.dLine, width: 1),
+      ),
+      shadowColor: Colors.black.withValues(alpha: 0.4),
       child: Padding(
         padding: EdgeInsets.all(20.w),
         child: Column(
@@ -154,7 +159,7 @@ class _ActiveDetailCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 22.sp,
                       fontWeight: FontWeight.w900,
-                      color: const Color(0xFF1A1A1A),
+                      color: AppColors.dText,
                       height: 1.25,
                     ),
                   ),
@@ -190,20 +195,20 @@ class _ActiveDetailCard extends StatelessWidget {
               text: '현재 참여 인원 ${card.currentMembers} / ${card.maxMembers}명',
             ),
             SizedBox(height: 20.h),
-            Divider(height: 1, color: const Color(0xFFEEEEEE)),
+            Divider(height: 1, color: AppColors.dLine),
             SizedBox(height: 16.h),
             _LabeledLine(
               icon: Icons.place_rounded,
               label: '장소명',
               value: card.effectivePlaceName,
-              iconColor: const Color(0xFFB33010),
+              iconColor: AppColors.dAccent,
             ),
             SizedBox(height: 14.h),
             _LabeledLine(
               icon: Icons.location_on_rounded,
               label: '주소',
               value: card.effectiveDetailAddress,
-              iconColor: const Color(0xFFB33010),
+              iconColor: AppColors.dAccent,
             ),
             if (card.effectiveBody.isNotEmpty) ...[
               SizedBox(height: 20.h),
@@ -212,7 +217,7 @@ class _ActiveDetailCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 15.sp,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF666666),
+                  color: AppColors.dMuted,
                 ),
               ),
               SizedBox(height: 10.h),
@@ -221,7 +226,7 @@ class _ActiveDetailCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16.sp,
                   fontWeight: FontWeight.w500,
-                  color: const Color(0xFF2C2C2C),
+                  color: AppColors.dMuted,
                   height: 1.55,
                 ),
               ),
@@ -243,7 +248,7 @@ class _InfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 20, color: const Color(0xFF666666)),
+        Icon(icon, size: 20, color: AppColors.dMuted),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -251,7 +256,7 @@ class _InfoRow extends StatelessWidget {
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF333333),
+              color: AppColors.dText,
             ),
           ),
         ),
@@ -288,7 +293,7 @@ class _LabeledLine extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF888888),
+                  color: AppColors.dMuted,
                 ),
               ),
               const SizedBox(height: 4),
@@ -297,7 +302,7 @@ class _LabeledLine extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1F1F1F),
+                  color: AppColors.dText,
                   height: 1.35,
                 ),
               ),
@@ -409,8 +414,8 @@ class _ActiveBottomActions extends StatelessWidget {
             child: OutlinedButton(
               onPressed: onLeavePressed,
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF666666),
-                side: const BorderSide(color: Color(0xFFCCCCCC)),
+                foregroundColor: AppColors.dMuted,
+                side: const BorderSide(color: AppColors.dLine2),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14.r),
                 ),

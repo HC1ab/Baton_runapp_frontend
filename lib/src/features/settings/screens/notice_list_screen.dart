@@ -15,13 +15,13 @@ class NoticeListScreen extends ConsumerWidget {
     final noticesAsync = ref.watch(noticeListProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: AppColors.dScreen,
       appBar: AppBar(
-        backgroundColor: AppColors.backgroundLight,
+        backgroundColor: AppColors.dScreen,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.textPrimary, size: 20.r),
+              color: AppColors.dText, size: 20.r),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -43,7 +43,7 @@ class NoticeListScreen extends ConsumerWidget {
                   padding: EdgeInsets.symmetric(vertical: 8.h),
                   itemCount: notices.length,
                   separatorBuilder: (_, __) =>
-                      Divider(height: 1, color: AppColors.divider),
+                      Divider(height: 1, color: AppColors.dLine),
                   itemBuilder: (_, i) {
                     final notice = notices[i];
                     return InkWell(
@@ -72,7 +72,7 @@ class NoticeListScreen extends ConsumerWidget {
                                       fontWeight: notice.isPinned
                                           ? FontWeight.w700
                                           : FontWeight.w600,
-                                      color: AppColors.textPrimary,
+                                      color: AppColors.dText,
                                     ),
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
@@ -82,7 +82,7 @@ class NoticeListScreen extends ConsumerWidget {
                                     notice.formattedDate,
                                     style: TextStyle(
                                       fontSize: 12.sp,
-                                      color: AppColors.textSecondary,
+                                      color: AppColors.dMuted,
                                     ),
                                   ),
                                 ],
@@ -90,7 +90,7 @@ class NoticeListScreen extends ConsumerWidget {
                             ),
                             SizedBox(width: 8.w),
                             Icon(Icons.arrow_forward_ios_rounded,
-                                size: 14.r, color: AppColors.textSecondary),
+                                size: 14.r, color: AppColors.dMuted),
                           ],
                         ),
                       ),
@@ -113,7 +113,7 @@ class NoticeListScreen extends ConsumerWidget {
           SizedBox(height: 16.h),
           Text('등록된 공지사항이 없어요.',
               style: AppTextStyles.bodyMedium
-                  .copyWith(color: AppColors.textSecondary)),
+                  .copyWith(color: AppColors.dMuted)),
         ],
       ),
     );
@@ -129,7 +129,7 @@ class NoticeListScreen extends ConsumerWidget {
           SizedBox(height: 12.h),
           Text('공지사항을 불러오지 못했어요.',
               style: AppTextStyles.bodyMedium
-                  .copyWith(color: AppColors.textSecondary)),
+                  .copyWith(color: AppColors.dMuted)),
           SizedBox(height: 12.h),
           TextButton(
             onPressed: () => ref.invalidate(noticeListProvider),

@@ -30,15 +30,9 @@ class ShopItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.dCard,
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: AppColors.dLine, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -58,7 +52,7 @@ class ShopItemCard extends StatelessWidget {
         // Background
         Container(
           decoration: BoxDecoration(
-            color: AppColors.backgroundLight,
+            color: AppColors.dCard2,
             borderRadius: BorderRadius.vertical(
               top: Radius.circular(AppSpacing.radiusLg),
             ),
@@ -142,7 +136,7 @@ class ShopItemCard extends StatelessWidget {
             item.name,
             style: AppTextStyles.labelSmall.copyWith(
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: AppColors.dText,
               fontSize: 11.sp,
             ),
             maxLines: 1,
@@ -160,7 +154,7 @@ class ShopItemCard extends StatelessWidget {
       return Text(
         'Owned',
         style: AppTextStyles.labelSmall.copyWith(
-          color: AppColors.textSecondary,
+          color: AppColors.dMuted,
           fontSize: 10.sp,
         ),
       );
@@ -172,8 +166,8 @@ class ShopItemCard extends StatelessWidget {
         padding: EdgeInsets.symmetric(vertical: 5.h),
         decoration: BoxDecoration(
           color: isPurchasing
-              ? AppColors.divider
-              : AppColors.primary,
+              ? AppColors.dCard3
+              : AppColors.dAccent,
           borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
         ),
         child: isPurchasing

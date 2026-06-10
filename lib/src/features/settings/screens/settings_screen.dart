@@ -15,13 +15,13 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: AppColors.dScreen,
       appBar: AppBar(
-        backgroundColor: AppColors.backgroundLight,
+        backgroundColor: AppColors.dScreen,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.textPrimary, size: 20.r),
+              color: AppColors.dText, size: 20.r),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -85,7 +85,7 @@ class SettingsScreen extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 14.sp,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
+                  color: AppColors.dMuted,
                 ),
               ),
               onTap: null,
@@ -128,13 +128,13 @@ class SettingsScreen extends ConsumerWidget {
                 .copyWith(fontWeight: FontWeight.w800)),
         content: Text('정말 로그아웃 하시겠어요?',
             style: AppTextStyles.bodyMedium
-                .copyWith(color: AppColors.textSecondary)),
+                .copyWith(color: AppColors.dMuted)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
             child: Text('취소',
                 style: AppTextStyles.labelLarge
-                    .copyWith(color: AppColors.textSecondary)),
+                    .copyWith(color: AppColors.dMuted)),
           ),
           TextButton(
             onPressed: () {
@@ -166,7 +166,7 @@ class _SectionHeader extends StatelessWidget {
         style: TextStyle(
           fontSize: 12.sp,
           fontWeight: FontWeight.w700,
-          color: AppColors.textSecondary,
+          color: AppColors.dMuted,
           letterSpacing: 0.8,
         ),
       ),
@@ -183,15 +183,9 @@ class _SettingsCard extends StatelessWidget {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.dCard,
         borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: AppColors.dLine, width: 1),
       ),
       child: Column(children: children),
     );
@@ -241,14 +235,14 @@ class _SettingsTile extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15.sp,
                 fontWeight: FontWeight.w600,
-                color: labelColor ?? AppColors.textPrimary,
+                color: labelColor ?? AppColors.dText,
               ),
             ),
             const Spacer(),
             if (trailing != null) trailing!,
             if (trailing == null && showArrow)
               Icon(Icons.arrow_forward_ios_rounded,
-                  size: 14.r, color: AppColors.textSecondary),
+                  size: 14.r, color: AppColors.dMuted),
           ],
         ),
       ),
@@ -260,5 +254,5 @@ class _TileDivider extends StatelessWidget {
   const _TileDivider();
   @override
   Widget build(BuildContext context) =>
-      Divider(height: 1, indent: 66.w, color: AppColors.divider);
+      Divider(height: 1, indent: 66.w, color: AppColors.dLine);
 }

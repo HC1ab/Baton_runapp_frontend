@@ -16,13 +16,13 @@ class NoticeDetailScreen extends ConsumerWidget {
     final detailAsync = ref.watch(noticeDetailProvider(noticeId));
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: AppColors.dScreen,
       appBar: AppBar(
-        backgroundColor: AppColors.backgroundLight,
+        backgroundColor: AppColors.dScreen,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.textPrimary, size: 20.r),
+              color: AppColors.dText, size: 20.r),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -71,7 +71,7 @@ class NoticeDetailScreen extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 20.sp,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+                  color: AppColors.dText,
                   height: 1.3,
                 ),
               ),
@@ -80,11 +80,11 @@ class NoticeDetailScreen extends ConsumerWidget {
                 notice.formattedDate,
                 style: TextStyle(
                   fontSize: 13.sp,
-                  color: AppColors.textSecondary,
+                  color: AppColors.dMuted,
                 ),
               ),
               SizedBox(height: 20.h),
-              Divider(color: AppColors.divider),
+              Divider(color: AppColors.dLine),
               SizedBox(height: 20.h),
 
               // 본문
@@ -92,7 +92,7 @@ class NoticeDetailScreen extends ConsumerWidget {
                 notice.content,
                 style: TextStyle(
                   fontSize: 15.sp,
-                  color: AppColors.textPrimary,
+                  color: AppColors.dText,
                   height: 1.7,
                 ),
               ),
@@ -114,7 +114,7 @@ class NoticeDetailScreen extends ConsumerWidget {
           SizedBox(height: 12.h),
           Text('공지사항을 불러오지 못했어요.',
               style: AppTextStyles.bodyMedium
-                  .copyWith(color: AppColors.textSecondary)),
+                  .copyWith(color: AppColors.dMuted)),
           SizedBox(height: 12.h),
           TextButton(
             onPressed: () => ref.invalidate(noticeDetailProvider(noticeId)),

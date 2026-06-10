@@ -36,7 +36,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final topPadding = MediaQuery.of(context).padding.top;
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: AppColors.dScreen,
       extendBody: true,
       body: Stack(
         children: [
@@ -110,7 +110,7 @@ class PlaceholderTab extends StatelessWidget {
                       Text(
                         englishLabel!,
                         style: TextStyle(
-                          color: AppColors.sectionLabel,
+                          color: AppColors.dAccent,
                           fontSize: 13.sp,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 1.8,
@@ -120,7 +120,7 @@ class PlaceholderTab extends StatelessWidget {
                     Text(
                       label,
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: AppColors.dText,
                         fontSize: 22.sp,
                         fontWeight: FontWeight.w900,
                         height: 1.1,
@@ -142,13 +142,13 @@ class PlaceholderTab extends StatelessWidget {
                 Icon(
                   icon,
                   size: 48.r,
-                  color: AppColors.primary.withValues(alpha: 0.3),
+                  color: AppColors.dAccent.withValues(alpha: 0.3),
                 ),
                 SizedBox(height: AppSpacing.sm),
                 Text(
                   '준비 중',
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.dMuted,
                   ),
                 ),
               ],

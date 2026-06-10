@@ -13,6 +13,7 @@ import 'package:logger/logger.dart';
 import '../../../core/character/character_provider.dart';
 import '../../../core/character/character_style.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_map_styles.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/shell/tab_providers.dart' show GroupJoinRequest, pendingGroupJoinProvider;
@@ -40,27 +41,6 @@ final _logger = Logger();
 const _defaultLatLng = LatLng(35.2475, 129.0914);
 const _defaultZoom = 18.5;
 const _defaultTilt = 45.0;
-
-// 흰색 맵 스타일 JSON
-const _whiteMapStyle = '''
-[
-  {"elementType": "geometry", "stylers": [{"color": "#f5f5f5"}]},
-  {"elementType": "labels.icon", "stylers": [{"visibility": "off"}]},
-  {"elementType": "labels.text.fill", "stylers": [{"color": "#616161"}]},
-  {"elementType": "labels.text.stroke", "stylers": [{"color": "#f5f5f5"}]},
-  {"featureType": "administrative.land_parcel", "stylers": [{"visibility": "off"}]},
-  {"featureType": "administrative.neighborhood", "stylers": [{"visibility": "off"}]},
-  {"featureType": "poi", "stylers": [{"visibility": "off"}]},
-  {"featureType": "road", "elementType": "geometry", "stylers": [{"color": "#ffffff"}]},
-  {"featureType": "road.arterial", "elementType": "labels", "stylers": [{"visibility": "off"}]},
-  {"featureType": "road.highway", "elementType": "geometry", "stylers": [{"color": "#dadada"}]},
-  {"featureType": "road.highway", "elementType": "labels", "stylers": [{"visibility": "off"}]},
-  {"featureType": "road.local", "stylers": [{"visibility": "on"}]},
-  {"featureType": "transit", "stylers": [{"visibility": "off"}]},
-  {"featureType": "water", "elementType": "geometry", "stylers": [{"color": "#c9c9c9"}]},
-  {"featureType": "water", "elementType": "labels.text", "stylers": [{"visibility": "off"}]}
-]
-''';
 
 class RunningScreen extends ConsumerStatefulWidget {
   const RunningScreen({
@@ -658,14 +638,14 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
         : const <GroundOverlay>{};
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: AppColors.dScreen,
       resizeToAvoidBottomInset: false, // 키보드 inset이 지도 크기를 변경하지 않도록 방지
       body: Stack(
         children: [
           // ── Full-screen Google Map ────────────────────────────────────────
           Positioned.fill(
             child: GoogleMap(
-              style: _whiteMapStyle,
+              style: AppMapStyles.darkWarm,
               mapType: MapType.normal,
               initialCameraPosition: const CameraPosition(
                 target: _defaultLatLng,
@@ -702,6 +682,27 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
                 setState(() => _isMapReadyForOverlays = true);
               },
               onTap: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+            ),
+          ),
+
+          // ── run-haze: 상·하단 비네트 + 하단 중앙 웜 글로우 ────────────────
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0x99141416),
+                      Color(0x00141416),
+                      Color(0x00141416),
+                      Color(0xCC141416),
+                    ],
+                    stops: [0.0, 0.18, 0.62, 1.0],
+                  ),
+                ),
+              ),
             ),
           ),
 
@@ -952,12 +953,14 @@ class _BottomPanel extends StatelessWidget {
                 filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.6),
+                    color: const Color(0xE61E1E21), // dCard @ ~0.9
                     borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+                    border: Border.all(color: AppColors.dLine, width: 1),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.07),
-                        blurRadius: 20,
+                        color: Colors.black.withValues(alpha: 0.4),
+                        blurRadius: 30,
+                        spreadRadius: -8,
                         offset: const Offset(0, -4),
                       ),
                     ],
@@ -976,7 +979,7 @@ class _BottomPanel extends StatelessWidget {
                           label: '거리 (KM)',
                           value: (record.distanceMeters / 1000)
                               .toStringAsFixed(2),
-                          labelColor: AppColors.primary,
+                          labelColor: AppColors.dAccent,
                         ),
                         SizedBox(width: AppSpacing.lg),
                         _MetricBlock(
@@ -998,7 +1001,7 @@ class _BottomPanel extends StatelessWidget {
                                 bottomExpanded
                                     ? Icons.keyboard_arrow_up_rounded
                                     : Icons.keyboard_arrow_down_rounded,
-                                color: AppColors.textSecondary,
+                                color: AppColors.dMuted,
                                 size: 24.r,
                               ),
                             ),
@@ -1033,7 +1036,7 @@ class _BottomPanel extends StatelessWidget {
                             Text(
                               '랩',
                               style: AppTextStyles.labelSmall.copyWith(
-                                color: AppColors.textSecondary,
+                                color: AppColors.dMuted,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.5,
                               ),
@@ -1061,7 +1064,7 @@ class _BottomPanel extends StatelessWidget {
                             vertical: 4.h,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.08),
+                            color: AppColors.dAccent.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(
                                 AppSpacing.radiusFull),
                           ),
@@ -1069,12 +1072,12 @@ class _BottomPanel extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.stars_rounded,
-                                  size: 14.r, color: AppColors.primary),
+                                  size: 14.r, color: AppColors.dAccentBright),
                               SizedBox(width: 4.w),
                               Text(
                                 '스팟 ${record.checkedInSpotIds.length}개 · +${record.spotPoints}P',
                                 style: AppTextStyles.labelSmall.copyWith(
-                                  color: AppColors.primary,
+                                  color: AppColors.dAccentBright,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -1111,20 +1114,35 @@ class _RunButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isRunning ? AppColors.error : AppColors.primary;
+    final size = isRunning ? 62.r : 66.r;
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 62.r,
-        height: 62.r,
+        width: size,
+        height: size,
         decoration: BoxDecoration(
-          color: color,
           shape: BoxShape.circle,
+          gradient: isRunning
+              ? null
+              : const RadialGradient(
+                  center: Alignment(-0.3, -0.4),
+                  radius: 0.95,
+                  colors: [
+                    AppColors.dAccentBright,
+                    AppColors.dAccent,
+                    AppColors.dAccentDeep,
+                  ],
+                  stops: [0.0, 0.55, 1.0],
+                ),
+          color: isRunning ? AppColors.dRouteEnd : null,
           boxShadow: [
+            // 버튼에 밀착된 은은한 글로우 — 넓게 번지지 않도록 타이트하게
             BoxShadow(
-              color: color.withValues(alpha: 0.35),
+              color: (isRunning ? AppColors.dRouteEnd : AppColors.dAccent)
+                  .withValues(alpha: 0.35),
               blurRadius: 16,
-              offset: const Offset(0, 6),
+              spreadRadius: -2,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -1142,7 +1160,7 @@ class _MetricBlock extends StatelessWidget {
   const _MetricBlock({
     required this.label,
     required this.value,
-    this.labelColor = AppColors.textSecondary,
+    this.labelColor = AppColors.dMuted,
     this.valueFontSize,
   });
   final String label;
@@ -1170,7 +1188,7 @@ class _MetricBlock extends StatelessWidget {
           style: TextStyle(
             fontSize: (valueFontSize ?? 44).sp,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: AppColors.dText,
             letterSpacing: -1.5,
             height: 1.0,
           ),
@@ -1260,7 +1278,7 @@ class _LapRow extends StatelessWidget {
             child: Text(
               '${lap.lapNumber}',
               style: AppTextStyles.labelSmall.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.dMuted,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1271,7 +1289,7 @@ class _LapRow extends StatelessWidget {
                 Text(
                   lap.formattedDuration,
                   style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.textPrimary,
+                    color: AppColors.dText,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -1279,7 +1297,7 @@ class _LapRow extends StatelessWidget {
                 Text(
                   '1km',
                   style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.dMuted,
                   ),
                 ),
               ],
@@ -1288,7 +1306,7 @@ class _LapRow extends StatelessWidget {
           Text(
             lap.formattedPace,
             style: AppTextStyles.labelSmall.copyWith(
-              color: AppColors.textSecondary,
+              color: AppColors.dMuted,
             ),
           ),
         ],

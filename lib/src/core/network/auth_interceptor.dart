@@ -51,16 +51,12 @@ class AuthInterceptor extends Interceptor {
       _logger.w('401 received (code: $code) — ${err.requestOptions.method} ${err.requestOptions.path}');
 
       // A001/A002/A003만 forceLogout — code 없는 401은 비즈니스 로직 에러일 수 있음
-      final isTokenAuthFailure = _tokenAuthCodes.contains(code);
-      if (isTokenAuthFailure) {
-        // 이미 로그아웃 상태면 중복 호출 방지
+      if (_tokenAuthCodes.contains(code)) {
         if (_ref.read(authProvider) is AuthStateUnauthenticated) {
           _logger.d('forceLogout skipped — already unauthenticated');
         } else {
-          _logger.w('Auth token failure (code: $code) → forceLogout (deferred)');
-          SchedulerBinding.instance.addPostFrameCallback((_) {
-            _ref.read(authProvider.notifier).forceLogout();
-          });
+          _logger.w('Auth token failure (code: $code) → forceLogout');
+          await _ref.read(authProvider.notifier).forceLogout();
         }
       }
     }

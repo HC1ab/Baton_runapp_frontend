@@ -302,7 +302,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       if (!mounted) return;
 
       if (useMockGps) {
-        // 목 모드 시작 위치 — 구서역 1호선 고정
+        // Mock 모드: 시뮬레이터 기본 GPS(샌프란시스코)를 피해 구서역 고정 사용
         const initLat = 35.2475;
         const initLng = 129.0914;
         _mockPos = _makeMockPos(lat: initLat, lng: initLng, speed: 0);

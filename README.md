@@ -1,54 +1,117 @@
-# RunApp
+# Baton — 게이미피케이션 러닝 앱
 
-RunApp은 러닝 기록을 측정하고, 주변 스팟(Spot)에 체크인하여 보상을 획득하는 **게이미피케이션 러닝 앱**입니다.
-Flutter와 Riverpod을 사용하여 개발되었으며, 네이버 지도(Naver Map)를 기반으로 작동합니다.
+Flutter 3.x / Riverpod 2.x / Google Maps / Android-first
 
-# 터미널 실행
+> GPS 러닝 추적 · 스팟 체크인 · 그룹 러닝 · 소셜 피드 · 러닝 결과 공유 카드
+
+---
+
+## 실행
+
+```bash
+# 개발
 flutter run --dart-define=ENV=dev
 
-## ✨ 주요 기능
+# 프로덕션
+flutter run --dart-define=ENV=prod
 
-- **러닝 트래킹**: 실시간 위치 추적, 이동 경로(Polyline) 그리기, 러닝 시간 및 점수 계산.
-- **스팟 체크인**:
-  - 주변 스팟 탐색 및 지도 표시.
-  - 스팟 반경 15m 이내 접근 시 자동/수동 체크인 및 포인트 획득.
-- **개발자 모드 (Mock Mode)**:
-  - 실제 밖으로 나가지 않고도 테스트 가능한 **가상 위치 조작(Joystick)** 기능.
-  - 자동 걷기(Auto Walk) 및 이동 속도 조절.
-  - 가상 스팟 데이터 생성 (`MockSpotApi`).
-- **UI/UX**:
-  - **Glassmorphism**: 배경이 투과되는 세련된 글래스 카드 디자인 (`GlassCard`).
-  - **Custom Bottom Bar**: 커스텀 디자인된 하단 네비게이션.
-  - 다크 모드/라이트 모드 지원.
-
-## 🛠 기술 스택
-
-- **Framework**: Flutter
-- **State Management**: Riverpod
-- **Map**: flutter_naver_map (Naver Maps API)
-- **Location**: geolocator
-- **Network**: Dio
-- **Architecture**: Feature-based Architecture
-
-## 📂 프로젝트 구조
-
-```text
-lib/
-├── src/
-│   ├── app.dart                   # 앱 최상위 설정 (테마, 라우팅)
-│   ├── core/                      # 공통 모듈 (Network, Session 등)
-│   ├── design/                    # 디자인 시스템 (GlassCard, Theme, CustomBar)
-│   └── features/                  # 기능별 모듈
-│       ├── auth/                  # 인증 (로그인)
-│       ├── map/                   # 지도, 위치 추적, Mock 컨트롤러
-│       ├── run/                   # 러닝 기록 데이터 관리
-│       └── spot/                  # 스팟 데이터 및 API
-└── main.dart                      # 진입점 (Naver Map 초기화)
+# APK 빌드
+flutter build apk --release --dart-define=ENV=prod
 ```
 
+---
 
-## 백엔드 연결
+## 주요 기능
 
-기본 Base URL은 `http://localhost:8080`입니다.
+### 러닝
+- 실시간 GPS 추적 (거리 · 페이스 · 칼로리 · 경로 폴리라인)
+- 나침반 연동 캐릭터 방향 회전
+- 러닝 결과 이미지 공유 카드 (자유 배치 / NRC 스타일 / 한글 스타일)
+  - 드래그 · 리사이즈 · 색상 개별 커스텀
 
-- 변경 위치: `lib/src/core/network/api_client.dart`
+### 스팟 체크인
+- 반경 30m 이내 GPS 체크인 · 24h 쿨다운
+- 체크인 시 포인트 지급
+
+### 그룹 러닝
+- WebSocket 실시간 참가자 위치 공유
+- 방 생성 · 참여 · 나가기 · 호스트 종료
+
+### 소셜
+- 그룹 방 피드 (30초 폴링)
+- 팔로우 · 팔로워 요청
+
+### 캐릭터 & 프로필
+- SVG 4레이어 구체 캐릭터 (색상 커스텀)
+- 칭호 · 포인트샵 · 러닝 히스토리
+
+---
+
+## 기술 스택
+
+| 분류 | 기술 |
+|------|------|
+| Framework | Flutter 3.x |
+| State | Riverpod 2.x (NotifierProvider / FutureProvider) |
+| 지도 | Google Maps Flutter |
+| 네트워크 | Dio + AuthInterceptor (자동 토큰 갱신) |
+| 실시간 | WebSocket |
+| 인증 | JWT + Kakao 소셜로그인 |
+| 저장 | SharedPreferences · flutter_secure_storage |
+| 이미지 | gal · image_picker |
+| 배포 | Firebase App Distribution (GitHub Actions) |
+
+---
+
+## 환경 설정
+
+`.env.dev` / `.env.prod` 파일 루트에 생성:
+
+```env
+IS_DEV=true
+USE_MOCK_GPS=true
+API_BASE_URL=http://api.baton-running-app.kro.kr:8080
+GOOGLE_MAPS_API_KEY=your_key
+KAKAO_NATIVE_APP_KEY=your_key
+```
+
+> `.env.*` 파일은 `.gitignore`에 등록됨. CI/CD는 GitHub Secrets에서 주입.
+
+---
+
+## 프로젝트 구조
+
+```
+lib/
+├── main.dart
+├── firebase_options.dart
+└── src/
+    ├── app.dart
+    ├── core/
+    │   ├── constants/        # AppColors · AppSpacing · AppRoutes · ErrorMessages 등
+    │   ├── network/          # Dio · AuthInterceptor · ApiClient
+    │   ├── storage/          # SecureStorage · SharedPreferences
+    │   ├── character/        # 캐릭터 스타일 프로바이더
+    │   └── utils/            # FormatUtils · RunningUtils
+    ├── common/
+    │   └── widgets/          # CharacterSphereWidget 등 공용 위젯
+    └── features/
+        ├── auth/             # 로그인 · 회원가입 · JWT 관리
+        ├── running/          # GPS 러닝 · 스팟 · 러닝 화면
+        ├── run_share/        # 러닝 결과 공유 카드
+        ├── social/           # 그룹 방 피드 · 소셜
+        ├── group_running/    # WebSocket 그룹 러닝
+        ├── profile/          # 프로필 · 히스토리
+        ├── shop/             # 포인트샵
+        └── spot/             # 스팟 목록
+```
+
+---
+
+## CI/CD
+
+`main` 브랜치 push 시 GitHub Actions 자동 실행:
+1. `.env.prod` 복원 (Secrets 주입)
+2. `google-services.json` / `GoogleService-Info.plist` 복원
+3. `flutter build apk --release`
+4. Firebase App Distribution → `testers` 그룹 배포

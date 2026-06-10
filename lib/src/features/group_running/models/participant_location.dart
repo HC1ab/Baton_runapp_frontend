@@ -32,6 +32,7 @@ class ParticipantLocation {
       latitude: latitude,
       longitude: longitude,
       nickname: json['nickname'] as String? ?? json['nickName'] as String?,
+      titleName: json['titleName'] as String? ?? json['title_name'] as String?,
       updatedAt: DateTime.tryParse(json['timestamp']?.toString() ?? '') ??
           DateTime.tryParse(json['updatedAt']?.toString() ?? ''),
     );

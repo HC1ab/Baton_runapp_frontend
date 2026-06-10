@@ -47,6 +47,23 @@ class MemberProfileService {
     }
   }
 
+  /// GET /api/v1/profile/colors?memberIds={memberId}
+  /// memberId → coreColorCode 단건 조회. 없으면 null 반환.
+  Future<String?> getColorCode(int memberId) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.profileColors,
+        queryParameters: {'memberIds': '$memberId'},
+      );
+      final list = response.data['data'] as List<dynamic>? ?? [];
+      if (list.isEmpty) return null;
+      return list.first['coreColorCode'] as String?;
+    } catch (e) {
+      _logger.w('getColorCode failed id=$memberId', error: e);
+      return null;
+    }
+  }
+
   AppException _mapDio(DioException e) {
     final status = e.response?.statusCode;
     if (status == 401) return const AuthException();
@@ -71,18 +88,6 @@ final memberProfileProvider =
 
 /// memberId → coreColorCode 단건 조회
 final memberColorCodeProvider =
-    FutureProvider.family<String?, int>((ref, memberId) async {
-  final dio = ref.watch(dioProvider);
-  try {
-    final res = await dio.get(
-      ApiConstants.profileColors,
-      queryParameters: {'memberIds': '$memberId'},
-    );
-    final list = res.data['data'] as List<dynamic>? ?? [];
-    if (list.isEmpty) return null;
-    return list.first['coreColorCode'] as String?;
-  } catch (e) {
-    Logger().w('memberColorCodeProvider failed id=$memberId', error: e);
-    return null;
-  }
+    FutureProvider.family<String?, int>((ref, memberId) {
+  return ref.watch(memberProfileServiceProvider).getColorCode(memberId);
 });

@@ -129,7 +129,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
 
       if (placemarks.isEmpty) {
         setState(() {
-          _addressController.text = '주소를 찾을 수 없습니다';
+          _addressController.text = ErrorMessages.addressNotFound;
         });
         return;
       }
@@ -137,12 +137,12 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       final line = _koreanAddressLine(placemarks.first);
       setState(() {
         _addressController.text =
-            line.isEmpty ? '주소를 찾을 수 없습니다' : line;
+            line.isEmpty ? ErrorMessages.addressNotFound : line;
       });
     } catch (_) {
       if (mounted) {
         setState(() {
-          _addressController.text = '주소를 찾을 수 없습니다';
+          _addressController.text = ErrorMessages.addressNotFound;
         });
       }
     }
@@ -206,7 +206,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     final address = _addressController.text.trim();
 
     if (title.isEmpty || content.isEmpty || placeName.isEmpty || address.isEmpty) {
-      AppSnackBar.error(context, '제목, 내용, 장소명, 주소를 모두 입력해 주세요.');
+      AppSnackBar.error(context, ErrorMessages.groupFormIncomplete);
       return;
     }
 

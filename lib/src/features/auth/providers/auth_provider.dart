@@ -121,6 +121,14 @@ class AuthNotifier extends Notifier<AuthState> {
       _logger.w('forceLogout tokenStorage.clear failed (best-effort)', error: e);
     }
     try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      await prefs.remove(StorageKeys.myNickname);
+      await prefs.remove(StorageKeys.coreColorCode);
+      await prefs.remove(StorageKeys.equippedTitleCode);
+    } catch (e) {
+      _logger.w('forceLogout prefs.clear failed (best-effort)', error: e);
+    }
+    try {
       ref.invalidate(profileProvider);
       ref.invalidate(myRoomProvider);
       ref.invalidate(monthlySummaryProvider);
@@ -149,6 +157,14 @@ class AuthNotifier extends Notifier<AuthState> {
       await ref.read(tokenStorageProvider).clear();
     } catch (e) {
       _logger.w('logout tokenStorage.clear failed (best-effort)', error: e);
+    }
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      await prefs.remove(StorageKeys.myNickname);
+      await prefs.remove(StorageKeys.coreColorCode);
+      await prefs.remove(StorageKeys.equippedTitleCode);
+    } catch (e) {
+      _logger.w('logout prefs.clear failed (best-effort)', error: e);
     }
     try {
       ref.invalidate(profileProvider);

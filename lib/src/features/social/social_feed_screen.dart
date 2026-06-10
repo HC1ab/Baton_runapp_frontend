@@ -16,6 +16,7 @@ import '../../core/constants/storage_keys.dart';
 import '../../core/network/api_client.dart';
 import '../../core/shell/tab_providers.dart';
 import '../../core/storage/token_storage.dart';
+import '../auth/providers/auth_provider.dart';
 import '../../core/utils/app_snack_bar.dart';
 import '../../core/utils/jwt_utils.dart';
 import '../group_running/providers/run_location_provider.dart';
@@ -58,6 +59,22 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
           _startPolling();
         } else {
           _stopPolling();
+        }
+      });
+      // 인증 상태 감지 — 로그아웃 시 카드 즉시 초기화, 로그인 시 재로드
+      ref.listenManual<AuthState>(authProvider, (prev, next) {
+        if (next is AuthStateUnauthenticated) {
+          _stopPolling();
+          if (mounted) {
+            setState(() {
+              _cards = const [];
+              _myMemberId = null;
+              _prevParticipatingGroupId = null;
+            });
+          }
+        } else if (next is AuthStateAuthenticated) {
+          _loadCards();
+          _startPolling();
         }
       });
     });

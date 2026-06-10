@@ -10,7 +10,6 @@ import '../models/share_overlay_config.dart';
 import '../models/stat_item_config.dart';
 import '../providers/run_share_provider.dart';
 import 'draggable_stat_widget.dart';
-import 'share_nrc_bar_widget.dart';
 
 /// 공유 카드 캔버스.
 /// [repaintKey]로 RepaintBoundary를 캡처해 이미지 저장에 사용.
@@ -62,18 +61,10 @@ class ShareCanvasWidget extends ConsumerWidget {
                     ),
                   ),
 
-                  // ── 스탯 (스타일 분기) ────────────────────────────────────
-                  if (config.cardStyle == CardStyle.nrc)
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      child: ShareNrcBarWidget(data: data, config: config),
-                    )
-                  else
-                    for (final stat in config.stats)
-                      if (stat.visible)
-                        _buildStatItem(stat, canvasSize, config),
+                  // ── 스탯 (공통: freestyle/nrc 모두 개별 드래그 가능) ────────
+                  for (final stat in config.stats)
+                    if (stat.visible)
+                      _buildStatItem(stat, canvasSize, config),
                 ],
               );
             },
@@ -82,6 +73,21 @@ class ShareCanvasWidget extends ConsumerWidget {
       ),
     );
   }
+
+  /// NRC 스타일: stat id → 아이콘
+  IconData? _nrcIcon(String id) => switch (id) {
+        'duration' => Icons.timer_outlined,
+        'pace' => Icons.speed_outlined,
+        _ => null,
+      };
+
+  /// 한글 스타일: stat id → 한글 레이블
+  String? _koreanLabel(String id) => switch (id) {
+        'distance' => '거리',
+        'duration' => '시간',
+        'pace' => '평균 페이스',
+        _ => null,
+      };
 
   Widget _buildStatItem(
     StatItemConfig stat,
@@ -98,6 +104,8 @@ class ShareCanvasWidget extends ConsumerWidget {
         canvasSize: canvasSize,
         isSelected: config.selectedStatId == stat.id,
         value: _value(stat.id),
+        prefixIcon: config.cardStyle == CardStyle.nrc ? _nrcIcon(stat.id) : null,
+        label: config.cardStyle == CardStyle.korean ? _koreanLabel(stat.id) : null,
       ),
     );
   }

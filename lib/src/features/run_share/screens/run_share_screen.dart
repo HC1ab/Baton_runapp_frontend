@@ -322,14 +322,19 @@ class _StyleToggle extends StatelessWidget {
       child: Row(
         children: [
           _Tab(
-            label: '자유 배치',
+            label: '자유',
             selected: current == CardStyle.freestyle,
             onTap: () => onChanged(CardStyle.freestyle),
           ),
           _Tab(
-            label: 'NRC 스타일',
+            label: 'NRC',
             selected: current == CardStyle.nrc,
             onTap: () => onChanged(CardStyle.nrc),
+          ),
+          _Tab(
+            label: '한글',
+            selected: current == CardStyle.korean,
+            onTap: () => onChanged(CardStyle.korean),
           ),
         ],
       ),

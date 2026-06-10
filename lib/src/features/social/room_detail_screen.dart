@@ -8,6 +8,8 @@ import '../../common/widgets/character_sphere_widget.dart';
 import '../../core/character/character_style.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
+import '../../core/constants/error_messages.dart';
+import '../../core/utils/app_snack_bar.dart';
 import '../group_running/services/group_run_api_service.dart';
 import '../profile/screens/member_profile_screen.dart';
 import 'models/run_card_data.dart';
@@ -69,6 +71,7 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
       _fetchParticipantColors(groupId);
     } catch (e, st) {
       _logger.e('[RoomDetail] _fetchDetail failed', error: e, stackTrace: st);
+      if (mounted) AppSnackBar.error(context, ErrorMessages.groupDetailLoadFailed);
     }
   }
 

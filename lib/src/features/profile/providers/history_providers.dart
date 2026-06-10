@@ -44,13 +44,17 @@ final monthlySummaryProvider = FutureProvider<MonthlySummaryModel>((ref) async {
 });
 
 /// 선택된 연/월에 해당하는 러닝 목록.
-/// 전체 목록을 받아 클라이언트에서 필터링 후 날짜 오름차순 정렬.
+/// 서버에 year/month 전달해 필터링 요청.
+/// 서버가 파라미터를 무시할 경우를 대비해 클라이언트 필터 안전망 유지.
 final myRunsProvider = FutureProvider<List<RunListItem>>((ref) async {
   final selectedDate = ref.watch(selectedDateProvider);
   final api = ref.read(historyApiProvider);
 
-  final all = await api.getMyRuns();
-  return all
+  final runs = await api.getMyRuns(
+    year: selectedDate.year,
+    month: selectedDate.month,
+  );
+  return runs
       .where((r) =>
           r.startTime.year == selectedDate.year &&
           r.startTime.month == selectedDate.month)

@@ -16,7 +16,6 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/shell/tab_providers.dart' show GroupJoinRequest, pendingGroupJoinProvider;
-import '../services/glb_sphere_renderer.dart';
 import '../../group_running/providers/run_location_provider.dart';
 import '../../group_running/services/group_run_api_service.dart';
 import '../../group_running/widgets/participant_marker_builder.dart';
@@ -83,6 +82,13 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   StreamSubscription<CompassEvent>? _compassSub;
   double? _currentHeading; // 기기 나침반 heading (null = 미수신)
 
+  // FlutterCompass는 -180~180 반환 가능, Geolocator heading도 음수/NaN 가능
+  // GroundOverlay.bearing assertion: 0.0 <= bearing <= 360.0
+  double _normalizeBearing(double bearing) {
+    if (bearing.isNaN || bearing.isInfinite) return 0.0;
+    return ((bearing % 360.0) + 360.0) % 360.0;
+  }
+
   // Mock state
   double _mockStepMeters = 3.33;
   bool _mockAutoWalk = false;
@@ -106,7 +112,6 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   // 마커 아이콘 캐시 — initState에서 한 번만 생성
   BitmapDescriptor? _iconDefault;
   BitmapDescriptor? _iconChecked;
-  BytesMapBitmap? _iconCharacter;
 
   // 현재 위치 (mock + 실 GPS 공통)
   LatLng? _myLatLng;
@@ -119,13 +124,6 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   // AppLifecycle — 호스트 방 삭제용
   AppLifecycleListener? _lifecycleListener;
 
-  // GroundOverlay 캐시 — 위치 변경 시만 재생성
-  // Set도 캐시: 클럭 틱마다 동일 참조 반환 → GoogleMap.didUpdateWidget에서 변경 없음 판정
-  bool _isMapReadyForOverlays = false;
-  GroundOverlay? _cachedGroundOverlay;
-  LatLng? _cachedGroundOverlayPos;
-  double? _cachedGroundOverlayBearing;
-  Set<GroundOverlay> _cachedGroundOverlaySet = const {};
 
   // Marker/Circle/Polyline 캐시 — 소스 데이터 identity 변경 시만 재계산
   // (클럭 틱은 duration만 바꾸므로 nearbySpots/checkedInSpotIds/path ref 불변 → 재계산 없음)
@@ -181,27 +179,6 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     } catch (e) {
       _logger.w('Spot marker icons failed to load', error: e);
     }
-
-    final style = ref.read(selectedCharacterStyleProvider);
-    _iconCharacter = await _buildCharacterSphereBitmap(style.baseColor);
-  }
-
-  /// GLB 구체 메시를 baseColor로 flat 렌더링한 비트맵.
-  Future<BytesMapBitmap?> _buildCharacterSphereBitmap(Color baseColor) async {
-    try {
-      final dpr =
-          WidgetsBinding.instance.platformDispatcher.views.first.devicePixelRatio;
-      final bytes = await GlbSphereRenderer.render(
-        baseColor: baseColor,
-        logicalSize: 96.0,
-        devicePixelRatio: dpr,
-      );
-      if (bytes == null) return null;
-      return BytesMapBitmap(bytes, bitmapScaling: MapBitmapScaling.none);
-    } catch (e) {
-      _logger.w('Character sphere bitmap build failed', error: e);
-      return null;
-    }
   }
 
   // -------------------------------------------------------------------------
@@ -233,14 +210,29 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   /// 그룹 참가자 마커 빌드 — 위치 변경 시 호출
   Future<void> _updateParticipantMarkers(RunLocationState locState) async {
     final newMarkers = <int, Marker>{};
+    final activeIds = locState.participants.keys.toSet();
+
+    // 퇴장한 참가자의 캐시 키 제거 (memberId prefix로 식별)
+    _participantBitmapCache.removeWhere(
+      (key, _) {
+        final id = int.tryParse(key.split('_').first);
+        return id != null && !activeIds.contains(id);
+      },
+    );
 
     for (final entry in locState.participants.entries) {
       final p = entry.value;
       final markerId = entry.key;
 
-      // 비트맵 캐시 미스 시 생성 (색상 포함 key)
+      // 비트맵 캐시 미스 시 생성 — nickname/titleName 변경 시도 재빌드되도록 key에 포함
       final colorCode = p.coreColorCode ?? 'CORE_ORANGE';
-      final cacheKey = '${markerId}_$colorCode';
+      final cacheKey = '${markerId}_${colorCode}_${p.nickname ?? ''}_${p.titleName ?? ''}';
+
+      // 같은 memberId의 stale 키(다른 colorCode/nickname) 제거
+      _participantBitmapCache.removeWhere(
+        (key, _) => key.startsWith('${markerId}_') && key != cacheKey,
+      );
+
       if (!_participantBitmapCache.containsKey(cacheKey)) {
         final sphereColor =
             CharacterStylePresets.fromCode(colorCode).baseColor;
@@ -275,14 +267,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     });
   }
 
-  void _rebuildCharacterMarker(CharacterStyle style) {
-    _buildCharacterSphereBitmap(style.baseColor).then((bitmap) {
-      if (!mounted) return;
-      setState(() => _iconCharacter = bitmap);
-    });
-  }
-
-  /// 소셜 탭에서 pendingGroupJoinProvider를 통해 진입할 때 호출.
+/// 소셜 탭에서 pendingGroupJoinProvider를 통해 진입할 때 호출.
   Future<void> _joinGroupFromPending(int groupId, {required bool isHost}) async {
     _activeGroupId = groupId;
     _cachedGroupIdForDispose = groupId;
@@ -350,7 +335,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
           final heading = event.heading;
           if (heading == null || !mounted) return;
           // setState로 _currentHeading 갱신 → build() 재실행 → GroundOverlay bearing 즉시 반영
-          setState(() => _currentHeading = heading);
+          setState(() => _currentHeading = _normalizeBearing(heading));
           // 현재 위치 있으면 카메라 bearing 즉시 갱신 (이동 없어도 회전 반영)
           final latLng = _myLatLng;
           if (latLng != null) {
@@ -469,7 +454,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
             zoom: _defaultZoom,
             tilt: _defaultTilt,
             // 나침반 값 우선, 미수신 시 GPS heading 폴백
-            bearing: _currentHeading ?? pos.heading,
+            bearing: _normalizeBearing(_currentHeading ?? 0.0),
           ),
         ),
       );
@@ -544,33 +529,6 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     };
   }
 
-  // 위치 변경 시만 GroundOverlay 재생성 (BytesMapBitmap 네이티브 재전송 방지)
-  // Set 자체도 캐시 → 위치 불변 시 동일 Set 참조 반환 → GoogleMap이 변경 없음으로 판정
-  Set<GroundOverlay> _buildGroundOverlays({double bearing = 0.0}) {
-    final pos = _myLatLng;
-    final bitmap = _iconCharacter;
-    if (pos == null || bitmap == null) return const {};
-
-    // 위치 또는 bearing 변경 시 재생성
-    final bearingChanged =
-        (_cachedGroundOverlayBearing ?? -1).toInt() != bearing.toInt();
-    if (_cachedGroundOverlayPos != pos || bearingChanged) {
-      _cachedGroundOverlayPos = pos;
-      _cachedGroundOverlayBearing = bearing;
-      _cachedGroundOverlay = GroundOverlay.fromPosition(
-        groundOverlayId: const GroundOverlayId('my_character'),
-        image: bitmap,
-        position: pos,
-        width: 16,
-        zoomLevel: _defaultZoom,
-        bearing: bearing,
-        anchor: const Offset(0.5, 0.5),
-        zIndex: 10,
-      );
-      _cachedGroundOverlaySet = {_cachedGroundOverlay!};
-    }
-    return _cachedGroundOverlaySet;
-  }
 
   // -------------------------------------------------------------------------
   // Helpers
@@ -608,14 +566,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     final topPadding = MediaQuery.of(context).padding.top;
     final mapHeight = MediaQuery.of(context).size.height;
 
-    // 스타일 변경 시 맵 마커 재생성 (async)
-    ref.listen(selectedCharacterStyleProvider, (prev, next) {
-      if (prev?.code != next.code) {
-        _rebuildCharacterMarker(next);
-      }
-    });
-
-    // 소셜 탭에서 pendingGroupJoinProvider로 진입 시 그룹 연결 시작
+// 소셜 탭에서 pendingGroupJoinProvider로 진입 시 그룹 연결 시작
     ref.listen<GroupJoinRequest?>(
       pendingGroupJoinProvider,
       (_, next) {
@@ -653,9 +604,6 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
       _prevTrailColor = characterStyle.baseColor;
       _cachedPolylines = _buildPolylines(record, characterStyle.baseColor);
     }
-    final groundOverlays = _isMapReadyForOverlays
-        ? _buildGroundOverlays(bearing: _currentHeading ?? 0.0)
-        : const <GroundOverlay>{};
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -691,7 +639,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
               markers: _cachedMarkers,
               circles: _cachedCircles,
               polylines: _cachedPolylines,
-              groundOverlays: groundOverlays,
+              groundOverlays: const {},
               onMapCreated: (ctrl) async {
                 setState(() => _mapCtrl = ctrl);
                 if (!mounted) return;
@@ -699,7 +647,6 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
                 if (pos != null) await _updateCamera(pos);
                 await Future<void>.delayed(const Duration(milliseconds: 300));
                 if (!mounted) return;
-                setState(() => _isMapReadyForOverlays = true);
               },
               onTap: (_) => FocusManager.instance.primaryFocus?.unfocus(),
             ),

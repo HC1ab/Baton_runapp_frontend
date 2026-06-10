@@ -24,6 +24,7 @@ class GroupParticipant {
         latitude: loc.latitude,
         longitude: loc.longitude,
         nickname: loc.nickname,
+        titleName: loc.titleName,
         updatedAt: loc.updatedAt,
       );
 

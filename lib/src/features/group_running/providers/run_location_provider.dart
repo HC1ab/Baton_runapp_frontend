@@ -204,27 +204,53 @@ class RunLocationNotifier extends Notifier<RunLocationState> {
     if (_pendingColorFetch.isEmpty) return;
     final ids = List<int>.from(_pendingColorFetch);
     _pendingColorFetch.clear();
-    try {
-      final colorMap = await ref
-          .read(groupRunApiServiceProvider)
-          .fetchProfileColorsBatch(ids);
-      if (colorMap.isEmpty) return;
 
-      // cache 업데이트
-      for (final entry in colorMap.entries) {
-        final existing = _infoCache[entry.key];
-        _infoCache[entry.key] = ParticipantInfo(
-          nickname: existing?.nickname ?? '',
-          titleName: existing?.titleName,
-          coreColorCode: entry.value,
-        );
+    final groupId = state.groupId;
+    if (groupId == null) return;
+
+    try {
+      final apiService = ref.read(groupRunApiServiceProvider);
+
+      // fetchGroupMemberColors: color + nickname 한 번에 (fetchProfileColorsBatch는 color만)
+      final memberMap = await apiService.fetchGroupMemberColors(groupId);
+      final filtered = Map<int, ParticipantInfo>.fromEntries(
+        memberMap.entries.where((e) => ids.contains(e.key)),
+      );
+      if (filtered.isEmpty) return;
+
+      // titleName N+1 — 그룹 최대 5명이라 허용
+      for (final entry in List<MapEntry<int, ParticipantInfo>>.from(filtered.entries)) {
+        final nickname = entry.value.nickname;
+        if (nickname.isEmpty) continue;
+        try {
+          final info = await apiService.getParticipantInfoByNickname(nickname);
+          if (info?.titleName != null) {
+            filtered[entry.key] = ParticipantInfo(
+              nickname: nickname,
+              titleName: info!.titleName,
+              coreColorCode: entry.value.coreColorCode,
+            );
+          }
+        } catch (e) {
+          _logger.w('titleName fetch failed for $nickname in flush', error: e);
+        }
       }
 
-      // 현재 participants에 색상 반영
+      // cache 머지 (기존 정보 유지하며 덮어쓰기)
+      _infoCache.addAll(filtered);
+
+      // participants 갱신 (nickname/titleName/color 모두 반영)
       final updated = state.participants.map((id, loc) {
-        final code = colorMap[id];
-        if (code == null) return MapEntry(id, loc);
-        return MapEntry(id, loc.copyWith(coreColorCode: code));
+        final info = filtered[id];
+        if (info == null) return MapEntry(id, loc);
+        return MapEntry(
+          id,
+          loc.copyWith(
+            nickname: info.nickname.isEmpty ? null : info.nickname,
+            titleName: info.titleName,
+            coreColorCode: info.coreColorCode,
+          ),
+        );
       });
       state = state.copyWith(participants: updated);
     } catch (e) {

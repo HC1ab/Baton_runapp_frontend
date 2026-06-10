@@ -1,9 +1,13 @@
 import 'package:dio/dio.dart';
+import 'package:logger/logger.dart';
 
 import '../../../core/constants/api_constants.dart';
+import '../../../core/error/app_exception.dart';
 import '../../../core/network/api_client.dart';
 import '../models/monthly_summary_model.dart';
 import '../models/run_detail_model.dart';
+
+final _logger = Logger();
 
 // ---------------------------------------------------------------------------
 // Model
@@ -69,39 +73,84 @@ class HistoryApi {
     required int year,
     required int month,
   }) async {
-    final response = await _dio.get(
-      '/api/v1/members/me/runs/monthly-summary',
-      queryParameters: {'year': year, 'month': month},
-    );
-    final unwrapped = unwrapApiResponse(response.data);
-    if (unwrapped is! Map<String, dynamic>) {
-      throw ApiException('월별 요약 데이터 응답이 올바르지 않습니다.');
+    try {
+      final response = await _dio.get(
+        '/api/v1/members/me/runs/monthly-summary',
+        queryParameters: {'year': year, 'month': month},
+      );
+      final unwrapped = unwrapApiResponse(response.data);
+      if (unwrapped is! Map<String, dynamic>) {
+        throw ApiException('월별 요약 데이터 응답이 올바르지 않습니다.');
+      }
+      return MonthlySummaryModel.fromJson(unwrapped);
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _mapDio(e);
+    } catch (e) {
+      _logger.e('getMonthlySummary error', error: e);
+      throw const UnknownException();
     }
-    return MonthlySummaryModel.fromJson(unwrapped);
   }
 
-  /// GET /api/v1/members/me/runs — 내 전체 러닝 목록.
-  /// 클라이언트에서 연/월 필터링 적용.
-  Future<List<RunListItem>> getMyRuns() async {
-    final response = await _dio.get('/api/v1/members/me/runs');
-    final unwrapped = unwrapApiResponse(response.data);
-    if (unwrapped is! List<dynamic>) {
-      throw ApiException('러닝 목록 응답이 올바르지 않습니다.');
+  /// GET /api/v1/members/me/runs — 내 러닝 목록.
+  /// year/month 전달 시 서버 필터링. 미전달 시 전체 반환.
+  Future<List<RunListItem>> getMyRuns({int? year, int? month}) async {
+    try {
+      final response = await _dio.get(
+        '/api/v1/members/me/runs',
+        queryParameters: {
+          if (year != null) 'year': year,
+          if (month != null) 'month': month,
+        },
+      );
+      final unwrapped = unwrapApiResponse(response.data);
+      if (unwrapped is! List<dynamic>) {
+        throw ApiException('러닝 목록 응답이 올바르지 않습니다.');
+      }
+      return unwrapped
+          .map((e) => RunListItem.fromJson(e as Map<String, dynamic>))
+          // 종료되지 않은(진행 중) 기록은 거리가 0으로 내려오므로 목록에서 제외
+          .where((run) => run.totalDistanceKm > 0)
+          .toList();
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _mapDio(e);
+    } catch (e) {
+      _logger.e('getMyRuns error', error: e);
+      throw const UnknownException();
     }
-    return unwrapped
-        .map((e) => RunListItem.fromJson(e as Map<String, dynamic>))
-        // 종료되지 않은(진행 중) 기록은 거리가 0으로 내려오므로 목록에서 제외
-        .where((run) => run.totalDistanceKm > 0)
-        .toList();
   }
 
   /// GET /api/v1/runs/{runId} — 러닝 상세 조회 (경로 포함)
   Future<RunDetailModel> getRunDetail(int runId) async {
-    final response = await _dio.get('${ApiConstants.runs}/$runId');
-    final unwrapped = unwrapApiResponse(response.data);
-    if (unwrapped is! Map<String, dynamic>) {
-      throw ApiException('러닝 상세 응답이 올바르지 않습니다.');
+    try {
+      final response = await _dio.get('${ApiConstants.runs}/$runId');
+      final unwrapped = unwrapApiResponse(response.data);
+      if (unwrapped is! Map<String, dynamic>) {
+        throw ApiException('러닝 상세 응답이 올바르지 않습니다.');
+      }
+      return RunDetailModel.fromJson(unwrapped);
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _mapDio(e);
+    } catch (e) {
+      _logger.e('getRunDetail error', error: e);
+      throw const UnknownException();
     }
-    return RunDetailModel.fromJson(unwrapped);
+  }
+
+  AppException _mapDio(DioException e) {
+    final status = e.response?.statusCode;
+    if (status == 401) return const AuthException();
+    if (status != null && status >= 500) return const ServerException();
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout) {
+      return const TimeoutException();
+    }
+    if (e.type == DioExceptionType.connectionError) return const NetworkException();
+    return const UnknownException();
   }
 }

@@ -20,6 +20,12 @@ Future<BytesMapBitmap?> buildParticipantMarkerBitmap({
   String? titleName,
   Color sphereColor = const Color(0xFF9E9E9E), // grey default for others
 }) async {
+  // 빈 문자열은 null과 동일 처리 — _flushPendingColorFetch 경로 방어
+  final String? effectiveNickname =
+      (nickname == null || nickname.isEmpty) ? null : nickname;
+  final String? effectiveTitle =
+      (titleName == null || titleName.isEmpty) ? null : titleName;
+
   try {
     final dpr =
         WidgetsBinding.instance.platformDispatcher.views.first.devicePixelRatio;
@@ -34,14 +40,14 @@ Future<BytesMapBitmap?> buildParticipantMarkerBitmap({
 
     // Measure text widths (worst-case estimation; actual clip won't matter)
     final double nickHeightPx =
-        nickname != null ? (nickFontLogical * dpr * 1.4) : 0;
+        effectiveNickname != null ? (nickFontLogical * dpr * 1.4) : 0;
     final double titleHeightPx =
-        titleName != null ? (titleFontLogical * dpr * 1.4) : 0;
+        effectiveTitle != null ? (titleFontLogical * dpr * 1.4) : 0;
     final double gapPx = (lineGapLogical * dpr);
 
     final double totalHeightPx = spherePx +
-        (nickname != null ? gapPx + nickHeightPx : 0) +
-        (titleName != null ? gapPx + titleHeightPx : 0);
+        (effectiveNickname != null ? gapPx + nickHeightPx : 0) +
+        (effectiveTitle != null ? gapPx + titleHeightPx : 0);
 
     // Canvas width: sphere size or text area (estimate 120px logical)
     final double canvasWidthPx =
@@ -113,9 +119,9 @@ Future<BytesMapBitmap?> buildParticipantMarkerBitmap({
 
     // --- 5. Nickname text ---
     double textY = spherePx.toDouble() + gapPx;
-    if (nickname != null) {
+    if (effectiveNickname != null) {
       final nickPainter = _makePainter(
-        nickname,
+        effectiveNickname,
         fontSize: nickFontLogical * dpr,
         color: AppColors.textPrimary,
         bold: true,
@@ -129,9 +135,9 @@ Future<BytesMapBitmap?> buildParticipantMarkerBitmap({
     }
 
     // --- 6. Title text ---
-    if (titleName != null) {
+    if (effectiveTitle != null) {
       final titlePainter = _makePainter(
-        titleName,
+        effectiveTitle,
         fontSize: titleFontLogical * dpr,
         color: AppColors.textSecondary,
         bold: false,

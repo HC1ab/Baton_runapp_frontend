@@ -33,6 +33,11 @@ abstract final class ErrorMessages {
   static const shopLoadError = '상품 목록을 불러오지 못했어요.';
   static const purchaseFailed = '구매에 실패했어요. 다시 시도해주세요.';
 
+  // --- Social / Group Room ---
+  static const groupFormIncomplete = '제목, 내용, 장소명, 주소를 모두 입력해 주세요.';
+  static const addressNotFound = '주소를 찾을 수 없습니다.';
+  static const groupDetailLoadFailed = '방 정보를 불러오지 못했어요.';
+
   // --- Spot ---
   static const spotRunNotFound = '존재하지 않는 러닝 기록이에요.';
   static const spotRunNotOwned = '본인의 러닝 기록이 아니에요.';

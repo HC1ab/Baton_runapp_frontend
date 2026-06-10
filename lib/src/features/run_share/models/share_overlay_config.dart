@@ -6,8 +6,11 @@ enum CardStyle {
   /// 개별 드래그/리사이즈/색상 자유 배치
   freestyle,
 
-  /// NRC 스타일 — 하단 고정 바 (아이콘 + 값 + 단위)
+  /// NRC 스타일 — 아이콘 + 값, 개별 드래그 가능
   nrc,
+
+  /// 한글 스타일 — 한글 레이블 위 + 큰 수치 아래, 세로 정렬
+  korean,
 }
 
 /// 공유 카드 오버레이 전체 설정.
@@ -69,7 +72,8 @@ class ShareOverlayConfig {
   static const _sentinel = Object();
 
   // ── 기본 초기 설정 ───────────────────────────────────────────────────────────
-  // 거리 → 중앙 큰 폰트 / 시간 → 좌하단 / 페이스 → 우하단
+
+  /// freestyle: 거리 중앙 / 시간 좌하단 / 페이스 우하단
   static ShareOverlayConfig initial() => const ShareOverlayConfig(
         distanceStat: StatItemConfig(
           id: 'distance',
@@ -92,5 +96,80 @@ class ShareOverlayConfig {
           fontSize: 26,
           color: Colors.white,
         ),
+      );
+
+  /// NRC 스타일 초기 위치: 하단 3분할 가로 배열
+  static const _nrcDistanceStat = StatItemConfig(
+    id: 'distance',
+    dx: 0.5,
+    dy: 0.88,
+    fontSize: 28,
+    color: Colors.white,
+  );
+  static const _nrcDurationStat = StatItemConfig(
+    id: 'duration',
+    dx: 0.2,
+    dy: 0.88,
+    fontSize: 22,
+    color: Colors.white,
+  );
+  static const _nrcPaceStat = StatItemConfig(
+    id: 'pace',
+    dx: 0.8,
+    dy: 0.88,
+    fontSize: 22,
+    color: Colors.white,
+  );
+
+  /// NRC 스타일로 전환 시 위치/크기를 NRC 기본값으로 리셋
+  ShareOverlayConfig resetToNrc() => ShareOverlayConfig(
+        distanceStat: _nrcDistanceStat.copyWith(color: distanceStat.color),
+        durationStat: _nrcDurationStat.copyWith(color: durationStat.color),
+        paceStat: _nrcPaceStat.copyWith(color: paceStat.color),
+        cardStyle: CardStyle.nrc,
+      );
+
+  /// freestyle 스타일로 전환 시 위치/크기를 freestyle 기본값으로 리셋
+  ShareOverlayConfig resetToFreestyle() {
+    final defaults = initial();
+    return ShareOverlayConfig(
+      distanceStat:
+          defaults.distanceStat.copyWith(color: distanceStat.color),
+      durationStat:
+          defaults.durationStat.copyWith(color: durationStat.color),
+      paceStat: defaults.paceStat.copyWith(color: paceStat.color),
+      cardStyle: CardStyle.freestyle,
+    );
+  }
+
+  /// 한글 스타일 초기 위치: 세로 중앙 3단 정렬
+  static const _koreanDistanceStat = StatItemConfig(
+    id: 'distance',
+    dx: 0.5,
+    dy: 0.28,
+    fontSize: 48,
+    color: Colors.white,
+  );
+  static const _koreanDurationStat = StatItemConfig(
+    id: 'duration',
+    dx: 0.5,
+    dy: 0.52,
+    fontSize: 40,
+    color: Colors.white,
+  );
+  static const _koreanPaceStat = StatItemConfig(
+    id: 'pace',
+    dx: 0.5,
+    dy: 0.76,
+    fontSize: 40,
+    color: Colors.white,
+  );
+
+  /// 한글 스타일로 전환 시 위치/크기를 한글 기본값으로 리셋 (색상 유지)
+  ShareOverlayConfig resetToKorean() => ShareOverlayConfig(
+        distanceStat: _koreanDistanceStat.copyWith(color: distanceStat.color),
+        durationStat: _koreanDurationStat.copyWith(color: durationStat.color),
+        paceStat: _koreanPaceStat.copyWith(color: paceStat.color),
+        cardStyle: CardStyle.korean,
       );
 }

@@ -40,9 +40,13 @@ class RunShareNotifier extends Notifier<ShareOverlayConfig> {
 
   // ── 카드 스타일 전환 ──────────────────────────────────────────────────────
 
+  /// 스타일 전환 시 각 스타일 기본 위치로 리셋 (색상은 유지)
   void setCardStyle(CardStyle style) {
-    // 스타일 전환 시 선택 해제
-    state = state.copyWith(cardStyle: style, selectedStatId: null);
+    state = switch (style) {
+      CardStyle.nrc => state.resetToNrc(),
+      CardStyle.korean => state.resetToKorean(),
+      CardStyle.freestyle => state.resetToFreestyle(),
+    };
   }
 
   // ── 표시 여부 ─────────────────────────────────────────────────────────────

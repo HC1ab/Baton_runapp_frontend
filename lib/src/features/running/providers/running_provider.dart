@@ -32,6 +32,8 @@ class RunningNotifier extends Notifier<RunRecordModel> {
   StreamSubscription<Position>? _positionSub;
   Timer? _clockTimer;
   Timer? _spotsDebounce;
+  Timer? _checkInCardTimer;  // checkIn 카드 자동 제거 타이머
+  Timer? _alreadyCardTimer;  // alreadyCheckedIn 카드 자동 제거 타이머
   Position? _lastPosition;
   Position? _lastSpotsRefreshPos; // 마지막으로 스팟 조회한 위치
   double _filteredPace = 0.0; // Low-pass filtered pace value
@@ -45,6 +47,7 @@ class RunningNotifier extends Notifier<RunRecordModel> {
 
   @override
   RunRecordModel build() {
+    ref.keepAlive(); // 탭 전환 시 dispose 방지 — 러닝 세션 데이터 보존
     ref.onDispose(_cleanUp);
     return RunRecordModel.initial();
   }
@@ -104,25 +107,34 @@ class RunningNotifier extends Notifier<RunRecordModel> {
           : state.path;
 
       // 랩 감지 — 1km 통과 시 LapRecord 생성
+      // 랩 경계 통과 시각을 GPS 업데이트 내 선형 보간으로 추정
       final List<LapRecord> newLaps = [...state.laps];
       double lapStartDist = _lapStartDistance;
       Duration lapStartDur = _lapStartDuration;
-      double checkDist = state.distanceMeters + distanceDelta;
+      final double totalDistAfter = state.distanceMeters + distanceDelta;
 
-      while (checkDist - lapStartDist >= _lapDistanceMeters) {
-        final lapDist = _lapDistanceMeters;
-        final lapDur = state.duration - lapStartDur;
+      while (totalDistAfter - lapStartDist >= _lapDistanceMeters) {
+        final lapEndDist = lapStartDist + _lapDistanceMeters;
+        // 이번 GPS 업데이트 구간에서 랩 경계까지의 비율로 경과 시간 보간
+        final Duration lapEndDur;
+        if (distanceDelta > 0) {
+          final ratio = (lapEndDist - state.distanceMeters) / distanceDelta;
+          lapEndDur = state.duration + Duration(milliseconds: (ratio * (const Duration(seconds: 1).inMilliseconds)).round());
+        } else {
+          lapEndDur = state.duration;
+        }
+        final lapDur = lapEndDur - lapStartDur;
         final lapPace = lapDur.inSeconds > 0
-            ? lapDur.inSeconds / (lapDist / 1000.0)
+            ? lapDur.inSeconds / (_lapDistanceMeters / 1000.0)
             : 0.0;
         newLaps.add(LapRecord(
           lapNumber: newLaps.length + 1,
-          distanceMeters: lapDist,
+          distanceMeters: _lapDistanceMeters,
           duration: lapDur,
           paceSecondsPerKm: lapPace,
         ));
-        lapStartDist += _lapDistanceMeters;
-        lapStartDur = state.duration;
+        lapStartDist = lapEndDist;
+        lapStartDur = lapEndDur;
       }
       _lapStartDistance = lapStartDist;
       _lapStartDuration = lapStartDur;
@@ -172,8 +184,17 @@ class RunningNotifier extends Notifier<RunRecordModel> {
           );
 
       // 개별 run 생성 후 그룹 러닝 시작 API 호출
+      // 실패 시 solo run으로 강등 (runId는 유효 — 서버 레코드 유지)
+      int? effectiveGroupId = groupId;
+      bool effectiveIsHost = isHost;
       if (groupId != null && isHost) {
-        await ref.read(groupRunApiServiceProvider).runStart(groupId);
+        try {
+          await ref.read(groupRunApiServiceProvider).runStart(groupId);
+        } catch (e) {
+          _logger.e('groupRunStart failed — falling back to solo run', error: e);
+          effectiveGroupId = null;
+          effectiveIsHost = false;
+        }
       }
 
       _filteredPace = 0.0;
@@ -196,8 +217,8 @@ class RunningNotifier extends Notifier<RunRecordModel> {
         laps: [],
         runId: runId,
         startTime: now,
-        groupId: groupId,
-        isHost: isHost,
+        groupId: effectiveGroupId,
+        isHost: effectiveIsHost,
       );
     } catch (e) {
       _logger.e('startRun error', error: e);
@@ -282,7 +303,8 @@ class RunningNotifier extends Notifier<RunRecordModel> {
     if (state.checkedInSpotIds.contains(spot.id)) {
       final alreadyResult = CheckInResult.alreadyCheckedIn(spot.name);
       state = state.copyWith(lastCheckIn: alreadyResult);
-      Future.delayed(const Duration(seconds: 3), () {
+      _alreadyCardTimer?.cancel();
+      _alreadyCardTimer = Timer(const Duration(seconds: 3), () {
         state = state.copyWith(clearCheckIn: true);
       });
       return;
@@ -389,7 +411,8 @@ class RunningNotifier extends Notifier<RunRecordModel> {
       );
 
       // 3초 후 체크인 카드 자동 제거
-      Future.delayed(const Duration(seconds: 3), () {
+      _checkInCardTimer?.cancel();
+      _checkInCardTimer = Timer(const Duration(seconds: 3), () {
         state = state.copyWith(clearCheckIn: true);
       });
     } catch (e) {
@@ -453,6 +476,8 @@ class RunningNotifier extends Notifier<RunRecordModel> {
     _stopClock();
     _positionSub?.cancel();
     _spotsDebounce?.cancel();
+    _checkInCardTimer?.cancel();
+    _alreadyCardTimer?.cancel();
     _lastPosition = null;
     _filteredPace = 0.0;
     _lapStartDistance = 0.0;

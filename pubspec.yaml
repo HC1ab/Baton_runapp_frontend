@@ -80,9 +80,6 @@ dev_dependencies:
   riverpod_lint: ^3.1.0           # flutter_riverpod 2.x 에 맞는 버전
 
 flutter:
-  config:
-    enable-swift-package-manager: false
-
   uses-material-design: true
   assets:
     - .env.dev

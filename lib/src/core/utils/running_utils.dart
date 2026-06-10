@@ -2,13 +2,13 @@
 /// Always reuse these — never duplicate pace/calorie/point logic elsewhere.
 abstract final class RunningUtils {
   /// Converts pace in seconds/km to "MM'SS\"" display string.
-  /// Returns "-'--\"" when pace is invalid or over 30 min/km.
+  /// Returns "00'00\"" when pace is invalid or over 30 min/km (e.g. standing still).
   static String formatPace(double paceSecondsPerKm) {
     if (paceSecondsPerKm <= 0 ||
         paceSecondsPerKm.isInfinite ||
         paceSecondsPerKm.isNaN ||
         paceSecondsPerKm > 1800) {
-      return "-'--\"";
+      return "00'00\"";
     }
     final minutes = (paceSecondsPerKm / 60).floor();
     final seconds = (paceSecondsPerKm % 60).floor();

@@ -98,6 +98,10 @@
 		<true/>
 	</dict>
 
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>공유 카드 배경으로 사용할 사진을 선택하기 위해 갤러리 접근 권한이 필요합니다.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>러닝 공유 카드 이미지를 갤러리에 저장하기 위해 권한이 필요합니다.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>나침반 방향 표시를 위해 기기 방향 센서를 사용합니다.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

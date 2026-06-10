@@ -21,7 +21,7 @@ dependencies:
   riverpod_annotation: ^4.0.0     # ✅ iOS 지원 확인됨
 
   # Navigation
-  go_router: ^17.2.3              # ✅ iOS 지원 확인됨
+  go_router: ^14.8.1              # ✅ iOS 지원 확인됨
 
   # Network
   dio: ^5.9.0                     # ✅ iOS 지원 확인됨

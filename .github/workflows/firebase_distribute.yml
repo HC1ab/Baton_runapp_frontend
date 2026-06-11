@@ -53,9 +53,9 @@ jobs:
 
       - name: Restore keystore
         run: |
-          echo "${{ secrets.KEY_STORE_BASE64 }}" | base64 --decode > android/app/baton-release.jks
+          echo "${{ secrets.KEY_STORE_BASE64 }}" | base64 --decode > android/baton-release.jks
           {
-            echo "storeFile=app/baton-release.jks"
+            echo "storeFile=baton-release.jks"
             echo "keyAlias=${{ secrets.KEY_ALIAS }}"
             echo "keyPassword=${{ secrets.KEY_PASSWORD }}"
             echo "storePassword=${{ secrets.STORE_PASSWORD }}"

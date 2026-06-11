@@ -78,6 +78,15 @@ dev_dependencies:
   riverpod_generator: ^4.0.0+1      # flutter_riverpod 2.x 에 맞는 버전
   custom_lint: ^0.8.1
   riverpod_lint: ^3.1.0           # flutter_riverpod 2.x 에 맞는 버전
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon_navy.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icons/app_icon_navy.png"
 
 flutter:
   config:

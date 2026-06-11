@@ -26,7 +26,7 @@ if (keyPropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.example.runapp"
+    namespace = "com.proteinj.baton"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -40,7 +40,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.runapp"
+        applicationId = "com.proteinj.baton"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

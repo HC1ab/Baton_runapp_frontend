@@ -9,7 +9,9 @@ import '../../features/auth/screens/splash_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/profile/screens/history_screen.dart';
 import '../../features/profile/screens/run_detail_screen.dart';
+import '../../features/settings/data/legal_documents.dart';
 import '../../features/settings/screens/account_screen.dart';
+import '../../features/settings/screens/legal_document_screen.dart';
 import '../../features/settings/screens/notice_detail_screen.dart';
 import '../../features/settings/screens/notice_list_screen.dart';
 import '../../features/profile/screens/friends_screen.dart';
@@ -87,6 +89,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.account,
         builder: (_, __) => const AccountScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.privacyPolicy,
+        builder: (_, __) => const LegalDocumentScreen(
+          title: '개인정보처리방침',
+          content: LegalDocuments.privacyPolicy,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.termsOfService,
+        builder: (_, __) => const LegalDocumentScreen(
+          title: '이용약관',
+          content: LegalDocuments.termsOfService,
+        ),
       ),
       GoRoute(
         path: AppRoutes.noticeList,

@@ -14,6 +14,8 @@ abstract final class AppRoutes {
   static const noticeList = '/notices';
   static const noticeDetail = '/notices/:noticeId';
   static const friends = '/friends';
+  static const privacyPolicy = '/privacy-policy';
+  static const termsOfService = '/terms-of-service';
 }
 
 /// Bottom navigation tab index constants.

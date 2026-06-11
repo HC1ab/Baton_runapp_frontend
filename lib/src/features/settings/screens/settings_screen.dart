@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
-import '../../../core/utils/app_snack_bar.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../auth/providers/auth_provider.dart';
 
@@ -64,7 +63,7 @@ class SettingsScreen extends ConsumerWidget {
               iconBg: const Color(0xFFE8F5E9),
               iconColor: const Color(0xFF388E3C),
               label: '개인정보처리방침',
-              onTap: () => _showComingSoon(context),
+              onTap: () => context.push(AppRoutes.privacyPolicy),
             ),
             _TileDivider(),
             _SettingsTile(
@@ -72,7 +71,7 @@ class SettingsScreen extends ConsumerWidget {
               iconBg: const Color(0xFFE3F2FD),
               iconColor: const Color(0xFF1976D2),
               label: '이용약관',
-              onTap: () => _showComingSoon(context),
+              onTap: () => context.push(AppRoutes.termsOfService),
             ),
             _TileDivider(),
             _SettingsTile(
@@ -111,10 +110,6 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  void _showComingSoon(BuildContext context) {
-    AppSnackBar.info(context, '준비 중이에요.');
   }
 
   void _confirmLogout(BuildContext context, WidgetRef ref) {

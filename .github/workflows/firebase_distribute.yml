@@ -51,17 +51,27 @@ jobs:
         run: |
           echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}" | base64 --decode > ios/Runner/GoogleService-Info.plist
 
+      - name: Restore keystore
+        run: |
+          echo "${{ secrets.KEY_STORE_BASE64 }}" | base64 --decode > android/app/baton-release.jks
+          {
+            echo "storeFile=app/baton-release.jks"
+            echo "keyAlias=${{ secrets.KEY_ALIAS }}"
+            echo "keyPassword=${{ secrets.KEY_PASSWORD }}"
+            echo "storePassword=${{ secrets.STORE_PASSWORD }}"
+          } > android/key.properties
+
       - name: Flutter pub get
         run: flutter pub get --no-example
 
-      - name: Build APK (debug)
-        run: flutter build apk --debug --dart-define=ENV=prod
+      - name: Build APK (release)
+        run: flutter build apk --release --dart-define=ENV=prod
 
       - name: Upload to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
           appId: ${{ secrets.FIREBASE_APP_ID_ANDROID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          groups: testers
-          file: build/app/outputs/flutter-apk/app-debug.apk
+          testers: hwangcs5202@gmail.com
+          file: build/app/outputs/flutter-apk/app-release.apk
           releaseNotes: "Branch: ${{ github.ref_name }} | Commit: ${{ github.sha }}"

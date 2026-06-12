@@ -25,11 +25,12 @@ class SpotInRangeCard extends StatelessWidget {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.dCard,
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        border: Border.all(color: AppColors.dLine, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
+            color: Colors.black.withValues(alpha: 0.4),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -42,7 +43,7 @@ class SpotInRangeCard extends StatelessWidget {
             if (i > 0)
               Divider(
                 height: 1,
-                color: AppColors.textSecondary.withValues(alpha: 0.1),
+                color: AppColors.dLine,
               ),
             _SpotRow(spot: spots[i], record: record),
           ],
@@ -78,7 +79,7 @@ class _SpotRow extends StatelessWidget {
       statusText = '24h 쿨타임';
       statusIcon = Icons.timelapse_rounded;
     } else {
-      statusColor = AppColors.primary;
+      statusColor = AppColors.dAccent;
       statusText = '체크인 가능';
       statusIcon = Icons.radio_button_checked_rounded;
     }
@@ -108,7 +109,7 @@ class _SpotRow extends StatelessWidget {
               spot.name,
               style: AppTextStyles.bodyMedium.copyWith(
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: AppColors.dText,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

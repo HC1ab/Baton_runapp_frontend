@@ -50,11 +50,12 @@ class _PurchaseSuccessDialogState
       child: Container(
         padding: EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.dCard,
           borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+          border: Border.all(color: AppColors.dLine, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
+              color: Colors.black.withValues(alpha: 0.5),
               blurRadius: 32,
               offset: const Offset(0, 8),
             ),
@@ -70,7 +71,7 @@ class _PurchaseSuccessDialogState
               '구매 완료!',
               style: AppTextStyles.headlineSmall.copyWith(
                 fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
+                color: AppColors.dText,
               ),
             ),
             SizedBox(height: 6.h),
@@ -79,7 +80,7 @@ class _PurchaseSuccessDialogState
               item.name,
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.dMuted,
               ),
             ),
             SizedBox(height: AppSpacing.verticalSm),
@@ -87,18 +88,19 @@ class _PurchaseSuccessDialogState
             Container(
               padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
+                color: AppColors.dAccentSoft,
                 borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.bolt_rounded, size: 14.r, color: AppColors.primary),
+                  Icon(Icons.bolt_rounded,
+                      size: 14.r, color: AppColors.dAccentBright),
                   SizedBox(width: 4.w),
                   Text(
                     '잔여 ${widget.remainingPoints} pts',
                     style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.primary,
+                      color: AppColors.dAccentBright,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -152,16 +154,16 @@ class _PurchaseSuccessDialogState
       child: Container(
         padding: EdgeInsets.symmetric(vertical: 13.h),
         decoration: BoxDecoration(
-          color: AppColors.backgroundLight,
+          color: AppColors.dCard2,
           borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-          border: Border.all(color: AppColors.divider),
+          border: Border.all(color: AppColors.dLine2),
         ),
         child: Center(
           child: Text(
             '닫기',
             style: AppTextStyles.bodySmall.copyWith(
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+              color: AppColors.dMuted,
             ),
           ),
         ),
@@ -175,7 +177,7 @@ class _PurchaseSuccessDialogState
       child: Container(
         padding: EdgeInsets.symmetric(vertical: 13.h),
         decoration: BoxDecoration(
-          color: _isEquipping ? AppColors.divider : AppColors.primary,
+          color: _isEquipping ? AppColors.dCard3 : AppColors.dAccent,
           borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
         ),
         child: Center(

@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_text_styles.dart';
-import '../../core/constants/app_spacing.dart';
 
-/// App-wide bottom navigation bar.
+/// App-wide bottom navigation bar — floating dark glass pill (redesign).
 /// Used in 2+ features → lives in common/widgets.
 class AppBottomNavBar extends StatelessWidget {
   const AppBottomNavBar({
@@ -27,41 +25,34 @@ class AppBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppSpacing.radiusXl),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 16,
-            offset: const Offset(0, -2),
+    // SafeArea(top:false) → 하단 시스템 인셋(홈 인디케이터/제스처 바)과
+    // 좌·우 노치 인셋을 항상 확보 → 둥근 펄 모서리가 화면 가장자리에 안 잘림.
+    return SafeArea(
+      top: false,
+      minimum: EdgeInsets.only(bottom: 12.h),
+      child: Padding(
+        // floating: 좌·우 14 여백
+        padding: EdgeInsets.symmetric(horizontal: 14.w),
+        child: Container(
+          height: 70.h,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E1E21), // 불투명 — 뒤 콘텐츠 비침/번짐 없음
+            borderRadius: BorderRadius.circular(30.r),
+            border: Border.all(color: AppColors.dLine2, width: 1),
           ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.only(bottom: 10.h),
-          child: SizedBox(
-          height: 60.h,
           child: Row(
             children: List.generate(_items.length, (index) {
               final item = _items[index];
-              final selected = currentIndex == index;
               return Expanded(
                 child: _NavButton(
                   icon: item.icon,
                   label: item.label,
-                  selected: selected,
+                  selected: currentIndex == index,
                   onTap: () => onTap(index),
                 ),
               );
             }),
           ),
-        ),
         ),
       ),
     );
@@ -83,7 +74,7 @@ class _NavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.primary : AppColors.textSecondary;
+    final color = selected ? AppColors.dAccent : AppColors.dFaint;
 
     return GestureDetector(
       onTap: onTap,
@@ -91,28 +82,14 @@ class _NavButton extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Selected indicator — orange pill background
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: EdgeInsets.symmetric(
-              horizontal: selected ? AppSpacing.md : AppSpacing.sm,
-              vertical: 4.h,
-            ),
-            decoration: BoxDecoration(
-              color: selected
-                  ? AppColors.primary.withValues(alpha: 0.12)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-            ),
-            child: Icon(icon, color: color, size: 22.r),
-          ),
-          SizedBox(height: 2.h),
+          Icon(icon, color: color, size: 23.r),
+          SizedBox(height: 5.h),
           Text(
             label,
-            style: AppTextStyles.labelSmall.copyWith(
+            style: TextStyle(
               color: color,
-              fontWeight:
-                  selected ? FontWeight.w700 : FontWeight.w500,
+              fontSize: 10.5.sp,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
             ),
           ),
         ],

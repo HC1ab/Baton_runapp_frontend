@@ -16,7 +16,7 @@ class CheckInResultCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isAlready = result.isAlreadyCheckedIn;
-    final accentColor = isAlready ? AppColors.textSecondary : AppColors.primary;
+    final accentColor = isAlready ? AppColors.dMuted : AppColors.dAccent;
 
     return Container(
       margin: EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
@@ -25,7 +25,7 @@ class CheckInResultCard extends StatelessWidget {
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
+        color: AppColors.dCard,
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         boxShadow: [
           BoxShadow(
@@ -70,7 +70,7 @@ class CheckInResultCard extends StatelessWidget {
                   result.spotName,
                   style: AppTextStyles.bodyMedium.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: AppColors.dText,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -81,7 +81,7 @@ class CheckInResultCard extends StatelessWidget {
                       ? ErrorMessages.spotAlreadyCheckedInCard
                       : ErrorMessages.spotCheckedInCard(result.currentTotalPoints),
                   style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.dMuted,
                   ),
                 ),
               ],
@@ -98,19 +98,19 @@ class CheckInResultCard extends StatelessWidget {
                 vertical: 4.h,
               ),
               decoration: BoxDecoration(
-                color: AppColors.primary,
+                color: AppColors.dAccent,
                 borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
               ),
               child: Text(
                 '+${result.earnedPoints}P',
                 style: AppTextStyles.labelSmall.copyWith(
-                  color: AppColors.textOnPrimary,
+                  color: const Color(0xFF1A0E06),
                   fontWeight: FontWeight.bold,
                 ),
               ),
             )
           else
-            Icon(Icons.block_rounded, color: AppColors.textSecondary, size: 20.r),
+            Icon(Icons.block_rounded, color: AppColors.dMuted, size: 20.r),
         ],
       ),
     );

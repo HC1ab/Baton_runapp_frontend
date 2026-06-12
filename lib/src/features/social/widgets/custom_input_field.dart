@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/app_colors.dart';
+
 class CustomInputField extends StatelessWidget {
   const CustomInputField({
     super.key,
@@ -26,10 +28,10 @@ class CustomInputField extends StatelessWidget {
   final int maxLines;
   final int? minLines;
 
-  static const Color _fieldBackground = Color(0xFFF4F4F4);
-  static const Color _labelColor = Color(0xFF4A4A4A);
-  static const Color _textColor = Color(0xFF222222);
-  static const Color _hintColor = Color(0xFF8E8E8E);
+  static const Color _fieldBackground = AppColors.dCard2;
+  static const Color _labelColor = AppColors.dMuted;
+  static const Color _textColor = AppColors.dText;
+  static const Color _hintColor = AppColors.dFaint;
 
   @override
   Widget build(BuildContext context) {

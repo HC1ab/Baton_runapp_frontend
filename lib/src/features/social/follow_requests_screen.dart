@@ -7,14 +7,15 @@ import '../group_running/services/group_run_api_service.dart';
 import '../profile/screens/member_profile_screen.dart';
 import '../../core/follow/models/follow_request_model.dart';
 import '../../core/follow/providers/follow_providers.dart';
+import '../../core/constants/app_colors.dart';
 import '../../core/utils/app_snack_bar.dart';
 
 class FollowRequestsScreen extends ConsumerWidget {
   const FollowRequestsScreen({super.key});
 
-  static const Color _primary = Color(0xFFDD6A3E);
-  static const Color _bg = Color(0xFFF4F4F4);
-  static const Color _textSub = Color(0xFF8C857F);
+  static const Color _primary = AppColors.dAccent;
+  static const Color _bg = AppColors.dScreen;
+  static const Color _textSub = AppColors.dMuted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -23,7 +24,7 @@ class FollowRequestsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: _bg,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
@@ -36,7 +37,7 @@ class FollowRequestsScreen extends ConsumerWidget {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF1F1A17),
+            color: AppColors.dText,
           ),
         ),
         centerTitle: true,
@@ -100,11 +101,11 @@ class FollowRequestsScreen extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.notifications_none_rounded, size: 48, color: Color(0xFFCCCCCC)),
+                Icon(Icons.notifications_none_rounded, size: 48, color: AppColors.dLine2),
                 SizedBox(height: 12),
                 Text(
                   '받은 팔로우 신청이 없어요.',
-                  style: TextStyle(color: Color(0xFF8C857F), fontSize: 15),
+                  style: TextStyle(color: AppColors.dMuted, fontSize: 15),
                 ),
               ],
             ),
@@ -184,15 +185,9 @@ class _FollowRequestTileState extends ConsumerState<_FollowRequestTile> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.dCard,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: AppColors.dLine, width: 1),
       ),
       child: Row(
         children: [
@@ -216,7 +211,7 @@ class _FollowRequestTileState extends ConsumerState<_FollowRequestTile> {
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF1F1A17),
+                        color: AppColors.dText,
                       ),
                     ),
                   ),
@@ -285,8 +280,8 @@ class _ActionButton extends StatelessWidget {
     return OutlinedButton(
       onPressed: onTap,
       style: OutlinedButton.styleFrom(
-        foregroundColor: const Color(0xFF666666),
-        side: const BorderSide(color: Color(0xFFCCCCCC)),
+        foregroundColor: AppColors.dMuted,
+        side: const BorderSide(color: AppColors.dLine2),
         minimumSize: const Size(58, 36),
         padding: const EdgeInsets.symmetric(horizontal: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

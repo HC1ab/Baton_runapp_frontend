@@ -36,20 +36,19 @@ class GroupRunCard extends StatelessWidget {
 
   static const Color _highlightedBackground = AppColors.cardHighlighted;
   static const Color _pointOrange = AppColors.socialAccent;
-  static const Color _darkText = AppColors.textPrimary;
-  static const Color _lightBadgeBackground = AppColors.scaffoldGrey;
 
   @override
   Widget build(BuildContext context) {
-    final cardBackground = isHighlighted ? _highlightedBackground : Colors.white;
-    final primaryTextColor = isHighlighted ? Colors.white : _darkText;
-    final secondaryTextColor = isHighlighted ? Colors.white : Colors.black54;
+    final cardBackground = isHighlighted ? _highlightedBackground : AppColors.dCard;
+    final primaryTextColor = isHighlighted ? Colors.white : AppColors.dText;
+    final secondaryTextColor =
+        isHighlighted ? Colors.white.withValues(alpha: 0.85) : AppColors.dMuted;
     final dividerColor = isHighlighted
         ? Colors.white.withValues(alpha: 0.24)
-        : Colors.black12;
+        : AppColors.dLine;
     final badgeBackground = isHighlighted
         ? Colors.white.withValues(alpha: 0.18)
-        : _lightBadgeBackground;
+        : AppColors.dCard2;
     final joinButtonColor = isHighlighted ? Colors.white.withValues(alpha: 0.16) : _pointOrange;
     final joinButtonTextColor = Colors.white;
 
@@ -58,6 +57,9 @@ class GroupRunCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cardBackground,
         borderRadius: BorderRadius.circular(24.r),
+        border: isHighlighted
+            ? null
+            : Border.all(color: AppColors.dLine, width: 1),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -181,7 +183,7 @@ class _RoomHeader extends StatelessWidget {
               border: Border.all(
                 color: isHighlighted
                     ? Colors.white.withValues(alpha: 0.40)
-                    : AppColors.divider,
+                    : AppColors.dLine2,
                 width: 1.5,
               ),
             ),

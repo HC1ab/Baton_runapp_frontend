@@ -80,13 +80,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final joinState = ref.watch(joinProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: AppColors.dScreen,
       appBar: AppBar(
-        backgroundColor: AppColors.backgroundLight,
+        backgroundColor: AppColors.dScreen,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          color: AppColors.textPrimary,
+          color: AppColors.dText,
           onPressed: () => context.go(AppRoutes.login),
         ),
       ),
@@ -103,7 +103,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 Text(
                   '회원가입',
                   style: AppTextStyles.displayMedium.copyWith(
-                    color: AppColors.textPrimary,
+                    color: AppColors.dText,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -111,7 +111,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 Text(
                   '이메일과 비밀번호로 간단히 시작할 수 있어요.',
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.dMuted,
                   ),
                 ),
                 SizedBox(height: 32.h),
@@ -202,7 +202,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     Text(
                       '이미 계정이 있으신가요?',
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
+                        color: AppColors.dMuted,
                       ),
                     ),
                     TextButton(
@@ -258,7 +258,7 @@ class _LabeledField extends StatelessWidget {
       textInputAction: textInputAction,
       autofillHints: autofillHints,
       onFieldSubmitted: onFieldSubmitted,
-      style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
+      style: AppTextStyles.bodyLarge.copyWith(color: AppColors.dText),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
@@ -289,7 +289,7 @@ class _PasswordField extends StatelessWidget {
       obscureText: obscure,
       textInputAction: TextInputAction.next,
       autofillHints: const [AutofillHints.newPassword],
-      style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
+      style: AppTextStyles.bodyLarge.copyWith(color: AppColors.dText),
       decoration: InputDecoration(
         labelText: '비밀번호',
         hintText: '8자 이상',
@@ -299,7 +299,7 @@ class _PasswordField extends StatelessWidget {
             obscure
                 ? Icons.visibility_outlined
                 : Icons.visibility_off_outlined,
-            color: AppColors.textSecondary,
+            color: AppColors.dMuted,
           ),
           onPressed: onToggleObscure,
         ),
@@ -322,7 +322,7 @@ class _SignupSuccessDialog extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
       ),
-      backgroundColor: AppColors.surfaceLight,
+      backgroundColor: AppColors.dCard,
       child: Padding(
         padding: EdgeInsets.all(AppSpacing.xl),
         child: Column(
@@ -345,7 +345,7 @@ class _SignupSuccessDialog extends StatelessWidget {
             Text(
               '회원가입 완료!',
               style: AppTextStyles.headlineMedium.copyWith(
-                color: AppColors.textPrimary,
+                color: AppColors.dText,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -353,7 +353,7 @@ class _SignupSuccessDialog extends StatelessWidget {
             Text(
               '계정이 성공적으로 생성되었어요.\n지금 바로 로그인해 보세요.',
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.dMuted,
               ),
               textAlign: TextAlign.center,
             ),

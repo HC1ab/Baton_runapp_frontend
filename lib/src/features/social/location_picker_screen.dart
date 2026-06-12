@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+import '../../core/constants/app_map_styles.dart';
+
 /// 지도에서 한 지점을 탭해 좌표를 선택하는 전체 화면.
 /// 선택 완료 시 `Navigator.pop(context, LatLng)`로 결과를 반환합니다.
 class LocationPickerScreen extends StatefulWidget {
@@ -81,6 +83,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         fit: StackFit.expand,
         children: [
           GoogleMap(
+            style: AppMapStyles.darkWarm,
             initialCameraPosition: widget.initialLatLng != null
                 ? CameraPosition(target: widget.initialLatLng!, zoom: 16)
                 : LocationPickerScreen._initialCamera,

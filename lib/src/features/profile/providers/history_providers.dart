@@ -67,3 +67,26 @@ final runDetailProvider =
     FutureProvider.family<RunDetailModel, int>((ref, runId) {
   return ref.read(historyApiProvider).getRunDetail(runId);
 });
+
+/// 내 전체 러닝 목록 (기간 필터 없음).
+/// Activity 화면이 Week/Month/Year 버킷으로 클라이언트 집계할 때 사용.
+final allRunsProvider = FutureProvider<List<RunListItem>>((ref) async {
+  final api = ref.read(historyApiProvider);
+  final all = await api.getMyRuns();
+  return all..sort((a, b) => a.startTime.compareTo(b.startTime));
+});
+
+/// Activity 화면 기간 선택. 기본값 = month (리디자인 사양).
+enum ActivityPeriod { week, month, year }
+
+class ActivityPeriodNotifier extends Notifier<ActivityPeriod> {
+  @override
+  ActivityPeriod build() => ActivityPeriod.month;
+
+  void select(ActivityPeriod period) => state = period;
+}
+
+final activityPeriodProvider =
+    NotifierProvider<ActivityPeriodNotifier, ActivityPeriod>(
+  ActivityPeriodNotifier.new,
+);

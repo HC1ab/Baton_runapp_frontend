@@ -25,9 +25,9 @@ class CreateRoomScreen extends ConsumerStatefulWidget {
 }
 
 class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
-  static const Color _background = AppColors.scaffoldGrey;
+  static const Color _background = AppColors.dScreen;
   static const Color _submitOrange = AppColors.socialAccent;
-  static const Color _accentBrown = AppColors.inputAccent;
+  static const Color _accentBrown = AppColors.dAccent;
 
   static final List<String> _distanceOptions = [
     ...List<String>.generate(42, (i) => '${i + 1}km'),
@@ -301,7 +301,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     var temp = _memberCount;
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.dCard,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg)),
       ),
@@ -371,7 +371,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     var temp = _distanceIndex;
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.dCard,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg)),
       ),
@@ -446,13 +446,13 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.dText),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: Text(
           '새로운 러닝 모집',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: AppColors.dText,
             fontSize: 18.sp,
             fontWeight: FontWeight.w800,
           ),
@@ -468,8 +468,9 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                 width: double.infinity,
                 padding: EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.dCard,
                   borderRadius: BorderRadius.circular(24.r),
+                  border: Border.all(color: AppColors.dLine, width: 1),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,

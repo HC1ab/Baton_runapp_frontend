@@ -8,6 +8,7 @@ import '../../../common/widgets/notification_bell_widget.dart';
 import '../../../common/widgets/rarity_title_badge.dart';
 import '../../../core/character/character_provider.dart';
 import '../../../core/character/character_style.dart';
+import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/myroom/my_room_service.dart';
 import '../../../core/shell/tab_providers.dart';
@@ -18,11 +19,11 @@ import '../services/profile_service.dart';
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
-  static const Color _bg = Color(0xFFFBF1EC);
-  static const Color _primary = Color(0xFFDD6A3E);
-  static const Color _cardLight = Color(0xFFFFFFFF);
-  static const Color _textPrimary = Color(0xFF1F1A17);
-  static const Color _textSub = Color(0xFF8C857F);
+  static const Color _bg = AppColors.dScreen;
+  static const Color _primary = AppColors.dAccent;
+  static const Color _cardLight = AppColors.dCard;
+  static const Color _textPrimary = AppColors.dText;
+  static const Color _textSub = AppColors.dMuted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -38,7 +39,7 @@ class ProfileScreen extends ConsumerWidget {
           ),
           error: (e, _) => _buildError(ref),
           data: (profile) => ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+            padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 140.h),
             children: [
               _buildAppBar(context, ref),
               const SizedBox(height: 12),
@@ -225,13 +226,7 @@ class ProfileScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: _cardLight,
         borderRadius: BorderRadius.circular(22),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 16,
-            offset: Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: AppColors.dLine, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,20 +275,20 @@ class _MetricCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFBF1EC),
+        color: AppColors.dCard2,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFEBD9CC)),
+        border: Border.all(color: AppColors.dLine),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: const Color(0xFFDD6A3E), size: 22),
+          Icon(icon, color: AppColors.dAccent, size: 22),
           const SizedBox(height: 12),
           Text(
             label,
             style: const TextStyle(
               fontSize: 12,
-              color: Color(0xFF8C857F),
+              color: AppColors.dMuted,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -303,7 +298,7 @@ class _MetricCard extends StatelessWidget {
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF1F1A17),
+              color: AppColors.dText,
             ),
           ),
         ],
@@ -329,19 +324,18 @@ class _BigActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color primary = Color(0xFFDD6A3E);
-    const Color cardSoft = Color(0xFFFCE6DA);
-    const Color textPrimary = Color(0xFF1F1A17);
-    const Color textSub = Color(0xFF8C857F);
+    const Color primary = AppColors.dAccent;
+    const Color cardSoft = AppColors.dCard2;
+    const Color textSub = AppColors.dMuted;
 
     final bg = filled ? primary : cardSoft;
-    final fg = filled ? Colors.white : textPrimary;
+    final fg = filled ? const Color(0xFF1A0E06) : AppColors.dText;
     final subFg =
-        filled ? Colors.white.withValues(alpha: 0.85) : textSub;
+        filled ? const Color(0xFF1A0E06).withValues(alpha: 0.75) : textSub;
     final iconBg = filled
         ? Colors.white.withValues(alpha: 0.22)
-        : Colors.white.withValues(alpha: 0.7);
-    final iconColor = filled ? Colors.white : primary;
+        : AppColors.dAccent.withValues(alpha: 0.14);
+    final iconColor = filled ? const Color(0xFF1A0E06) : primary;
 
     return GestureDetector(
       onTap: onTap,
@@ -351,15 +345,9 @@ class _BigActionCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(22),
-          boxShadow: filled
-              ? const [
-                  BoxShadow(
-                    color: Color(0x33D96A3F),
-                    blurRadius: 14,
-                    offset: Offset(0, 6),
-                  ),
-                ]
-              : null,
+          border: filled
+              ? null
+              : Border.all(color: AppColors.dLine, width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

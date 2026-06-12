@@ -114,3 +114,4 @@ app.*.map.json
 api.json
 baton-api.openapi.json
 except.md
+TODO_optimization.md

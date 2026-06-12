@@ -37,6 +37,15 @@ class CheckInResult {
     required this.earnedPoints,
     required this.currentTotalPoints,
     required this.visitLogId,
+    this.earnedExp = 0,
+    this.isLevelUp = false,
+    this.currentLevel = 0,
+    this.totalExp = 0,
+    this.occupationChanged = false,
+    this.occupationType,
+    this.occupationBonusPoints = 0,
+    this.occupierMemberId,
+    this.occupierCheckinCount,
     this.isAlreadyCheckedIn = false,
   });
 
@@ -44,6 +53,22 @@ class CheckInResult {
   final int earnedPoints;
   final int currentTotalPoints;
   final String visitLogId;
+  final int earnedExp;
+  final bool isLevelUp;
+  final int currentLevel;
+  final int totalExp;
+
+  /// 이번 체크인으로 점령/탈환이 발생했는지
+  final bool occupationChanged;
+  /// "SPOT_OCCUPY"(첫 점령) | "SPOT_STEAL"(탈환) | null(변화 없음)
+  final String? occupationType;
+  /// 점령/탈환 보너스 포인트 (첫 점령 50, 탈환 100, 변화 없으면 0)
+  final int occupationBonusPoints;
+  /// 현재 점령자 memberId
+  final int? occupierMemberId;
+  /// 현재 점령자의 해당 스팟 누적 체크인 수
+  final int? occupierCheckinCount;
+
   final bool isAlreadyCheckedIn;
 
   /// 이미 체크인한 스팟 알림용 팩토리
@@ -134,6 +159,15 @@ class SpotService implements SpotServiceBase {
         earnedPoints: (data['earnedPoints'] as num?)?.toInt() ?? 0,
         currentTotalPoints: (data['currentTotalPoints'] as num?)?.toInt() ?? 0,
         visitLogId: data['visitLogId']?.toString() ?? '',
+        earnedExp: (data['earnedExp'] as num?)?.toInt() ?? 0,
+        isLevelUp: (data['isLevelUp'] as bool?) ?? false,
+        currentLevel: (data['currentLevel'] as num?)?.toInt() ?? 0,
+        totalExp: (data['totalExp'] as num?)?.toInt() ?? 0,
+        occupationChanged: (data['occupationChanged'] as bool?) ?? false,
+        occupationType: data['occupationType']?.toString(),
+        occupationBonusPoints: (data['occupationBonusPoints'] as num?)?.toInt() ?? 0,
+        occupierMemberId: (data['occupierMemberId'] as num?)?.toInt(),
+        occupierCheckinCount: (data['occupierCheckinCount'] as num?)?.toInt(),
       );
     } on AppException {
       rethrow;

@@ -1,9 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/dio_client.dart';
+import '../../running/models/spot_model.dart';
+import '../../running/services/spot_service.dart';
 import '../data/spot_api.dart';
 import '../models/spot_cooldown_model.dart';
 
+export '../../running/models/spot_model.dart' show SpotDetail;
 export '../models/spot_cooldown_model.dart' show SpotCooldownModel;
 
 final spotApiProvider = Provider<SpotApi>((ref) {
@@ -14,4 +17,10 @@ final spotApiProvider = Provider<SpotApi>((ref) {
 final spotCooldownsProvider =
     FutureProvider.autoDispose<List<SpotCooldownModel>>((ref) {
   return ref.watch(spotApiProvider).getCooldowns();
+});
+
+/// 스팟 상세 + 현재 점령자 정보 (GET /api/v1/spots/{spotId})
+final spotDetailProvider =
+    FutureProvider.autoDispose.family<SpotDetail, int>((ref, spotId) {
+  return ref.watch(spotServiceProvider).detail(spotId);
 });

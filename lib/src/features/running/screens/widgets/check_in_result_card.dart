@@ -16,7 +16,12 @@ class CheckInResultCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isAlready = result.isAlreadyCheckedIn;
-    final accentColor = isAlready ? AppColors.dMuted : AppColors.dAccent;
+    final occupationChanged = result.occupationChanged;
+    final accentColor = isAlready
+        ? AppColors.dMuted
+        : occupationChanged
+            ? AppColors.dGold
+            : AppColors.dAccent;
 
     return Container(
       margin: EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
@@ -39,78 +44,132 @@ class CheckInResultCard extends StatelessWidget {
           width: 1.5,
         ),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // 아이콘
-          Container(
-            width: 44.r,
-            height: 44.r,
-            decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              isAlready
-                  ? Icons.check_circle_outline_rounded
-                  : Icons.location_on_rounded,
-              color: accentColor,
-              size: 22.r,
-            ),
+          Row(
+            children: [
+              // 아이콘
+              Container(
+                width: 44.r,
+                height: 44.r,
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isAlready
+                      ? Icons.check_circle_outline_rounded
+                      : occupationChanged
+                          ? Icons.emoji_events_rounded
+                          : Icons.location_on_rounded,
+                  color: accentColor,
+                  size: 22.r,
+                ),
+              ),
+
+              SizedBox(width: AppSpacing.sm),
+
+              // 스팟 이름 + 상태 메시지
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      result.spotName,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.dText,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      isAlready
+                          ? ErrorMessages.spotAlreadyCheckedInCard
+                          : '체크인 완료! 현재 ${result.currentTotalPoints}P 보유',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.dMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(width: AppSpacing.sm),
+
+              // 포인트 배지 or 차단 아이콘
+              if (!isAlready)
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: 4.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.dAccent,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                  ),
+                  child: Text(
+                    '+${result.earnedPoints}P',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: const Color(0xFF1A0E06),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                )
+              else
+                Icon(Icons.block_rounded, color: AppColors.dMuted, size: 20.r),
+            ],
           ),
 
-          SizedBox(width: AppSpacing.sm),
-
-          // 스팟 이름 + 상태 메시지
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+          // 점령 / 탈환 안내
+          if (occupationChanged) ...[
+            SizedBox(height: AppSpacing.sm),
+            Divider(height: 1, color: AppColors.dLine),
+            SizedBox(height: AppSpacing.sm),
+            Row(
               children: [
-                Text(
-                  result.spotName,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.dText,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Icon(
+                  result.occupationType == 'SPOT_STEAL'
+                      ? Icons.flag_rounded
+                      : Icons.star_rounded,
+                  color: AppColors.dGold,
+                  size: 18.r,
                 ),
-                SizedBox(height: 2.h),
-                Text(
-                  isAlready
-                      ? ErrorMessages.spotAlreadyCheckedInCard
-                      : '체크인 완료! 현재 ${result.currentTotalPoints}P 보유',
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.dMuted,
+                SizedBox(width: 6.w),
+                Expanded(
+                  child: Text(
+                    result.occupationType == 'SPOT_STEAL'
+                        ? '스팟을 탈환했어요!'
+                        : '스팟을 처음으로 점령했어요!',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.dGold,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: 4.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.dGold,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                  ),
+                  child: Text(
+                    '+${result.occupationBonusPoints}P',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: const Color(0xFF1A0E06),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-
-          SizedBox(width: AppSpacing.sm),
-
-          // 포인트 배지 or 차단 아이콘
-          if (!isAlready)
-            Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: 4.h,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.dAccent,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-              ),
-              child: Text(
-                '+${result.earnedPoints}P',
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: const Color(0xFF1A0E06),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            )
-          else
-            Icon(Icons.block_rounded, color: AppColors.dMuted, size: 20.r),
+          ],
         ],
       ),
     );

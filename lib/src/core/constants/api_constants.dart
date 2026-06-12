@@ -50,6 +50,7 @@ abstract final class ApiConstants {
   static const profileEquip = '/api/v1/profile/equip';
   static const profileMe = '/api/v1/profile/me';
   static const profileSearch = '/api/v1/profile/search';
+  static String profileById(int memberId) => '/api/v1/profile/$memberId';
 
   // Endpoints — Follow
   static const followRequest = '/api/v1/follows/request';

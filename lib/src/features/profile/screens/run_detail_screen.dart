@@ -147,10 +147,17 @@ class _RunDetailScreenState extends ConsumerState<RunDetailScreen> {
               icon: Icon(Icons.share_rounded,
                   color: AppColors.dText, size: 22.r),
               tooltip: '공유 카드',
-              onPressed: () => context.push(
-                AppRoutes.runShare,
-                extra: RunShareData.fromDetail(detail),
-              ),
+              onPressed: () async {
+                final snapshot = await _mapController?.takeSnapshot();
+                if (!mounted) return;
+                context.push(
+                  AppRoutes.runShare,
+                  extra: RunShareData.fromDetail(
+                    detail,
+                    mapSnapshot: snapshot,
+                  ),
+                );
+              },
             ),
           ) ?? const SizedBox.shrink(),
         ],
@@ -254,14 +261,13 @@ class _RunDetailScreenState extends ConsumerState<RunDetailScreen> {
                         ),
                       ),
               ),
-              // Floating back button
-              Positioned(
-                top: MediaQuery.of(context).padding.top + 8.h,
-                left: 16.w,
-                child: _GlassBackButton(
-                  onTap: () => Navigator.of(context).pop(),
+              // 날짜 칩
+              if (detail.startedAt != null)
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 56.h,
+                  left: 16.w,
+                  child: _DateChip(date: detail.startedAt!),
                 ),
-              ),
             ],
           ),
         ),
@@ -531,4 +537,45 @@ class _GlassBackButton extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── 날짜 칩 ──────────────────────────────────────────────────────────────────
+
+class _DateChip extends StatelessWidget {
+  const _DateChip({required this.date});
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) {
+    final label =
+        '${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')} '
+        '${_weekday(date.weekday)}  '
+        '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20.r),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+          decoration: BoxDecoration(
+            color: const Color(0xB31E1E21),
+            borderRadius: BorderRadius.circular(20.r),
+            border: Border.all(color: AppColors.dLine, width: 1),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: AppColors.dText,
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _weekday(int w) => ['월', '화', '수', '목', '금', '토', '일'][w - 1];
 }

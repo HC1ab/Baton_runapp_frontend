@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +8,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:logger/logger.dart';
 
 import '../../../common/widgets/character_sphere_widget.dart';
+import '../../../common/widgets/rarity_title_badge.dart';
 import '../../../core/character/character_style.dart';
 
 final _logger = Logger();
@@ -24,6 +26,7 @@ class CharacterSphereOverlay extends StatefulWidget {
     required this.characterStyle,
     this.size = 48.0,
     this.titleName,
+    this.titleRarity = 'NORMAL',
     this.nickname,
   });
 
@@ -37,7 +40,10 @@ class CharacterSphereOverlay extends StatefulWidget {
   /// 장착 칭호 표시 이름. null이면 배지 숨김.
   final String? titleName;
 
-  /// 닉네임 — 칭호 위에 표시. null이면 숨김.
+  /// 칭호 rarity — RarityTitleBadge 스타일 결정.
+  final String titleRarity;
+
+  /// 닉네임 — 구체 위에 표시. null이면 숨김.
   final String? nickname;
 
   @override
@@ -116,14 +122,16 @@ class _CharacterSphereOverlayState extends State<CharacterSphereOverlay> {
   @override
   Widget build(BuildContext context) {
     final coord = _screenCoord;
-    final dpr = MediaQuery.devicePixelRatioOf(context);
+    // iOS: getScreenCoordinate()는 logical pixel(pt) 반환 → 변환 불필요
+    // Android: physical pixel 반환 → dpr로 나눠 logical pixel로 변환
+    final scale = Platform.isAndroid ? MediaQuery.devicePixelRatioOf(context) : 1.0;
     final s = widget.size;
     final title = widget.titleName;
     final nickname = widget.nickname;
 
     // 기준점(LatLng)에서 구 반지름만큼 위로 올림
-    final cx = coord != null ? coord.x / dpr : -500.0;
-    final cy = coord != null ? coord.y / dpr - s * 0.25 : -500.0;
+    final cx = coord != null ? coord.x / scale : -500.0;
+    final cy = coord != null ? coord.y / scale - s * 0.25 : -500.0;
 
     return Positioned(
       left: cx - s / 2,
@@ -140,23 +148,27 @@ class _CharacterSphereOverlayState extends State<CharacterSphereOverlay> {
               style: widget.characterStyle,
               size: s,
             ),
-            // 칭호 배지 — 구체 위에 overflow 배치, null이면 숨김
-            if (title != null)
-              Positioned(
-                bottom: s + 2.h,
-                child: UnconstrainedBox(
-                  child: _LabelBadge(text: title),
-                ),
-              ),
-            // 닉네임 배지 — 칭호 위 (칭호 없으면 구체 바로 위)
+            // 닉네임 배지 — 구체 위
             if (nickname != null)
               Positioned(
-                bottom: s + 2.h + (title != null ? 18.h : 0),
+                bottom: s + 2.h,
                 child: UnconstrainedBox(
                   child: _LabelBadge(
                     text: nickname,
                     backgroundColor: Colors.white.withValues(alpha: 0.85),
                     textColor: Colors.black87,
+                  ),
+                ),
+              ),
+            // 칭호 배지 — 구체 아래 (rarity 스타일 적용)
+            if (title != null)
+              Positioned(
+                top: s + 2.h,
+                child: UnconstrainedBox(
+                  child: RarityTitleBadge(
+                    title: title,
+                    rarity: widget.titleRarity,
+                    fontSize: 9.sp,
                   ),
                 ),
               ),

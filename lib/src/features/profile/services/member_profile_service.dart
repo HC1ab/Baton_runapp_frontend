@@ -8,7 +8,7 @@ import '../../../core/error/app_exception.dart';
 import '../../../core/network/dio_client.dart';
 import '../models/member_profile_model.dart';
 
-export '../models/member_profile_model.dart' show MemberProfileModel;
+export '../models/member_profile_model.dart' show MemberProfileModel, MemberPublicProfile;
 
 final _logger = Logger();
 
@@ -64,6 +64,27 @@ class MemberProfileService {
     }
   }
 
+  /// GET /api/v1/profile/{memberId} — memberId로 공개 프로필 조회
+  Future<MemberPublicProfile> getById(int memberId) async {
+    try {
+      final response = await _dio.get(ApiConstants.profileById(memberId));
+      final raw = response.data;
+      if (raw is Map<String, dynamic> && raw['success'] == true) {
+        final data = raw['data'] as Map<String, dynamic>?;
+        if (data == null) throw const ServerException(ErrorMessages.invalidResponse);
+        return MemberPublicProfile.fromJson(data);
+      }
+      throw const ServerException(ErrorMessages.invalidResponse);
+    } on AppException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _mapDio(e);
+    } catch (e) {
+      _logger.e('getById error memberId=$memberId', error: e);
+      throw const UnknownException();
+    }
+  }
+
   AppException _mapDio(DioException e) {
     final status = e.response?.statusCode;
     if (status == 401) return const AuthException();
@@ -84,6 +105,12 @@ final memberProfileServiceProvider = Provider<MemberProfileService>((ref) {
 final memberProfileProvider =
     FutureProvider.family<MemberProfileModel, String>((ref, nickname) {
   return ref.watch(memberProfileServiceProvider).getByNickname(nickname);
+});
+
+/// memberId → 공개 프로필 조회 (점령자 닉네임 표시 등)
+final memberPublicProfileProvider =
+    FutureProvider.autoDispose.family<MemberPublicProfile, int>((ref, memberId) {
+  return ref.watch(memberProfileServiceProvider).getById(memberId);
 });
 
 /// memberId → coreColorCode 단건 조회

@@ -372,15 +372,20 @@ class HistoryScreen extends ConsumerWidget {
                     ],
                   ),
                   SizedBox(height: 6.h),
-                  Row(
-                    children: [
-                      _miniStat(run.totalDistanceKm.toStringAsFixed(2), 'KM'),
-                      SizedBox(width: 12.w),
-                      _miniStat(run.avgPaceText, 'PACE'),
-                      SizedBox(width: 12.w),
-                      _miniStat(
-                          _formatDuration(run.durationSeconds), 'TIME'),
-                    ],
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      children: [
+                        _miniStat(
+                            run.totalDistanceKm.toStringAsFixed(2), 'KM'),
+                        SizedBox(width: 12.w),
+                        _miniStat(run.avgPaceText, 'PACE'),
+                        SizedBox(width: 12.w),
+                        _miniStat(
+                            _formatDuration(run.durationSeconds), 'TIME'),
+                      ],
+                    ),
                   ),
                 ],
               ),

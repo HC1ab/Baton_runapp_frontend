@@ -43,13 +43,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       extendBody: true,
       body: Stack(
         children: [
-          SafeArea(
-            // bottom: false — nav bar 자체가 SafeArea를 처리함
-            bottom: false,
-            child: IndexedStack(
-              index: currentTab,
-              children: tabs.map((t) => t.builder(context)).toList(),
-            ),
+          IndexedStack(
+            index: currentTab,
+            children: tabs.map((t) => t.builder(context)).toList(),
           ),
           if (showBadge)
             Positioned(

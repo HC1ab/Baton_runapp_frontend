@@ -4,17 +4,32 @@ import 'package:logger/logger.dart';
 import '../constants/storage_keys.dart';
 import '../storage/shared_prefs_provider.dart';
 import '../../features/profile/constants/title_presets.dart';
+import '../myroom/my_room_service.dart';
 import 'character_style.dart';
 
 export '../storage/shared_prefs_provider.dart' show sharedPreferencesProvider;
 
 /// 현재 유저의 장착 칭호 표시 이름. 없으면 null.
-/// StorageKeys.equippedTitleCode → TitlePresets.nameFor() 변환.
+/// myRoomProvider(서버)가 로드되면 우선 사용, 로딩 중엔 로컬 prefs 폴백.
 final myEquippedTitleNameProvider = Provider<String?>((ref) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  final code = prefs.getString(StorageKeys.equippedTitleCode);
-  if (code == null || code.isEmpty) return null;
-  return TitlePresets.nameFor(code);
+  final myRoomAsync = ref.watch(myRoomProvider);
+  return myRoomAsync.maybeWhen(
+    data: (result) =>
+        result.equippedTitle.isNotEmpty ? result.equippedTitle : null,
+    orElse: () {
+      final prefs = ref.watch(sharedPreferencesProvider);
+      final code = prefs.getString(StorageKeys.equippedTitleCode);
+      if (code == null || code.isEmpty) return null;
+      return TitlePresets.nameFor(code);
+    },
+  );
+});
+
+/// 현재 유저의 장착 칭호 rarity. 없으면 'NORMAL'.
+final myEquippedTitleRarityProvider = Provider<String>((ref) {
+  final name = ref.watch(myEquippedTitleNameProvider);
+  if (name == null || name.isEmpty) return 'NORMAL';
+  return TitlePresets.rarityForName(name);
 });
 
 final _logger = Logger();

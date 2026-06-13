@@ -364,12 +364,14 @@ class _InfoRow extends StatelessWidget {
                 color: AppColors.dMuted,
               )),
           const Spacer(),
-          Text(value,
-              style: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w700,
-                color: AppColors.dText,
-              )),
+          Text(
+            value.isEmpty ? '-' : value,
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w700,
+              color: value.isEmpty ? AppColors.dMuted : AppColors.dText,
+            ),
+          ),
         ],
       ),
     );

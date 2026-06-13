@@ -16,6 +16,7 @@ class RunDetailModel {
     required this.totalTimeSeconds,
     required this.avgPaceSecPerKm,
     required this.path,
+    this.startedAt,
   });
 
   final int runId;
@@ -25,6 +26,9 @@ class RunDetailModel {
   /// 평균 페이스 (초/km)
   final int avgPaceSecPerKm;
   final List<PathPoint> path;
+
+  /// 러닝 시작 시각 (로컬 시간)
+  final DateTime? startedAt;
 
   String get avgPaceText {
     if (avgPaceSecPerKm <= 0) return "--'--\"";
@@ -44,6 +48,7 @@ class RunDetailModel {
   factory RunDetailModel.fromJson(Map<String, dynamic> json) {
     // 백엔드는 평균 페이스를 "분 단위 소수"로 전송 (예: 0.97 = 0.97분/km) → 초/km로 환산
     final rawPace = (json['avgPace'] as num? ?? 0).toDouble();
+    final rawStart = json['startTime'] as String?;
     return RunDetailModel(
       runId: (json['runId'] as num? ?? 0).toInt(),
       totalDistanceKm: (json['totalDistanceKm'] as num? ?? 0.0).toDouble(),
@@ -52,6 +57,7 @@ class RunDetailModel {
       path: (json['path'] as List<dynamic>? ?? [])
           .map((e) => PathPoint.fromJson(e as Map<String, dynamic>))
           .toList(),
+      startedAt: rawStart == null ? null : DateTime.parse(rawStart).toLocal(),
     );
   }
 }

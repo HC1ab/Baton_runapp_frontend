@@ -96,7 +96,8 @@ class ProfileScreen extends ConsumerWidget {
                       icon: Icons.place_rounded,
                       title: '나의 스팟',
                       subtitle: '저장된 코스 확인',
-                      filled: false,
+                      filled: true,
+                      fillColor: AppColors.dGold,
                       onTap: () => ref
                           .read(currentTabProvider.notifier)
                           .switchTo(AppTabs.spot),
@@ -184,19 +185,12 @@ class ProfileScreen extends ConsumerWidget {
   Widget _buildAppBar(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
-        const CircleAvatar(
-          radius: 18,
-          backgroundColor: _primary,
-          child: Icon(Icons.person, color: Colors.white, size: 20),
-        ),
-        const SizedBox(width: 10),
-        const Text(
-          'Baton',
-          style: TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.w900,
-            color: _primary,
-            letterSpacing: -0.5,
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Image.asset(
+            'assets/icons/app_icon_orange.png',
+            height: 36,
+            fit: BoxFit.contain,
           ),
         ),
         const Spacer(),
@@ -313,6 +307,7 @@ class _BigActionCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.filled,
+    this.fillColor,
     this.onTap,
   });
 
@@ -320,6 +315,7 @@ class _BigActionCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final bool filled;
+  final Color? fillColor;
   final VoidCallback? onTap;
 
   @override
@@ -328,7 +324,8 @@ class _BigActionCard extends StatelessWidget {
     const Color cardSoft = AppColors.dCard2;
     const Color textSub = AppColors.dMuted;
 
-    final bg = filled ? primary : cardSoft;
+    final effectiveFill = fillColor ?? primary;
+    final bg = filled ? effectiveFill : cardSoft;
     final fg = filled ? const Color(0xFF1A0E06) : AppColors.dText;
     final subFg =
         filled ? const Color(0xFF1A0E06).withValues(alpha: 0.75) : textSub;

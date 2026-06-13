@@ -109,7 +109,7 @@ class _RunShareScreenState extends ConsumerState<RunShareScreen> {
   void _showSnackBar(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg),
+        content: Text(msg, style: const TextStyle(color: Colors.white)),
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.textPrimary,
         shape: RoundedRectangleBorder(
@@ -182,8 +182,7 @@ class _RunShareScreenState extends ConsumerState<RunShareScreen> {
                   // ── 스타일 전환 토글 ─────────────────────────────────────
                   _StyleToggle(
                     current: config.cardStyle,
-                    onChanged: (style) =>
-                        ref.read(runShareProvider.notifier).setCardStyle(style),
+                    onChanged: ref.read(runShareProvider.notifier).setCardStyle,
                   ),
                   SizedBox(height: 12.h),
 
@@ -369,7 +368,7 @@ class _Tab extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 13.sp,
+              fontSize: 11.sp,
               fontWeight: FontWeight.w700,
               color: selected
                   ? Colors.white

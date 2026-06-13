@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../core/constants/app_colors.dart';
 
-class CustomInputField extends StatelessWidget {
+class CustomInputField extends StatefulWidget {
   const CustomInputField({
     super.key,
     required this.label,
@@ -28,68 +29,107 @@ class CustomInputField extends StatelessWidget {
   final int maxLines;
   final int? minLines;
 
-  static const Color _fieldBackground = AppColors.dCard2;
+  @override
+  State<CustomInputField> createState() => _CustomInputFieldState();
+}
+
+class _CustomInputFieldState extends State<CustomInputField> {
+  final FocusNode _focusNode = FocusNode();
+  bool _isFocused = false;
+
   static const Color _labelColor = AppColors.dMuted;
   static const Color _textColor = AppColors.dText;
   static const Color _hintColor = AppColors.dFaint;
+  static const Color _background = AppColors.dCard2;
+  static const Color _borderNormal = AppColors.dLine;
+  static const Color _borderFocused = AppColors.dAccent;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(() {
+      setState(() => _isFocused = _focusNode.hasFocus);
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isMultiline = widget.maxLines > 1;
+    final radius = BorderRadius.circular(16.r);
+    final borderColor = _isFocused ? _borderFocused : _borderNormal;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          label,
-          style: const TextStyle(
-            fontSize: 15,
+          widget.label,
+          style: TextStyle(
+            fontSize: 13.sp,
             fontWeight: FontWeight.w600,
-            color: _labelColor,
+            color: _isFocused ? _borderFocused : _labelColor,
+            letterSpacing: 0.1,
           ),
         ),
-        const SizedBox(height: 10),
-        Container(
+        SizedBox(height: 8.h),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
           decoration: BoxDecoration(
-            color: _fieldBackground,
-            borderRadius: BorderRadius.circular(24),
+            color: _background,
+            borderRadius: radius,
+            border: Border.all(
+              color: borderColor,
+              width: _isFocused ? 1.5 : 1.0,
+            ),
           ),
           child: TextField(
-            controller: controller,
-            keyboardType: keyboardType ??
-                (maxLines > 1 ? TextInputType.multiline : TextInputType.text),
-            readOnly: readOnly,
-            onTap: onTap,
-            onChanged: onChanged,
-            maxLines: maxLines,
-            minLines: minLines,
+            controller: widget.controller,
+            focusNode: _focusNode,
+            keyboardType: widget.keyboardType ??
+                (isMultiline ? TextInputType.multiline : TextInputType.text),
+            readOnly: widget.readOnly,
+            onTap: widget.onTap,
+            onChanged: widget.onChanged,
+            maxLines: widget.maxLines,
+            minLines: widget.minLines,
             textAlignVertical:
-                maxLines > 1 ? TextAlignVertical.top : TextAlignVertical.center,
-            style: const TextStyle(
-              fontSize: 18,
+                isMultiline ? TextAlignVertical.top : TextAlignVertical.center,
+            style: TextStyle(
+              fontSize: 15.sp,
               fontWeight: FontWeight.w500,
               color: _textColor,
             ),
             decoration: InputDecoration(
-              hintText: hintText,
-              hintStyle: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
+              hintText: widget.hintText,
+              hintStyle: TextStyle(
+                fontSize: 15.sp,
+                fontWeight: FontWeight.w400,
                 color: _hintColor,
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              suffixIcon: suffixIcon != null
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 18.w,
+                vertical: isMultiline ? 14.h : 0,
+              ),
+              suffixIcon: widget.suffixIcon != null
                   ? Padding(
                       padding: EdgeInsets.only(
-                        right: 8,
-                        top: maxLines > 1 ? 12 : 0,
+                        right: 4.w,
+                        top: isMultiline ? 12.h : 0,
                       ),
-                      child: suffixIcon,
+                      child: widget.suffixIcon,
                     )
                   : null,
-              suffixIconConstraints: const BoxConstraints(
-                minWidth: 44,
-                minHeight: 44,
+              suffixIconConstraints: BoxConstraints(
+                minWidth: 44.w,
+                minHeight: 44.h,
               ),
+              isCollapsed: !isMultiline,
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,

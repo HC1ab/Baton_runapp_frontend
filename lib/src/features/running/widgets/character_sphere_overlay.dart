@@ -165,13 +165,10 @@ class _CharacterSphereOverlayState extends State<CharacterSphereOverlay> {
               Positioned(
                 top: s + 2.h,
                 child: UnconstrainedBox(
-                  child: Transform.scale(
-                    scale: 0.62,
-                    alignment: Alignment.topCenter,
-                    child: RarityTitleBadge(
-                      title: title,
-                      rarity: widget.titleRarity,
-                    ),
+                  child: RarityTitleBadge(
+                    title: title,
+                    rarity: widget.titleRarity,
+                    fontSize: 9.sp,
                   ),
                 ),
               ),

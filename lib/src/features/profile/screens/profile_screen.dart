@@ -184,19 +184,12 @@ class ProfileScreen extends ConsumerWidget {
   Widget _buildAppBar(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
-        const CircleAvatar(
-          radius: 18,
-          backgroundColor: _primary,
-          child: Icon(Icons.person, color: Colors.white, size: 20),
-        ),
-        const SizedBox(width: 10),
-        const Text(
-          'Baton',
-          style: TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.w900,
-            color: _primary,
-            letterSpacing: -0.5,
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Image.asset(
+            'assets/icons/app_icon_orange.png',
+            height: 36,
+            fit: BoxFit.contain,
           ),
         ),
         const Spacer(),

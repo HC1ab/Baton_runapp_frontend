@@ -96,7 +96,8 @@ class ProfileScreen extends ConsumerWidget {
                       icon: Icons.place_rounded,
                       title: '나의 스팟',
                       subtitle: '저장된 코스 확인',
-                      filled: false,
+                      filled: true,
+                      fillColor: AppColors.dGold,
                       onTap: () => ref
                           .read(currentTabProvider.notifier)
                           .switchTo(AppTabs.spot),
@@ -306,6 +307,7 @@ class _BigActionCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.filled,
+    this.fillColor,
     this.onTap,
   });
 
@@ -313,6 +315,7 @@ class _BigActionCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final bool filled;
+  final Color? fillColor;
   final VoidCallback? onTap;
 
   @override
@@ -321,7 +324,8 @@ class _BigActionCard extends StatelessWidget {
     const Color cardSoft = AppColors.dCard2;
     const Color textSub = AppColors.dMuted;
 
-    final bg = filled ? primary : cardSoft;
+    final effectiveFill = fillColor ?? primary;
+    final bg = filled ? effectiveFill : cardSoft;
     final fg = filled ? const Color(0xFF1A0E06) : AppColors.dText;
     final subFg =
         filled ? const Color(0xFF1A0E06).withValues(alpha: 0.75) : textSub;

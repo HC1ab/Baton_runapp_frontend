@@ -17,6 +17,7 @@ abstract final class AppMapStyles {
   {"featureType": "poi", "stylers": [{"visibility": "off"}]},
   {"featureType": "road", "elementType": "geometry", "stylers": [{"color": "#242427"}]},
   {"featureType": "road", "elementType": "geometry.stroke", "stylers": [{"color": "#1A1A1D"}]},
+  {"featureType": "road", "elementType": "labels", "stylers": [{"visibility": "off"}]},
   {"featureType": "road.highway", "elementType": "geometry", "stylers": [{"color": "#2B2B2E"}]},
   {"featureType": "road.local", "elementType": "geometry", "stylers": [{"color": "#1F1F22"}]},
   {"featureType": "transit", "stylers": [{"visibility": "off"}]},

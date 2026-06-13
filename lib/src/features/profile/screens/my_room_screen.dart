@@ -100,12 +100,12 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
             return Column(
               children: [
                 Text(
-                  'EQUIPPED TITLE',
+                  '장착된 칭호',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: AppColors.dFaint,
                     fontSize: 11.sp,
-                    letterSpacing: 1.8,
+                    letterSpacing: 1.2,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -423,6 +423,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
     final isEquipped = equippedTitle == title.name;
     final isOwned = title.owned;
     final rarityColor = _rarityColor(title.rarity);
+    final preset = TitlePresets.all.where((t) => t.id == title.titleId).firstOrNull;
 
     return Padding(
       padding: EdgeInsets.only(bottom: 10.h),
@@ -500,6 +501,26 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    if (preset != null) ...[
+                      SizedBox(height: 6.h),
+                      Row(
+                        children: [
+                          _BonusChip(
+                            label: 'EXP',
+                            value: preset.expBonusRatio,
+                            color: AppColors.dGold,
+                            owned: isOwned,
+                          ),
+                          SizedBox(width: 6.w),
+                          _BonusChip(
+                            label: '포인트',
+                            value: preset.pointBonusRatio,
+                            color: AppColors.dTitleBlue,
+                            owned: isOwned,
+                          ),
+                        ],
                       ),
                     ],
                   ],
@@ -583,6 +604,49 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
         child: Text(
           'Coming soon',
           style: TextStyle(color: AppColors.dMuted, fontSize: 14.sp),
+        ),
+      ),
+    );
+  }
+}
+
+// ── 보너스 칩 ─────────────────────────────────────────────────────────────────
+
+class _BonusChip extends StatelessWidget {
+  const _BonusChip({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.owned,
+  });
+
+  final String label;
+  final double value;
+  final Color color;
+  final bool owned;
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveColor = owned ? color : AppColors.dFaint;
+    final pct = value * 100;
+    final text = pct == 0
+        ? '$label +0%'
+        : '$label +${pct % 1 == 0 ? pct.toInt() : pct.toStringAsFixed(1)}%';
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
+      decoration: BoxDecoration(
+        color: effectiveColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6.r),
+        border: Border.all(color: effectiveColor.withValues(alpha: 0.30)),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 9.5.sp,
+          fontWeight: FontWeight.w700,
+          color: effectiveColor,
+          letterSpacing: 0.2,
         ),
       ),
     );

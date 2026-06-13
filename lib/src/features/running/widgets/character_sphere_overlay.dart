@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -116,14 +117,16 @@ class _CharacterSphereOverlayState extends State<CharacterSphereOverlay> {
   @override
   Widget build(BuildContext context) {
     final coord = _screenCoord;
-    final dpr = MediaQuery.devicePixelRatioOf(context);
+    // iOS: getScreenCoordinate()는 logical pixel(pt) 반환 → 변환 불필요
+    // Android: physical pixel 반환 → dpr로 나눠 logical pixel로 변환
+    final scale = Platform.isAndroid ? MediaQuery.devicePixelRatioOf(context) : 1.0;
     final s = widget.size;
     final title = widget.titleName;
     final nickname = widget.nickname;
 
     // 기준점(LatLng)에서 구 반지름만큼 위로 올림
-    final cx = coord != null ? coord.x / dpr : -500.0;
-    final cy = coord != null ? coord.y / dpr - s * 0.25 : -500.0;
+    final cx = coord != null ? coord.x / scale : -500.0;
+    final cy = coord != null ? coord.y / scale - s * 0.25 : -500.0;
 
     return Positioned(
       left: cx - s / 2,

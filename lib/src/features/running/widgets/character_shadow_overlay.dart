@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -58,16 +59,18 @@ class _CharacterShadowOverlayState extends State<CharacterShadowOverlay> {
   @override
   Widget build(BuildContext context) {
     final coord = _screenCoord;
-    final dpr = MediaQuery.devicePixelRatioOf(context);
+    // iOS: getScreenCoordinate()는 logical pixel(pt) 반환 → 변환 불필요
+    // Android: physical pixel 반환 → dpr로 나눠 logical pixel로 변환
+    final scale = Platform.isAndroid ? MediaQuery.devicePixelRatioOf(context) : 1.0;
     final s = widget.size;
 
     // 그림자 크기: 너비 s, 높이 s * 0.35 (납작한 타원)
     final w = s;
     final h = s * 0.35;
 
-    // 화면 좌표: 물리 픽셀 → 논리 픽셀, 캐릭터 위치 기준 약간 아래
-    final cx = coord != null ? coord.x / dpr : -500.0;
-    final cy = coord != null ? coord.y / dpr + s * 0.28 : -500.0;
+    // 화면 좌표: 캐릭터 위치 기준 약간 아래
+    final cx = coord != null ? coord.x / scale : -500.0;
+    final cy = coord != null ? coord.y / scale + s * 0.28 : -500.0;
 
     return Positioned(
       left: cx - w / 2,

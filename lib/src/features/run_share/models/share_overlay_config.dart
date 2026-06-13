@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/app_colors.dart';
 import 'stat_item_config.dart';
 
 enum CardStyle {
   /// 개별 드래그/리사이즈/색상 자유 배치
   freestyle,
 
-  /// NRC 스타일 — 하단 고정 바 (아이콘 + 값 + 단위)
-  nrc,
+  /// BATON1 — 지도 스냅샷 배경 + 하단 고정 스탯 바
+  baton1,
+
+  /// BATON2 — 상단 대형 거리 + 하단 페이스·시간
+  baton2,
+
+  /// BATON3 — 추후 추가 예정
+  baton3,
 }
 
 /// 공유 카드 오버레이 전체 설정.
@@ -18,7 +25,14 @@ class ShareOverlayConfig {
     required this.durationStat,
     required this.paceStat,
     this.selectedStatId,
-    this.cardStyle = CardStyle.freestyle,
+    this.cardStyle = CardStyle.baton1,
+    this.showRoute = false,
+    this.routeColor = AppColors.dAccent,
+    this.routeStrokeWidth = 3.0,
+    this.routeOffsetX = 0.5,
+    this.routeOffsetY = 0.5,
+    this.routeScale = 1.0,
+    this.routeSelected = false,
   });
 
   final StatItemConfig distanceStat;
@@ -30,6 +44,25 @@ class ShareOverlayConfig {
   final String? selectedStatId;
 
   final CardStyle cardStyle;
+
+  /// 자유 배치 모드에서 글로우 경로 오버레이 표시 여부.
+  final bool showRoute;
+
+  /// 글로우 경로 색상.
+  final Color routeColor;
+
+  /// 글로우 경로 코어 라인 두께 (1.0 ~ 8.0).
+  final double routeStrokeWidth;
+
+  /// 글로우 경로 중심 위치 (캔버스 대비 비율 0~1).
+  final double routeOffsetX;
+  final double routeOffsetY;
+
+  /// 글로우 경로 스케일 (0.2 ~ 2.0).
+  final double routeScale;
+
+  /// 글로우 경로 선택 상태.
+  final bool routeSelected;
 
   List<StatItemConfig> get stats => [distanceStat, durationStat, paceStat];
 
@@ -54,6 +87,13 @@ class ShareOverlayConfig {
     StatItemConfig? paceStat,
     Object? selectedStatId = _sentinel,
     CardStyle? cardStyle,
+    bool? showRoute,
+    Color? routeColor,
+    double? routeStrokeWidth,
+    double? routeOffsetX,
+    double? routeOffsetY,
+    double? routeScale,
+    bool? routeSelected,
   }) {
     return ShareOverlayConfig(
       distanceStat: distanceStat ?? this.distanceStat,
@@ -63,13 +103,18 @@ class ShareOverlayConfig {
           ? this.selectedStatId
           : selectedStatId as String?,
       cardStyle: cardStyle ?? this.cardStyle,
+      showRoute: showRoute ?? this.showRoute,
+      routeColor: routeColor ?? this.routeColor,
+      routeStrokeWidth: routeStrokeWidth ?? this.routeStrokeWidth,
+      routeOffsetX: routeOffsetX ?? this.routeOffsetX,
+      routeOffsetY: routeOffsetY ?? this.routeOffsetY,
+      routeScale: routeScale ?? this.routeScale,
+      routeSelected: routeSelected ?? this.routeSelected,
     );
   }
 
   static const _sentinel = Object();
 
-  // ── 기본 초기 설정 ───────────────────────────────────────────────────────────
-  // 거리 → 중앙 큰 폰트 / 시간 → 좌하단 / 페이스 → 우하단
   static ShareOverlayConfig initial() => const ShareOverlayConfig(
         distanceStat: StatItemConfig(
           id: 'distance',

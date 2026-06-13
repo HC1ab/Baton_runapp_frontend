@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../models/share_overlay_config.dart';
 import '../models/stat_item_config.dart';
 import '../providers/run_share_provider.dart';
 
@@ -64,6 +65,66 @@ class ShareCustomizeSheet extends ConsumerWidget {
           ),
           SizedBox(height: 12.h),
 
+          // 자유 배치 모드: 글로우 경로 토글 + 색상 + 두께
+          if (config.cardStyle == CardStyle.freestyle || config.cardStyle == CardStyle.baton2) ...[
+            _ToggleRow(
+              label: '글로우 경로',
+              value: config.showRoute,
+              onToggle: notifier.toggleRoute,
+            ),
+            if (config.showRoute) ...[
+              SizedBox(height: 10.h),
+              // 색상 팔레트
+              Row(
+                children: [
+                  for (final color in _palette)
+                    _ColorDot(
+                      color: color,
+                      isSelected:
+                          config.routeColor.toARGB32() == color.toARGB32(),
+                      onTap: () => notifier.setRouteColor(color),
+                    ),
+                ],
+              ),
+              SizedBox(height: 10.h),
+              // 두께 슬라이더
+              Row(
+                children: [
+                  Text(
+                    '두께',
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Expanded(
+                    child: Slider(
+                      value: config.routeStrokeWidth,
+                      min: 1.0,
+                      max: 8.0,
+                      divisions: 14,
+                      activeColor: AppColors.primary,
+                      inactiveColor: AppColors.divider,
+                      onChanged: notifier.setRouteStrokeWidth,
+                    ),
+                  ),
+                  Text(
+                    config.routeStrokeWidth.toStringAsFixed(1),
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            SizedBox(height: 4.h),
+            Divider(height: 1, color: AppColors.divider),
+            SizedBox(height: 14.h),
+          ],
+
           // 스탯 3개
           for (final stat in config.stats)
             _StatRow(
@@ -84,6 +145,64 @@ class ShareCustomizeSheet extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── _ToggleRow ────────────────────────────────────────────────────────────────
+
+class _ToggleRow extends StatelessWidget {
+  const _ToggleRow({
+    required this.label,
+    required this.value,
+    required this.onToggle,
+  });
+
+  final String label;
+  final bool value;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w700,
+            color: value ? AppColors.textPrimary : AppColors.textSecondary,
+          ),
+        ),
+        const Spacer(),
+        GestureDetector(
+          onTap: onToggle,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 44.w,
+            height: 24.h,
+            decoration: BoxDecoration(
+              color: value ? AppColors.primary : AppColors.divider,
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: AnimatedAlign(
+              duration: const Duration(milliseconds: 200),
+              alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+              child: Padding(
+                padding: EdgeInsets.all(3.r),
+                child: Container(
+                  width: 18.r,
+                  height: 18.r,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

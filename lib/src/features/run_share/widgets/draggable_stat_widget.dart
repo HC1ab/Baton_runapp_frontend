@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../models/stat_item_config.dart';
@@ -60,11 +61,11 @@ class DraggableStatWidget extends ConsumerWidget {
                 : null,
             child: Text(
               value,
-              style: TextStyle(
+              style: GoogleFonts.barlowCondensed(
                 fontSize: stat.fontSize,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 color: stat.color,
-                letterSpacing: -1,
+                letterSpacing: 0.5,
                 height: 1.0,
                 shadows: const [
                   Shadow(

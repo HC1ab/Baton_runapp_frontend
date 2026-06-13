@@ -109,7 +109,7 @@ class _RunShareScreenState extends ConsumerState<RunShareScreen> {
   void _showSnackBar(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg),
+        content: Text(msg, style: const TextStyle(color: Colors.white)),
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.textPrimary,
         shape: RoundedRectangleBorder(
@@ -182,8 +182,7 @@ class _RunShareScreenState extends ConsumerState<RunShareScreen> {
                   // ── 스타일 전환 토글 ─────────────────────────────────────
                   _StyleToggle(
                     current: config.cardStyle,
-                    onChanged: (style) =>
-                        ref.read(runShareProvider.notifier).setCardStyle(style),
+                    onChanged: ref.read(runShareProvider.notifier).setCardStyle,
                   ),
                   SizedBox(height: 12.h),
 
@@ -322,14 +321,24 @@ class _StyleToggle extends StatelessWidget {
       child: Row(
         children: [
           _Tab(
-            label: '자유 배치',
+            label: '자유 1',
             selected: current == CardStyle.freestyle,
             onTap: () => onChanged(CardStyle.freestyle),
           ),
           _Tab(
-            label: 'NRC 스타일',
-            selected: current == CardStyle.nrc,
-            onTap: () => onChanged(CardStyle.nrc),
+            label: '자유 2',
+            selected: current == CardStyle.baton2,
+            onTap: () => onChanged(CardStyle.baton2),
+          ),
+          _Tab(
+            label: 'BATON 1',
+            selected: current == CardStyle.baton1,
+            onTap: () => onChanged(CardStyle.baton1),
+          ),
+          _Tab(
+            label: 'BATON 2',
+            selected: current == CardStyle.baton3,
+            onTap: () => onChanged(CardStyle.baton3),
           ),
         ],
       ),
@@ -364,7 +373,7 @@ class _Tab extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 13.sp,
+              fontSize: 11.sp,
               fontWeight: FontWeight.w700,
               color: selected
                   ? Colors.white

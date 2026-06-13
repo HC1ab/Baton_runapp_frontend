@@ -203,7 +203,7 @@ class _Header extends StatelessWidget {
         ),
         SizedBox(height: 8.h),
         Text(
-          '로그인하고 오늘의 러닝을 시작해보세요.',
+          '오늘도, 당신의 페이스로.',
           style: AppTextStyles.bodyMedium.copyWith(
             color: AppColors.dMuted,
           ),

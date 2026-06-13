@@ -143,24 +143,24 @@ class _CharacterSphereOverlayState extends State<CharacterSphereOverlay> {
               style: widget.characterStyle,
               size: s,
             ),
-            // 칭호 배지 — 구체 위에 overflow 배치, null이면 숨김
-            if (title != null)
-              Positioned(
-                bottom: s + 2.h,
-                child: UnconstrainedBox(
-                  child: _LabelBadge(text: title),
-                ),
-              ),
-            // 닉네임 배지 — 칭호 위 (칭호 없으면 구체 바로 위)
+            // 닉네임 배지 — 구체 위
             if (nickname != null)
               Positioned(
-                bottom: s + 2.h + (title != null ? 18.h : 0),
+                bottom: s + 2.h,
                 child: UnconstrainedBox(
                   child: _LabelBadge(
                     text: nickname,
                     backgroundColor: Colors.white.withValues(alpha: 0.85),
                     textColor: Colors.black87,
                   ),
+                ),
+              ),
+            // 칭호 배지 — 구체 아래
+            if (title != null)
+              Positioned(
+                top: s + 2.h,
+                child: UnconstrainedBox(
+                  child: _LabelBadge(text: title),
                 ),
               ),
           ],

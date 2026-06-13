@@ -39,6 +39,8 @@ class SpotDetail {
     required this.rewardAmount,
     required this.latitude,
     required this.longitude,
+    this.occupierMemberId,
+    this.occupierCheckinCount,
   });
 
   final int id;
@@ -47,6 +49,10 @@ class SpotDetail {
   final int rewardAmount;
   final double latitude;
   final double longitude;
+  /// 현재 점령자 memberId (점령자 없으면 null)
+  final int? occupierMemberId;
+  /// 현재 점령자의 해당 스팟 누적 체크인 수
+  final int? occupierCheckinCount;
 
   factory SpotDetail.fromJson(Map<String, Object?> json) {
     return SpotDetail(
@@ -56,6 +62,8 @@ class SpotDetail {
       rewardAmount: (json['rewardAmount'] as num).toInt(),
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),
+      occupierMemberId: (json['occupierMemberId'] as num?)?.toInt(),
+      occupierCheckinCount: (json['occupierCheckinCount'] as num?)?.toInt(),
     );
   }
 }

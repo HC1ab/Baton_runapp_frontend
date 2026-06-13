@@ -1,128 +1,141 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
 import '../providers/history_providers.dart';
-import '../models/monthly_summary_model.dart';
 
+/// Activity dashboard — Week/Month/Year stats aggregated client-side from the
+/// real run list, with an animated flex bar chart (redesign dark UI).
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedDate = ref.watch(selectedDateProvider);
-    final summaryAsync = ref.watch(monthlySummaryProvider);
-    final runsAsync = ref.watch(myRunsProvider);
+    final period = ref.watch(activityPeriodProvider);
+    final anchor = ref.watch(selectedDateProvider);
+    final runsAsync = ref.watch(allRunsProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF9F6),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFFF9F6),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: Color(0xFF1F1A17)),
-          onPressed: () => context.pop(),
-        ),
-        title: const Text(
-          'Baton',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w900,
-            color: Color(0xFFDD6A3E),
-            letterSpacing: -0.5,
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.notifications_none_rounded,
-              color: Color(0xFFDD6A3E),
-              size: 26,
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
+      backgroundColor: AppColors.dScreen,
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(monthlySummaryProvider);
-            ref.invalidate(myRunsProvider);
-          },
-          color: const Color(0xFFDD6A3E),
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            children: [
-              _buildTabSelector(),
-              const SizedBox(height: 24),
-              _buildMonthSelector(context, ref, selectedDate),
-              const SizedBox(height: 16),
-              summaryAsync.when(
-                data: (summary) {
-                  final runs = runsAsync.maybeWhen(
-                    data: (r) => r,
-                    orElse: () => <RunListItem>[],
-                  );
-                  return _buildSummaryContent(summary, runs);
-                },
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 40),
-                    child: CircularProgressIndicator(
-                        color: Color(0xFFDD6A3E)),
-                  ),
+        bottom: false,
+        child: Column(
+          children: [
+            _buildTopBar(context),
+            Expanded(
+              child: RefreshIndicator(
+                color: AppColors.dAccent,
+                backgroundColor: AppColors.dCard,
+                onRefresh: () async => ref.invalidate(allRunsProvider),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(22.w, 14.h, 22.w, 32.h),
+                  children: [
+                    _buildPeriodSelector(ref, period),
+                    SizedBox(height: 22.h),
+                    runsAsync.when(
+                      loading: () => _loadingBox(),
+                      error: (e, _) => _errorBox(ref, e),
+                      data: (runs) {
+                        final data = _aggregate(period, anchor, runs);
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildPeriodLabel(context, ref, anchor, data),
+                            SizedBox(height: 14.h),
+                            _buildStatsCard(data),
+                            SizedBox(height: 28.h),
+                            _buildRecentActivities(context, runs),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
                 ),
-                error: (err, stack) => _buildSummaryError(ref, err),
               ),
-              const SizedBox(height: 28),
-              _buildRecentActivitiesSection(context, ref, runsAsync),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // ── Tab Selector ──────────────────────────────────────────────────────────
+  // ── Top bar ─────────────────────────────────────────────────────────────
 
-  Widget _buildTabSelector() {
-    final tabs = ['Week', 'Month', 'Year', 'All'];
-    const activeTab = 'Month';
+  Widget _buildTopBar(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(8.w, 6.h, 8.w, 6.h),
+      child: Row(
+        children: [
+          IconButton(
+            icon: Icon(Icons.arrow_back_ios_new_rounded,
+                color: AppColors.dText, size: 20.r),
+            onPressed: () => context.pop(),
+          ),
+          const Spacer(),
+          Text(
+            'Baton',
+            style: TextStyle(
+              fontSize: 21.sp,
+              fontWeight: FontWeight.w800,
+              color: AppColors.dAccent,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const Spacer(),
+          IconButton(
+            onPressed: () {},
+            icon: Icon(Icons.notifications_none_rounded,
+                color: AppColors.dText, size: 24.r),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Period selector ───────────────────────────────────────────────────────
+
+  Widget _buildPeriodSelector(WidgetRef ref, ActivityPeriod period) {
+    const items = [
+      (ActivityPeriod.week, 'Week'),
+      (ActivityPeriod.month, 'Month'),
+      (ActivityPeriod.year, 'Year'),
+    ];
 
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: EdgeInsets.all(5.r),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5EBE6),
-        borderRadius: BorderRadius.circular(20),
+        color: AppColors.dCard,
+        borderRadius: BorderRadius.circular(999.r),
+        border: Border.all(color: AppColors.dLine, width: 1),
       ),
       child: Row(
-        children: tabs.map((tab) {
-          final isActive = tab == activeTab;
+        children: items.map((it) {
+          final selected = period == it.$1;
           return Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(
-                color: isActive
-                    ? const Color(0xFFDD6A3E)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                tab,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight:
-                      isActive ? FontWeight.w800 : FontWeight.w600,
-                  color: isActive
-                      ? Colors.white
-                      : const Color(0xFF8C857F),
+            child: GestureDetector(
+              onTap: () =>
+                  ref.read(activityPeriodProvider.notifier).select(it.$1),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: EdgeInsets.symmetric(vertical: 10.h),
+                decoration: BoxDecoration(
+                  color: selected ? AppColors.dAccent : Colors.transparent,
+                  borderRadius: BorderRadius.circular(999.r),
+                ),
+                child: Text(
+                  it.$2,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
+                    color:
+                        selected ? const Color(0xFF160D06) : AppColors.dMuted,
+                  ),
                 ),
               ),
             ),
@@ -132,45 +145,319 @@ class HistoryScreen extends ConsumerWidget {
     );
   }
 
-  // ── Month Selector ────────────────────────────────────────────────────────
+  // ── Period label ──────────────────────────────────────────────────────────
 
-  Widget _buildMonthSelector(
-      BuildContext context, WidgetRef ref, DateTime selectedDate) {
-    final formattedDate = DateFormat('MMMM yyyy').format(selectedDate);
+  Widget _buildPeriodLabel(BuildContext context, WidgetRef ref,
+      DateTime anchor, _ActivityData data) {
+    return GestureDetector(
+      onTap: () async {
+        final picked = await _showMonthYearPicker(context, anchor);
+        if (picked != null) {
+          ref.read(selectedDateProvider.notifier).changeDate(picked);
+        }
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            data.periodLabel,
+            style: TextStyle(
+              fontSize: 22.sp,
+              fontWeight: FontWeight.w800,
+              color: AppColors.dText,
+            ),
+          ),
+          SizedBox(width: 4.w),
+          Icon(Icons.keyboard_arrow_down_rounded,
+              size: 26.r, color: AppColors.dMuted),
+        ],
+      ),
+    );
+  }
 
-    return Row(
-      children: [
-        GestureDetector(
-          onTap: () async {
-            final picked =
-                await _showMonthYearPicker(context, selectedDate);
-            if (picked != null) {
-              ref.read(selectedDateProvider.notifier).changeDate(picked);
-            }
-          },
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+  // ── Stats card ──────────────────────────────────────────────────────────
+
+  Widget _buildStatsCard(_ActivityData data) {
+    return Container(
+      padding: EdgeInsets.all(22.r),
+      decoration: BoxDecoration(
+        color: AppColors.dCard,
+        borderRadius: BorderRadius.circular(26.r),
+        border: Border.all(color: AppColors.dLine, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'KILOMETERS',
+            style: TextStyle(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w800,
+              color: AppColors.dFaint,
+              letterSpacing: 1.6,
+            ),
+          ),
+          SizedBox(height: 6.h),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                formattedDate,
-                style: const TextStyle(
-                  fontSize: 24,
+                data.totalKm.toStringAsFixed(1),
+                style: TextStyle(
+                  fontSize: 56.sp,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1F1A17),
+                  color: AppColors.dText,
+                  height: 1.0,
                 ),
               ),
-              const SizedBox(width: 4),
-              const Icon(
-                Icons.keyboard_arrow_down_rounded,
-                size: 28,
-                color: Color(0xFF1F1A17),
+              SizedBox(width: 6.w),
+              Padding(
+                padding: EdgeInsets.only(bottom: 8.h),
+                child: Text(
+                  'km',
+                  style: TextStyle(
+                    fontSize: 22.sp,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.dMuted,
+                  ),
+                ),
               ),
             ],
+          ),
+          SizedBox(height: 18.h),
+          Row(
+            children: [
+              _statCell('${data.runs}', 'Runs'),
+              _statDivider(),
+              _statCell(data.avgPaceText, 'Avg Pace'),
+              _statDivider(),
+              _statCell(data.timeText, 'Time'),
+            ],
+          ),
+          SizedBox(height: 24.h),
+          _ActivityBarChart(
+            bars: data.bars,
+            labels: data.axisLabels,
+            highlightIndex: data.highlightIndex,
+            showDividers: data.showDividers,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statCell(String value, String label) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 19.sp,
+              fontWeight: FontWeight.w800,
+              color: AppColors.dText,
+            ),
+          ),
+          SizedBox(height: 3.h),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.5.sp,
+              fontWeight: FontWeight.w600,
+              color: AppColors.dFaint,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statDivider() {
+    return Container(
+      width: 1,
+      height: 34.h,
+      color: AppColors.dLine,
+      margin: EdgeInsets.symmetric(horizontal: 14.w),
+    );
+  }
+
+  // ── Recent activities ─────────────────────────────────────────────────────
+
+  Widget _buildRecentActivities(BuildContext context, List<RunListItem> runs) {
+    final sorted = [...runs]
+      ..sort((a, b) => b.startTime.compareTo(a.startTime));
+    final recent = sorted.take(8).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Recent Activities',
+          style: TextStyle(
+            fontSize: 20.sp,
+            fontWeight: FontWeight.w800,
+            color: AppColors.dText,
+          ),
+        ),
+        SizedBox(height: 14.h),
+        if (recent.isEmpty)
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 28.h),
+            child: Center(
+              child: Text(
+                '러닝 기록이 없어요.',
+                style: TextStyle(fontSize: 14.sp, color: AppColors.dMuted),
+              ),
+            ),
+          )
+        else
+          ...recent.map((r) => _buildActivityCard(context, r)),
+      ],
+    );
+  }
+
+  Widget _buildActivityCard(BuildContext context, RunListItem run) {
+    return GestureDetector(
+      onTap: () => context.push('${AppRoutes.runDetail}/${run.runId}'),
+      child: Container(
+        margin: EdgeInsets.only(bottom: 13.h),
+        padding: EdgeInsets.all(12.r),
+        decoration: BoxDecoration(
+          color: AppColors.dCard,
+          borderRadius: BorderRadius.circular(26.r),
+          border: Border.all(color: AppColors.dLine, width: 1),
+        ),
+        child: Row(
+          children: [
+            // route thumbnail
+            Container(
+              width: 50.r,
+              height: 50.r,
+              decoration: BoxDecoration(
+                color: AppColors.dCard2,
+                borderRadius: BorderRadius.circular(14.r),
+              ),
+              child: CustomPaint(painter: _RouteThumbPainter()),
+            ),
+            SizedBox(width: 11.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _runTitle(run.startTime),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.dText,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      Text(
+                        DateFormat('MMM d').format(run.startTime),
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.dFaint,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 6.h),
+                  Row(
+                    children: [
+                      _miniStat(run.totalDistanceKm.toStringAsFixed(2), 'KM'),
+                      SizedBox(width: 12.w),
+                      _miniStat(run.avgPaceText, 'PACE'),
+                      SizedBox(width: 12.w),
+                      _miniStat(
+                          _formatDuration(run.durationSeconds), 'TIME'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: 4.w),
+            Icon(Icons.chevron_right_rounded,
+                size: 20.r, color: AppColors.dFaint),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _miniStat(String value, String unit) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13.5.sp,
+            fontWeight: FontWeight.w800,
+            color: AppColors.dText,
+          ),
+        ),
+        SizedBox(width: 3.w),
+        Text(
+          unit,
+          style: TextStyle(
+            fontSize: 9.5.sp,
+            fontWeight: FontWeight.w700,
+            color: AppColors.dFaint,
+            letterSpacing: 0.3,
           ),
         ),
       ],
     );
   }
+
+  // ── States ────────────────────────────────────────────────────────────────
+
+  Widget _loadingBox() => Padding(
+        padding: EdgeInsets.symmetric(vertical: 60.h),
+        child: const Center(
+          child: CircularProgressIndicator(color: AppColors.dAccent),
+        ),
+      );
+
+  Widget _errorBox(WidgetRef ref, Object e) => Container(
+        padding: EdgeInsets.all(20.r),
+        decoration: BoxDecoration(
+          color: AppColors.dCard,
+          borderRadius: BorderRadius.circular(20.r),
+          border: Border.all(color: AppColors.dLine),
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.error_outline_rounded,
+                color: AppColors.dRouteEnd, size: 32.r),
+            SizedBox(height: 8.h),
+            Text(
+              '활동 정보를 가져오지 못했어요.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.dMuted, fontSize: 13.sp),
+            ),
+            SizedBox(height: 12.h),
+            TextButton(
+              onPressed: () => ref.invalidate(allRunsProvider),
+              child: const Text('다시 시도'),
+            ),
+          ],
+        ),
+      );
+
+  // ── Month/Year picker ──────────────────────────────────────────────────────
 
   Future<DateTime?> _showMonthYearPicker(
       BuildContext context, DateTime current) {
@@ -181,14 +468,15 @@ class HistoryScreen extends ConsumerWidget {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.dCard,
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text(
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
             '조회 기간 선택',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 16.sp,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF1F1A17),
+              color: AppColors.dText,
             ),
           ),
           content: Row(
@@ -196,61 +484,47 @@ class HistoryScreen extends ConsumerWidget {
             children: [
               DropdownButton<int>(
                 value: selectedYear,
+                dropdownColor: AppColors.dCard2,
                 underline: const SizedBox.shrink(),
-                style: const TextStyle(
-                  fontSize: 18,
+                style: TextStyle(
+                  fontSize: 18.sp,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1F1A17),
+                  color: AppColors.dText,
                 ),
                 items: List.generate(8, (i) => 2022 + i)
-                    .map((y) => DropdownMenuItem(
-                          value: y,
-                          child: Text('$y년'),
-                        ))
+                    .map((y) =>
+                        DropdownMenuItem(value: y, child: Text('$y년')))
                     .toList(),
-                onChanged: (v) =>
-                    setDialogState(() => selectedYear = v!),
+                onChanged: (v) => setDialogState(() => selectedYear = v!),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               DropdownButton<int>(
                 value: selectedMonth,
+                dropdownColor: AppColors.dCard2,
                 underline: const SizedBox.shrink(),
-                style: const TextStyle(
-                  fontSize: 18,
+                style: TextStyle(
+                  fontSize: 18.sp,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1F1A17),
+                  color: AppColors.dText,
                 ),
                 items: List.generate(12, (i) => i + 1)
-                    .map((m) => DropdownMenuItem(
-                          value: m,
-                          child: Text('$m월'),
-                        ))
+                    .map((m) =>
+                        DropdownMenuItem(value: m, child: Text('$m월')))
                     .toList(),
-                onChanged: (v) =>
-                    setDialogState(() => selectedMonth = v!),
+                onChanged: (v) => setDialogState(() => selectedMonth = v!),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text(
-                '취소',
-                style: TextStyle(color: Color(0xFF8C857F)),
-              ),
+              child: Text('취소',
+                  style: TextStyle(color: AppColors.dMuted)),
             ),
             TextButton(
-              onPressed: () => Navigator.pop(
-                context,
-                DateTime(selectedYear, selectedMonth),
-              ),
-              child: const Text(
-                '확인',
-                style: TextStyle(
-                  color: Color(0xFFDD6A3E),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              onPressed: () =>
+                  Navigator.pop(context, DateTime(selectedYear, selectedMonth)),
+              child: const Text('확인'),
             ),
           ],
         ),
@@ -258,321 +532,7 @@ class HistoryScreen extends ConsumerWidget {
     );
   }
 
-  // ── Summary Content ───────────────────────────────────────────────────────
-
-  Widget _buildSummaryContent(
-      MonthlySummaryModel summary, List<RunListItem> runs) {
-    final totalSeconds =
-        (summary.avgPaceSecPerKm * summary.totalDistanceKm).round();
-    final durationText = _formatDuration(totalSeconds);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          summary.totalDistanceKm.toStringAsFixed(1),
-          style: const TextStyle(
-            fontSize: 64,
-            fontWeight: FontWeight.w900,
-            color: Color(0xFF1F1A17),
-            height: 1.1,
-          ),
-        ),
-        const Text(
-          'KILOMETERS',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF8C857F),
-            letterSpacing: 0.8,
-          ),
-        ),
-        const SizedBox(height: 24),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildStatItem(value: '${summary.totalRuns}', label: 'Runs'),
-            _buildStatItem(value: summary.avgPaceText, label: 'Avg Pace'),
-            _buildStatItem(value: durationText, label: 'Time'),
-          ],
-        ),
-        const SizedBox(height: 32),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFDD6A3E).withValues(alpha: 0.04),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: SizedBox(
-            height: 160,
-            child: _RunDistanceChart(runs: runs),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatItem({required String value, required String label}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF1F1A17),
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF8C857F),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSummaryError(WidgetRef ref, Object err) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFEBEE),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          const Icon(Icons.error_outline_rounded,
-              color: Color(0xFFC62828), size: 32),
-          const SizedBox(height: 8),
-          Text(
-            '요약 정보를 가져오지 못했습니다.\n($err)',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-                color: Color(0xFFC62828),
-                fontWeight: FontWeight.w600,
-                fontSize: 13),
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton(
-            onPressed: () => ref.refresh(monthlySummaryProvider),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFDD6A3E),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('다시 시도',
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Recent Activities ─────────────────────────────────────────────────────
-
-  Widget _buildRecentActivitiesSection(
-      BuildContext context, WidgetRef ref, AsyncValue<List<RunListItem>> runsAsync) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Recent Activities',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF1F1A17),
-          ),
-        ),
-        const SizedBox(height: 16),
-        runsAsync.when(
-          loading: () => const Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 20),
-              child:
-                  CircularProgressIndicator(color: Color(0xFFDD6A3E)),
-            ),
-          ),
-          error: (e, _) => _buildActivitiesError(ref),
-          data: (runs) {
-            if (runs.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 32),
-                child: Center(
-                  child: Text(
-                    '이번 달 러닝 기록이 없어요.',
-                    style: TextStyle(
-                        fontSize: 14, color: Color(0xFF8C857F)),
-                  ),
-                ),
-              );
-            }
-            // 최신순 정렬
-            final sorted = [...runs]
-              ..sort((a, b) => b.startTime.compareTo(a.startTime));
-            return Column(
-              children: sorted
-                  .map((r) => _buildRunCard(context, r))
-                  .toList(),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRunCard(BuildContext context, RunListItem run) {
-    final dateLabel =
-        '${DateFormat('MMM d, yyyy').format(run.startTime)} · ${DateFormat('h:mm a').format(run.startTime)}';
-    final title = _runTitle(run.startTime);
-    final distanceStr = run.totalDistanceKm.toStringAsFixed(2);
-
-    return GestureDetector(
-      onTap: () => context.push('${AppRoutes.runDetail}/${run.runId}'),
-      child: Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              _buildRunIcon(),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      dateLabel,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1F1A17),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF8C857F),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Divider(height: 1, color: Color(0xFFF3EDE9)),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildActivityStat(value: distanceStr, label: 'KM'),
-              _buildActivityStat(value: run.avgPaceText, label: 'PACE'),
-              _buildActivityStat(
-                  value: _formatDuration(run.durationSeconds), label: 'TIME'),
-            ],
-          ),
-        ],
-      ),
-      ),
-    );
-  }
-
-  Widget _buildRunIcon() {
-    return Container(
-      width: 52,
-      height: 52,
-      decoration: const BoxDecoration(
-        color: Color(0xFFFEECE6),
-        shape: BoxShape.circle,
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(26),
-        child: CustomPaint(
-          painter: _PathLinePainter(const Color(0xFFDD6A3E)),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActivityStat(
-      {required String value, required String label}) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF1F1A17),
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF8C857F),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActivitiesError(WidgetRef ref) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFEBEE),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          const Text(
-            '러닝 목록을 불러오지 못했습니다.',
-            style: TextStyle(
-                color: Color(0xFFC62828), fontWeight: FontWeight.w600),
-          ),
-          TextButton(
-            onPressed: () => ref.invalidate(myRunsProvider),
-            child: const Text('다시 시도',
-                style: TextStyle(color: Color(0xFFDD6A3E))),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Helpers ───────────────────────────────────────────────────────────────
+  // ── Helpers ─────────────────────────────────────────────────────────────
 
   String _runTitle(DateTime time) {
     final hour = time.hour;
@@ -591,108 +551,269 @@ class HistoryScreen extends ConsumerWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Run Distance Bar Chart
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// Aggregation — Week / Month / Year buckets from the real run list
+// ===========================================================================
 
-class _RunDistanceChart extends StatelessWidget {
-  const _RunDistanceChart({required this.runs});
-  final List<RunListItem> runs;
+class _ActivityData {
+  const _ActivityData({
+    required this.bars,
+    required this.axisLabels,
+    required this.highlightIndex,
+    required this.showDividers,
+    required this.totalKm,
+    required this.runs,
+    required this.avgPaceText,
+    required this.timeText,
+    required this.periodLabel,
+  });
+
+  final List<double> bars;
+  final List<String> axisLabels;
+  final int highlightIndex;
+  final bool showDividers;
+  final double totalKm;
+  final int runs;
+  final String avgPaceText;
+  final String timeText;
+  final String periodLabel;
+}
+
+_ActivityData _aggregate(
+    ActivityPeriod period, DateTime anchor, List<RunListItem> all) {
+  final List<double> bars;
+  final List<String> labels;
+  final periodRuns = <RunListItem>[];
+  bool showDividers = false;
+  String periodLabel;
+
+  switch (period) {
+    case ActivityPeriod.week:
+      final base = DateTime(anchor.year, anchor.month, anchor.day);
+      final monday = base.subtract(Duration(days: base.weekday - 1));
+      bars = List.filled(7, 0.0);
+      for (final run in all) {
+        final d = DateTime(
+            run.startTime.year, run.startTime.month, run.startTime.day);
+        final idx = d.difference(monday).inDays;
+        if (idx >= 0 && idx < 7) {
+          bars[idx] += run.totalDistanceKm;
+          periodRuns.add(run);
+        }
+      }
+      labels = const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      final sunday = monday.add(const Duration(days: 6));
+      periodLabel = monday.month == sunday.month
+          ? '${DateFormat('MMM d').format(monday)} – ${sunday.day}'
+          : '${DateFormat('MMM d').format(monday)} – ${DateFormat('MMM d').format(sunday)}';
+
+    case ActivityPeriod.month:
+      final daysInMonth = DateUtils.getDaysInMonth(anchor.year, anchor.month);
+      final weeks = (daysInMonth / 7).ceil();
+      bars = List.filled(weeks, 0.0);
+      for (final run in all) {
+        if (run.startTime.year == anchor.year &&
+            run.startTime.month == anchor.month) {
+          final idx = ((run.startTime.day - 1) ~/ 7).clamp(0, weeks - 1);
+          bars[idx] += run.totalDistanceKm;
+          periodRuns.add(run);
+        }
+      }
+      labels = List.generate(weeks, (i) => 'W${i + 1}');
+      showDividers = true;
+      periodLabel = DateFormat('MMMM yyyy').format(anchor);
+
+    case ActivityPeriod.year:
+      bars = List.filled(12, 0.0);
+      for (final run in all) {
+        if (run.startTime.year == anchor.year) {
+          bars[run.startTime.month - 1] += run.totalDistanceKm;
+          periodRuns.add(run);
+        }
+      }
+      labels = const [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      periodLabel = '${anchor.year}';
+  }
+
+  final totalKm = periodRuns.fold(0.0, (p, r) => p + r.totalDistanceKm);
+  final totalTime = periodRuns.fold(0, (p, r) => p + r.durationSeconds);
+  final avgPaceSec = totalKm > 0 ? (totalTime / totalKm).round() : 0;
+
+  // highlight = bucket with the max value
+  int highlight = -1;
+  double maxV = 0;
+  for (var i = 0; i < bars.length; i++) {
+    if (bars[i] > maxV) {
+      maxV = bars[i];
+      highlight = i;
+    }
+  }
+
+  return _ActivityData(
+    bars: bars,
+    axisLabels: labels,
+    highlightIndex: highlight,
+    showDividers: showDividers,
+    totalKm: totalKm,
+    runs: periodRuns.length,
+    avgPaceText: _paceText(avgPaceSec),
+    timeText: _durationText(totalTime),
+    periodLabel: periodLabel,
+  );
+}
+
+String _paceText(int secPerKm) {
+  if (secPerKm <= 0) return "--'--\"";
+  final m = secPerKm ~/ 60;
+  final s = secPerKm % 60;
+  return "$m'${s.toString().padLeft(2, '0')}\"";
+}
+
+String _durationText(int seconds) {
+  if (seconds <= 0) return '0:00:00';
+  final h = seconds ~/ 3600;
+  final m = (seconds % 3600) ~/ 60;
+  final s = seconds % 60;
+  return '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+}
+
+// ===========================================================================
+// Bar chart — equal-width flex columns, animated heights, zero stubs
+// ===========================================================================
+
+class _ActivityBarChart extends StatelessWidget {
+  const _ActivityBarChart({
+    required this.bars,
+    required this.labels,
+    required this.highlightIndex,
+    required this.showDividers,
+  });
+
+  final List<double> bars;
+  final List<String> labels;
+  final int highlightIndex;
+  final bool showDividers;
 
   @override
   Widget build(BuildContext context) {
-    if (runs.isEmpty) {
-      return const Center(
-        child: Text(
-          '이번 달 러닝 기록이 없어요.',
-          style: TextStyle(fontSize: 13, color: Color(0xFF8C857F)),
-        ),
-      );
-    }
-
-    // 최대 15개 표시 (최신순)
-    final display = runs.length > 15
-        ? runs.sublist(runs.length - 15)
-        : runs;
-
-    final maxDist =
-        display.map((r) => r.totalDistanceKm).reduce(max);
-    const maxBarHeight = 100.0;
+    final maxV = bars.fold(0.0, (p, e) => e > p ? e : p);
+    final chartH = 96.h;
 
     return Column(
       children: [
-        Expanded(
+        SizedBox(
+          height: chartH,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             crossAxisAlignment: CrossAxisAlignment.end,
-            children: display.map((run) {
-              final ratio = maxDist > 0
-                  ? run.totalDistanceKm / maxDist
-                  : 0.0;
-              final barH =
-                  (ratio * maxBarHeight).clamp(6.0, maxBarHeight);
+            children: List.generate(bars.length, (i) {
+              final v = bars[i];
+              final isZero = v <= 0;
+              final ratio = maxV > 0 ? (v / maxV) : 0.0;
+              final h = isZero
+                  ? chartH * 0.04
+                  : (ratio * chartH).clamp(chartH * 0.06, chartH);
 
-              return Tooltip(
-                message:
-                    '${run.totalDistanceKm.toStringAsFixed(1)} km',
-                child: Container(
-                  width: 10,
-                  height: barH,
+              return Expanded(
+                child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: const Color(0xFFDD6A3E),
-                    borderRadius: BorderRadius.circular(4),
+                    border: showDividers && i < bars.length - 1
+                        ? Border(
+                            right: BorderSide(color: AppColors.dLine, width: 1),
+                          )
+                        : null,
+                  ),
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 420),
+                      curve: const Cubic(0.2, 0.8, 0.2, 1),
+                      width: 16.w,
+                      height: h,
+                      decoration: BoxDecoration(
+                        gradient: isZero
+                            ? null
+                            : const LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  AppColors.dAccentBright,
+                                  AppColors.dAccent,
+                                ],
+                              ),
+                        color: isZero
+                            ? Colors.white.withValues(alpha: 0.07)
+                            : null,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(6),
+                          bottom: Radius.circular(2),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               );
-            }).toList(),
+            }),
           ),
         ),
-        const SizedBox(height: 12),
-        const Divider(height: 1, color: Color(0xFFF3EDE9)),
-        const SizedBox(height: 6),
+        Container(height: 1, color: AppColors.dLine),
+        SizedBox(height: 8.h),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: display
-              .map((run) => Text(
-                    '${run.startTime.day}',
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: Color(0xFF8C857F),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ))
-              .toList(),
+          children: List.generate(labels.length, (i) {
+            final highlighted = i == highlightIndex;
+            return Expanded(
+              child: Text(
+                labels[i],
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 10.sp,
+                  fontWeight: highlighted ? FontWeight.w800 : FontWeight.w600,
+                  color: highlighted ? AppColors.dAccent : AppColors.dFaint,
+                ),
+              ),
+            );
+          }),
         ),
       ],
     );
   }
 }
 
-// ---------------------------------------------------------------------------
-// Path Icon Painter
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// Route thumbnail painter — mini map line with start/end dots
+// ===========================================================================
 
-class _PathLinePainter extends CustomPainter {
-  const _PathLinePainter(this.color);
-  final Color color;
-
+class _RouteThumbPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 2.0
+    final line = Paint()
+      ..color = AppColors.dAccent
+      ..strokeWidth = 2.4
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 
-    final path = Path();
-    path.moveTo(size.width * 0.2, size.height * 0.8);
-    path.quadraticBezierTo(
-      size.width * 0.5,
-      size.height * 0.1,
-      size.width * 0.8,
-      size.height * 0.5,
+    final path = Path()
+      ..moveTo(size.width * 0.22, size.height * 0.72)
+      ..quadraticBezierTo(
+        size.width * 0.45,
+        size.height * 0.12,
+        size.width * 0.78,
+        size.height * 0.40,
+      );
+    canvas.drawPath(path, line);
+
+    canvas.drawCircle(
+      Offset(size.width * 0.22, size.height * 0.72),
+      2.8,
+      Paint()..color = AppColors.dRouteStart,
     );
-    canvas.drawPath(path, paint);
+    canvas.drawCircle(
+      Offset(size.width * 0.78, size.height * 0.40),
+      2.8,
+      Paint()..color = AppColors.dRouteEnd,
+    );
   }
 
   @override

@@ -339,7 +339,7 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
     final cards = _cards;
 
     return Scaffold(
-      backgroundColor: AppColors.scaffoldGrey,
+      backgroundColor: AppColors.dScreen,
       body: SafeArea(
         bottom: false,
         child: Padding(
@@ -362,7 +362,7 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
                         Text(
                           'COMMUNITY FEED',
                           style: TextStyle(
-                            color: AppColors.sectionLabel,
+                            color: AppColors.dAccent,
                             fontSize: 13.sp,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.8,
@@ -372,7 +372,7 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
                         Text(
                           '소셜',
                           style: TextStyle(
-                            color: AppColors.textPrimary,
+                            color: AppColors.dText,
                             fontSize: 22.sp,
                             fontWeight: FontWeight.w900,
                             height: 1.1,
@@ -441,12 +441,12 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
-                  Icon(Icons.error_outline, size: 40.r, color: Colors.black38),
+                  Icon(Icons.error_outline, size: 40.r, color: AppColors.dFaint),
                   const SizedBox(height: 12),
                   Text(
                     _loadError!,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.black54),
+                    style: const TextStyle(color: AppColors.dMuted),
                   ),
                   const SizedBox(height: 12),
                   TextButton(
@@ -471,12 +471,12 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
-                  Icon(Icons.directions_run_rounded, size: 48.r, color: Colors.black26),
+                  Icon(Icons.directions_run_rounded, size: 48.r, color: AppColors.dFaint),
                   SizedBox(height: 12),
                   Text(
                     '아직 모집 중인 그룹이 없어요.\n+ 모집하기 버튼으로 첫 방을 열어보세요!',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.black54, height: 1.4),
+                    style: TextStyle(color: AppColors.dMuted, height: 1.4),
                   ),
                 ],
               ),

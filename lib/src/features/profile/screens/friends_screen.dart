@@ -39,30 +39,30 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.scaffoldGrey,
+      backgroundColor: AppColors.dScreen,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.dScreen,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.of(context).maybePop(),
           icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20.r),
-          color: AppColors.primary,
+          color: AppColors.dAccent,
         ),
         title: Text(
           '친구',
           style: TextStyle(
             fontSize: 18.sp,
             fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
+            color: AppColors.dText,
           ),
         ),
         centerTitle: true,
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
-          indicatorColor: AppColors.primary,
+          labelColor: AppColors.dAccent,
+          unselectedLabelColor: AppColors.dMuted,
+          indicatorColor: AppColors.dAccent,
           indicatorWeight: 2.5,
           labelStyle: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w700),
           unselectedLabelStyle:
@@ -301,7 +301,7 @@ class _FriendTileState extends ConsumerState<_FriendTile> {
           style: TextStyle(
             fontSize: 16.sp,
             fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            color: AppColors.dText,
           ),
         ),
       ),
@@ -315,7 +315,7 @@ class _FriendTileState extends ConsumerState<_FriendTile> {
         return IconButton(
           onPressed: widget.onDelete,
           icon: const Icon(Icons.person_remove_rounded),
-          color: AppColors.textSecondary,
+          color: AppColors.dMuted,
           tooltip: '팔로잉 삭제',
         );
 
@@ -341,7 +341,7 @@ class _FriendTileState extends ConsumerState<_FriendTile> {
           return Container(
             padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
             decoration: BoxDecoration(
-              color: AppColors.divider,
+              color: AppColors.dCard2,
               borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
             ),
             child: Text(
@@ -349,7 +349,7 @@ class _FriendTileState extends ConsumerState<_FriendTile> {
               style: TextStyle(
                 fontSize: 12.sp,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
+                color: AppColors.dMuted,
               ),
             ),
           );
@@ -403,7 +403,7 @@ Widget _buildError(WidgetRef ref, {required VoidCallback onRetry}) {
             Text(
               '목록을 불러오지 못했어요.',
               style: TextStyle(
-                color: AppColors.textSecondary,
+                color: AppColors.dMuted,
                 fontSize: 14.sp,
               ),
             ),
@@ -438,13 +438,13 @@ Widget _buildEmpty(String message) {
             Icon(
               Icons.people_outline_rounded,
               size: 48.r,
-              color: AppColors.divider,
+              color: AppColors.dLine2,
             ),
             SizedBox(height: 12.h),
             Text(
               message,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.dMuted,
                 fontWeight: FontWeight.w500,
               ),
             ),

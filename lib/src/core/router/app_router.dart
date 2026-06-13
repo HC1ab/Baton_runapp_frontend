@@ -9,13 +9,16 @@ import '../../features/auth/screens/splash_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/profile/screens/history_screen.dart';
 import '../../features/profile/screens/run_detail_screen.dart';
+import '../../features/settings/data/legal_documents.dart';
 import '../../features/settings/screens/account_screen.dart';
+import '../../features/settings/screens/legal_document_screen.dart';
 import '../../features/settings/screens/notice_detail_screen.dart';
 import '../../features/settings/screens/notice_list_screen.dart';
 import '../../features/profile/screens/friends_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/run_share/models/run_share_data.dart';
 import '../../features/run_share/screens/run_share_screen.dart';
+import '../../features/spot/screens/spot_detail_screen.dart';
 import '../../features/shop/screens/shop_screen.dart';
 import '../constants/app_routes.dart';
 
@@ -91,6 +94,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const AccountScreen(),
       ),
       GoRoute(
+        path: AppRoutes.privacyPolicy,
+        builder: (_, __) => const LegalDocumentScreen(
+          title: '개인정보처리방침',
+          content: LegalDocuments.privacyPolicy,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.termsOfService,
+        builder: (_, __) => const LegalDocumentScreen(
+          title: '이용약관',
+          content: LegalDocuments.termsOfService,
+        ),
+      ),
+      GoRoute(
         path: AppRoutes.noticeList,
         builder: (_, __) => const NoticeListScreen(),
       ),
@@ -111,6 +128,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.runShare,
         builder: (_, state) => RunShareScreen(
           data: state.extra as RunShareData,
+        ),
+      ),
+      GoRoute(
+        path: '${AppRoutes.spotDetail}/:spotId',
+        builder: (_, state) => SpotDetailScreen(
+          spotId: int.parse(state.pathParameters['spotId']!),
         ),
       ),
       // RunningScreen은 HomeScreen의 IndexedStack 안에 포함됨

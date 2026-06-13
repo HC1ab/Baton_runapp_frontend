@@ -30,7 +30,7 @@ class NotificationBellWidget extends ConsumerWidget {
         clipBehavior: Clip.none,
         children: [
           Icon(Icons.notifications_rounded,
-              color: AppColors.iconNeutral, size: 22.r),
+              color: AppColors.dMuted, size: 22.r),
           if (count > 0)
             Positioned(
               top: -4,

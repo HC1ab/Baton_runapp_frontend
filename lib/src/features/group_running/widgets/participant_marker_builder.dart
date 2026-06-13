@@ -117,7 +117,7 @@ Future<BytesMapBitmap?> buildParticipantMarkerBitmap({
       final nickPainter = _makePainter(
         nickname,
         fontSize: nickFontLogical * dpr,
-        color: AppColors.textPrimary,
+        color: AppColors.dText,
         bold: true,
       );
       nickPainter.layout(maxWidth: canvasWidthPx);
@@ -133,7 +133,7 @@ Future<BytesMapBitmap?> buildParticipantMarkerBitmap({
       final titlePainter = _makePainter(
         titleName,
         fontSize: titleFontLogical * dpr,
-        color: AppColors.textSecondary,
+        color: AppColors.dMuted,
         bold: false,
       );
       titlePainter.layout(maxWidth: canvasWidthPx);

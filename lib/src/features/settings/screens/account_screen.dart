@@ -17,13 +17,13 @@ class AccountScreen extends ConsumerWidget {
     final meAsync = ref.watch(memberMeProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: AppColors.dScreen,
       appBar: AppBar(
-        backgroundColor: AppColors.backgroundLight,
+        backgroundColor: AppColors.dScreen,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.textPrimary, size: 20.r),
+              color: AppColors.dText, size: 20.r),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -93,15 +93,9 @@ class AccountScreen extends ConsumerWidget {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.dCard,
         borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: AppColors.dLine, width: 1),
       ),
       child: Column(children: children),
     );
@@ -111,15 +105,9 @@ class AccountScreen extends ConsumerWidget {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.dCard,
         borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: AppColors.dLine, width: 1),
       ),
       child: Column(children: children),
     );
@@ -134,7 +122,7 @@ class AccountScreen extends ConsumerWidget {
           SizedBox(height: 12.h),
           Text('정보를 불러오지 못했어요.',
               style: AppTextStyles.bodyMedium
-                  .copyWith(color: AppColors.textSecondary)),
+                  .copyWith(color: AppColors.dMuted)),
           SizedBox(height: 12.h),
           TextButton(
             onPressed: () => ref.invalidate(memberMeProvider),
@@ -155,7 +143,7 @@ class AccountScreen extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.dCard,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
       ),
@@ -178,7 +166,7 @@ class AccountScreen extends ConsumerWidget {
                     width: 40.w,
                     height: 4.h,
                     decoration: BoxDecoration(
-                      color: AppColors.divider,
+                      color: AppColors.dLine2,
                       borderRadius: BorderRadius.circular(2.r),
                     ),
                   ),
@@ -283,7 +271,7 @@ class AccountScreen extends ConsumerWidget {
             Text(
               '탈퇴 시 모든 데이터가 삭제되며\n복구할 수 없어요. 정말 탈퇴하시겠어요?',
               style: AppTextStyles.bodyMedium
-                  .copyWith(color: AppColors.textSecondary),
+                  .copyWith(color: AppColors.dMuted),
             ),
             SizedBox(height: 16.h),
             TextField(
@@ -292,7 +280,7 @@ class AccountScreen extends ConsumerWidget {
               decoration: InputDecoration(
                 hintText: '비밀번호 입력',
                 filled: true,
-                fillColor: AppColors.backgroundLight,
+                fillColor: AppColors.dCard2,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12.r),
                   borderSide: BorderSide.none,
@@ -306,7 +294,7 @@ class AccountScreen extends ConsumerWidget {
             onPressed: () => Navigator.of(ctx).pop(),
             child: Text('취소',
                 style: AppTextStyles.labelLarge
-                    .copyWith(color: AppColors.textSecondary)),
+                    .copyWith(color: AppColors.dMuted)),
           ),
           TextButton(
             onPressed: () async {
@@ -350,7 +338,7 @@ class _SectionHeader extends StatelessWidget {
         style: TextStyle(
           fontSize: 12.sp,
           fontWeight: FontWeight.w700,
-          color: AppColors.textSecondary,
+          color: AppColors.dMuted,
           letterSpacing: 0.8,
         ),
       ),
@@ -373,14 +361,14 @@ class _InfoRow extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14.sp,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
+                color: AppColors.dMuted,
               )),
           const Spacer(),
           Text(value,
               style: TextStyle(
                 fontSize: 14.sp,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: AppColors.dText,
               )),
         ],
       ),
@@ -392,7 +380,7 @@ class _Divider extends StatelessWidget {
   const _Divider();
   @override
   Widget build(BuildContext context) =>
-      Divider(height: 1, indent: 20.w, endIndent: 20.w, color: AppColors.divider);
+      Divider(height: 1, indent: 20.w, endIndent: 20.w, color: AppColors.dLine);
 }
 
 class _ActionTile extends StatelessWidget {
@@ -435,13 +423,13 @@ class _ActionTile extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15.sp,
                 fontWeight: FontWeight.w600,
-                color: labelColor ?? AppColors.textPrimary,
+                color: labelColor ?? AppColors.dText,
               ),
             ),
             const Spacer(),
             if (showArrow)
               Icon(Icons.arrow_forward_ios_rounded,
-                  size: 14.r, color: AppColors.textSecondary),
+                  size: 14.r, color: AppColors.dMuted),
           ],
         ),
       ),
@@ -468,7 +456,7 @@ class _PwField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         filled: true,
-        fillColor: AppColors.backgroundLight,
+        fillColor: AppColors.dCard2,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12.r),
           borderSide: BorderSide.none,

@@ -61,7 +61,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final loginState = ref.watch(loginProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: AppColors.dScreen,
       body: SafeArea(
         child: GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
@@ -139,7 +139,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       Text(
                         '계정이 없으신가요?',
                         style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
+                          color: AppColors.dMuted,
                         ),
                       ),
                       TextButton(
@@ -197,7 +197,7 @@ class _Header extends StatelessWidget {
         Text(
           'BATON',
           style: AppTextStyles.displayMedium.copyWith(
-            color: AppColors.textPrimary,
+            color: AppColors.dText,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -205,7 +205,7 @@ class _Header extends StatelessWidget {
         Text(
           '로그인하고 오늘의 러닝을 시작해보세요.',
           style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
+            color: AppColors.dMuted,
           ),
         ),
       ],
@@ -311,7 +311,7 @@ class _EmailField extends StatelessWidget {
       keyboardType: TextInputType.emailAddress,
       textInputAction: TextInputAction.next,
       autofillHints: const [AutofillHints.email],
-      style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
+      style: AppTextStyles.bodyLarge.copyWith(color: AppColors.dText),
       decoration: InputDecoration(
         labelText: '이메일',
         hintText: 'hello@example.com',
@@ -342,7 +342,7 @@ class _PasswordField extends StatelessWidget {
       obscureText: obscure,
       textInputAction: TextInputAction.done,
       autofillHints: const [AutofillHints.password],
-      style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary),
+      style: AppTextStyles.bodyLarge.copyWith(color: AppColors.dText),
       decoration: InputDecoration(
         labelText: '비밀번호',
         prefixIcon: const Icon(Icons.lock_outline),
@@ -351,7 +351,7 @@ class _PasswordField extends StatelessWidget {
             obscure
                 ? Icons.visibility_outlined
                 : Icons.visibility_off_outlined,
-            color: AppColors.textSecondary,
+            color: AppColors.dMuted,
           ),
           onPressed: onToggleObscure,
         ),

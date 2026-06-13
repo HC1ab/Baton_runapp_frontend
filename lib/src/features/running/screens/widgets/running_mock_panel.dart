@@ -1,12 +1,12 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
 
-/// Developer-only panel for simulating GPS movement.
-/// Only rendered when _isDev is true — never shown in production builds.
+/// Developer-only "Mock Runner" panel for simulating GPS movement.
+/// Glass dark card (redesign). Only rendered when _isDev is true.
 class RunningMockPanel extends StatelessWidget {
   const RunningMockPanel({
     super.key,
@@ -34,131 +34,190 @@ class RunningMockPanel extends StatelessWidget {
     return "$min'${sec.toString().padLeft(2, '0')}\"";
   }
 
+  static const _paces = <(double, String)>[
+    (2.77, "6'00"),
+    (3.33, "5'00"),
+    (4.16, "4'00"),
+    (5.55, "3'00"),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        border: Border.all(color: scheme.outline.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '🛠  Mock Runner',
-                style: AppTextStyles.labelLarge.copyWith(
-                  color: AppColors.primary,
-                ),
-              ),
-              if (isAutoWalk) const _BlinkingDot(),
-            ],
-          ),
-          SizedBox(height: AppSpacing.sm),
-
-          // Speed label
-          Text(
-            '속도: ${stepMeters.toStringAsFixed(2)} m/s  (${_paceLabel(stepMeters)} /km)',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: scheme.onSurfaceVariant,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20.r),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          padding: EdgeInsets.all(14.r),
+          decoration: BoxDecoration(
+            color: const Color(0xBC28282B), // card-2 @ 0.74
+            borderRadius: BorderRadius.circular(20.r),
+            border: Border.all(
+              color: AppColors.dAccent.withValues(alpha: 0.22),
+              width: 1,
             ),
           ),
-          SizedBox(height: AppSpacing.sm),
-
-          // Speed selector
-          SegmentedButton<double>(
-            showSelectedIcon: false,
-            segments: const [
-              ButtonSegment(value: 2.77, label: Text("6'00")),
-              ButtonSegment(value: 3.33, label: Text("5'00")),
-              ButtonSegment(value: 4.16, label: Text("4'00")),
-              ButtonSegment(value: 5.55, label: Text("3'00")),
-            ],
-            selected: {stepMeters},
-            onSelectionChanged: isBusy ? null : (s) => onChangeStep(s.first),
-          ),
-          SizedBox(height: AppSpacing.sm),
-
-          // Controls
-          Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                flex: 2,
-                child: FilledButton.icon(
-                  onPressed: isBusy ? null : onToggleAutoWalk,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: isAutoWalk
-                        ? scheme.errorContainer
-                        : scheme.primaryContainer,
-                    foregroundColor: isAutoWalk
-                        ? scheme.error
-                        : scheme.onPrimaryContainer,
+              // Header
+              Row(
+                children: [
+                  Container(
+                    width: 8.r,
+                    height: 8.r,
+                    decoration: BoxDecoration(
+                      color: AppColors.dAccentBright,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.dAccentBright.withValues(alpha: 0.7),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
                   ),
-                  icon: Icon(
-                    isAutoWalk ? Icons.pause_circle : Icons.play_circle,
-                    size: 18.r,
+                  SizedBox(width: 8.w),
+                  Text(
+                    'Mock Runner',
+                    style: TextStyle(
+                      fontSize: 15.5.sp,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.dAccentBright,
+                    ),
                   ),
-                  label: Text(isAutoWalk ? '중단' : '자동 이동'),
+                ],
+              ),
+              SizedBox(height: 5.h),
+              Text(
+                '속도 ${stepMeters.toStringAsFixed(2)} m/s · ${_paceLabel(stepMeters)} /km',
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.dMuted,
                 ),
               ),
-              SizedBox(width: AppSpacing.sm),
-              IconButton.filledTonal(
-                onPressed: isBusy ? null : onNudge,
-                icon: Icon(Icons.navigation_rounded, size: 18.r),
-                tooltip: '현재 방향으로 한 걸음',
+              SizedBox(height: 11.h),
+
+              // Pace selector — 4-up
+              Row(
+                children: [
+                  for (var i = 0; i < _paces.length; i++) ...[
+                    if (i > 0) SizedBox(width: 7.w),
+                    Expanded(
+                      child: _PaceButton(
+                        label: _paces[i].$2,
+                        active: stepMeters == _paces[i].$1,
+                        onTap: isBusy ? null : () => onChangeStep(_paces[i].$1),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              SizedBox(height: 11.h),
+
+              // Actions
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: isBusy ? null : onToggleAutoWalk,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 12.h),
+                        decoration: BoxDecoration(
+                          color: isAutoWalk
+                              ? AppColors.dRouteEnd
+                              : AppColors.dAccent,
+                          borderRadius: BorderRadius.circular(13.r),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              isAutoWalk
+                                  ? Icons.pause_rounded
+                                  : Icons.play_arrow_rounded,
+                              size: 18.r,
+                              color: isAutoWalk
+                                  ? Colors.white
+                                  : const Color(0xFF1A0E06),
+                            ),
+                            SizedBox(width: 6.w),
+                            Text(
+                              isAutoWalk ? '중단' : '자동 이동',
+                              style: TextStyle(
+                                fontSize: 14.5.sp,
+                                fontWeight: FontWeight.w800,
+                                color: isAutoWalk
+                                    ? Colors.white
+                                    : const Color(0xFF1A0E06),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  GestureDetector(
+                    onTap: isBusy ? null : onNudge,
+                    child: Container(
+                      width: 46.r,
+                      height: 46.r,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.04),
+                        borderRadius: BorderRadius.circular(13.r),
+                        border: Border.all(color: AppColors.dLine2, width: 1),
+                      ),
+                      child: Icon(Icons.north_rounded,
+                          size: 19.r, color: AppColors.dText),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _BlinkingDot extends StatefulWidget {
-  const _BlinkingDot();
+class _PaceButton extends StatelessWidget {
+  const _PaceButton({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
 
-  @override
-  State<_BlinkingDot> createState() => _BlinkingDotState();
-}
-
-class _BlinkingDotState extends State<_BlinkingDot>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
+  final String label;
+  final bool active;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _ctrl,
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
-        width: 8.r,
-        height: 8.r,
-        decoration: const BoxDecoration(
-          color: AppColors.error,
-          shape: BoxShape.circle,
+        padding: EdgeInsets.symmetric(vertical: 9.h),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: active
+              ? AppColors.dAccent
+              : Colors.white.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(11.r),
+          border: active
+              ? null
+              : Border.all(color: AppColors.dLine2, width: 1),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13.5.sp,
+            fontWeight: FontWeight.w700,
+            color: active ? const Color(0xFF1A0E06) : AppColors.dMuted,
+          ),
         ),
       ),
     );

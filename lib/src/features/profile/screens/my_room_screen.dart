@@ -9,8 +9,6 @@ import '../../../common/widgets/rarity_title_badge.dart';
 import '../../../core/character/character_provider.dart';
 import '../../../core/character/character_style.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_spacing.dart';
-import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/constants/storage_keys.dart';
 import '../constants/title_presets.dart';
@@ -34,33 +32,34 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
   bool _isChangingColor = false;
   bool _isEquippingTitle = false;
 
-  static const List<String> _tabs = ['Core Colors', 'Aura', 'Titles', 'Inventory'];
+  static const List<String> _tabs = [
+    'Core Colors',
+    'Aura',
+    'Titles',
+    'Inventory'
+  ];
 
   @override
   Widget build(BuildContext context) {
     final currentStyle = ref.watch(selectedCharacterStyleProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: AppColors.dScreen,
       body: SafeArea(
+        bottom: false,
         child: ListView(
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.screenHorizontal,
-            AppSpacing.verticalSm,
-            AppSpacing.screenHorizontal,
-            AppSpacing.verticalXl,
-          ),
+          padding: EdgeInsets.fromLTRB(22.w, 8.h, 22.w, 110.h),
           children: [
-            _buildAppBar(),
-            SizedBox(height: AppSpacing.verticalLg),
+            _buildTitle(),
+            SizedBox(height: 24.h),
             _buildHeroSphere(currentStyle),
-            SizedBox(height: AppSpacing.verticalMd),
+            SizedBox(height: 20.h),
             _buildEquippedTitle(),
-            SizedBox(height: AppSpacing.verticalMd),
+            SizedBox(height: 22.h),
             _buildShopBanner(),
-            SizedBox(height: AppSpacing.verticalMd),
+            SizedBox(height: 22.h),
             _buildTabSelector(),
-            SizedBox(height: AppSpacing.verticalMd),
+            SizedBox(height: 20.h),
             _buildTabContent(currentStyle),
           ],
         ),
@@ -68,32 +67,17 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
     );
   }
 
-  // ── AppBar ──────────────────────────────────────────────────────────────
+  // ── Title ─────────────────────────────────────────────────────────────────
 
-  Widget _buildAppBar() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Customize your core sphere and identity.',
-          style: TextStyle(
-            color: AppColors.sectionLabel,
-            fontSize: 13.sp,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.8,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '마이 룸',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 22.sp,
-            fontWeight: FontWeight.w900,
-            height: 1.1,
-          ),
-        ),
-      ],
+  Widget _buildTitle() {
+    return Text(
+      '마이 룸',
+      style: TextStyle(
+        color: AppColors.dText,
+        fontSize: 30.sp,
+        fontWeight: FontWeight.w800,
+        height: 1.1,
+      ),
     );
   }
 
@@ -105,90 +89,94 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
 
   Widget _buildEquippedTitle() {
     return ref.watch(myRoomProvider).when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (myRoom) {
-        final equipped = myRoom.titles.cast<MyRoomTitleItem?>().firstWhere(
-              (t) => t?.name == myRoom.equippedTitle,
-              orElse: () => null,
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (myRoom) {
+            final equipped =
+                myRoom.titles.cast<MyRoomTitleItem?>().firstWhere(
+                      (t) => t?.name == myRoom.equippedTitle,
+                      orElse: () => null,
+                    );
+            return Column(
+              children: [
+                Text(
+                  'EQUIPPED TITLE',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.dFaint,
+                    fontSize: 11.sp,
+                    letterSpacing: 1.8,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                RarityTitleBadge(
+                  title: myRoom.equippedTitle,
+                  rarity: equipped?.rarity ?? 'NORMAL',
+                  fontSize: 16.sp,
+                ),
+              ],
             );
-        return Column(
-          children: [
-            Text(
-              'EQUIPPED TITLE',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.labelSmall.copyWith(
-                color: AppColors.textSecondary,
-                letterSpacing: 1.4,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            SizedBox(height: 8.h),
-            RarityTitleBadge(
-              title: myRoom.equippedTitle,
-              rarity: equipped?.rarity ?? 'NORMAL',
-              fontSize: 18.sp,
-            ),
-          ],
+          },
         );
-      },
-    );
   }
 
   Widget _buildShopBanner() {
     return GestureDetector(
       onTap: () => context.push(AppRoutes.shop),
       child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: 14.h,
-        ),
+        padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 15.h),
         decoration: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          gradient: const LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [
+              AppColors.dAccent,
+              Color(0xFFD9622A),
+              AppColors.dAccentDeep,
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20.r),
         ),
         child: Row(
           children: [
             Container(
-              width: 40.r,
-              height: 40.r,
+              width: 44.r,
+              height: 44.r,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(13.r),
               ),
-              child: Icon(
-                Icons.storefront_rounded,
-                color: Colors.white,
-                size: 20.r,
-              ),
+              child: Icon(Icons.storefront_rounded,
+                  color: Colors.white, size: 22.r),
             ),
-            SizedBox(width: AppSpacing.sm + AppSpacing.xs),
+            SizedBox(width: 13.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Baton Shop',
-                    style: AppTextStyles.bodyMedium.copyWith(
+                    style: TextStyle(
                       color: Colors.white,
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
+                  SizedBox(height: 2.h),
                   Text(
                     'GET EXCLUSIVE ITEMS',
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: Colors.white.withValues(alpha: 0.8),
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      fontSize: 11.5.sp,
+                      fontWeight: FontWeight.w600,
                       letterSpacing: 0.8,
                     ),
                   ),
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: Colors.white,
-              size: 24.r,
-            ),
+            Icon(Icons.chevron_right_rounded, color: Colors.white, size: 24.r),
           ],
         ),
       ),
@@ -199,10 +187,11 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
 
   Widget _buildTabSelector() {
     return Container(
-      padding: EdgeInsets.all(4.r),
+      padding: EdgeInsets.all(5.r),
       decoration: BoxDecoration(
-        color: AppColors.divider,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+        color: AppColors.dCard,
+        borderRadius: BorderRadius.circular(999.r),
+        border: Border.all(color: AppColors.dLine, width: 1),
       ),
       child: Row(
         children: List.generate(_tabs.length, (index) {
@@ -212,28 +201,20 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
               onTap: () => setState(() => _selectedTab = index),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: EdgeInsets.symmetric(vertical: 8.h),
+                padding: EdgeInsets.symmetric(vertical: 9.h),
                 decoration: BoxDecoration(
-                  color: selected ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-                  boxShadow: selected
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
+                  color: selected ? AppColors.dAccent : Colors.transparent,
+                  borderRadius: BorderRadius.circular(999.r),
                 ),
                 child: Text(
                   _tabs[index],
                   textAlign: TextAlign.center,
-                  style: AppTextStyles.labelSmall.copyWith(
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  style: TextStyle(
+                    fontSize: 11.5.sp,
+                    fontWeight: FontWeight.w700,
                     color: selected
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
+                        ? const Color(0xFF160D06)
+                        : AppColors.dMuted,
                   ),
                 ),
               ),
@@ -258,13 +239,15 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
 
   Widget _buildCoreColorSection(CharacterStyle currentStyle) {
     return ref.watch(myRoomProvider).when(
-      loading: () => SizedBox(
-        height: 120.h,
-        child: const Center(child: CircularProgressIndicator()),
-      ),
-      error: (e, _) => _buildColorError(),
-      data: (myRoom) => _buildColorGrid(currentStyle, myRoom.colors),
-    );
+          loading: () => SizedBox(
+            height: 120.h,
+            child: const Center(
+              child: CircularProgressIndicator(color: AppColors.dAccent),
+            ),
+          ),
+          error: (e, _) => _buildColorError(),
+          data: (myRoom) => _buildColorGrid(currentStyle, myRoom.colors),
+        );
   }
 
   Widget _buildColorGrid(
@@ -276,8 +259,8 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
-        mainAxisSpacing: 12.h,
-        crossAxisSpacing: 12.w,
+        mainAxisSpacing: 15.h,
+        crossAxisSpacing: 15.w,
         childAspectRatio: 1,
       ),
       itemCount: CharacterStylePresets.all.length,
@@ -295,19 +278,24 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
         return GestureDetector(
           onTap: _isChangingColor
               ? null
-              : () => isOwned
-                  ? _onColorTap(style)
-                  : _showLockedMessage(),
+              : () => isOwned ? _onColorTap(style) : _showLockedMessage(),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
             decoration: BoxDecoration(
-              color: isOwned ? style.baseColor : AppColors.divider,
+              color: isOwned ? style.baseColor : AppColors.dCard2,
               shape: BoxShape.circle,
-              border: isSelected
-                  ? Border.all(
-                      color: AppColors.textPrimary,
-                      width: 2.5,
-                    )
+              // Selected: inner screen ring + outer white ring (per redesign).
+              boxShadow: isSelected
+                  ? [
+                      const BoxShadow(
+                        color: Colors.white,
+                        spreadRadius: 5,
+                      ),
+                      const BoxShadow(
+                        color: AppColors.dScreen,
+                        spreadRadius: 3,
+                      ),
+                    ]
                   : null,
             ),
             child: _isChangingColor && isSelected
@@ -321,11 +309,8 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
                 : isSelected
                     ? Icon(Icons.check_rounded, color: Colors.white, size: 24.r)
                     : !isOwned
-                        ? Icon(
-                            Icons.lock_rounded,
-                            color: AppColors.textSecondary,
-                            size: 18.r,
-                          )
+                        ? Icon(Icons.lock_rounded,
+                            color: AppColors.dFaint, size: 18.r)
                         : null,
           ),
         );
@@ -341,9 +326,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
         children: [
           Text(
             '색상 정보를 불러오지 못했어요.',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(color: AppColors.dMuted, fontSize: 13.sp),
           ),
           SizedBox(height: 8.h),
           TextButton(
@@ -390,51 +373,50 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
 
   Widget _buildTitlesSection() {
     return ref.watch(myRoomProvider).when(
-      loading: () => SizedBox(
-        height: 120.h,
-        child: const Center(child: CircularProgressIndicator()),
-      ),
-      error: (e, _) => SizedBox(
-        height: 120.h,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              '칭호 목록을 불러오지 못했어요.',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
+          loading: () => SizedBox(
+            height: 120.h,
+            child: const Center(
+              child: CircularProgressIndicator(color: AppColors.dAccent),
             ),
-            SizedBox(height: 8.h),
-            TextButton(
-              onPressed: () => ref.invalidate(myRoomProvider),
-              child: const Text('다시 시도'),
-            ),
-          ],
-        ),
-      ),
-      data: (myRoom) {
-        final titles = myRoom.titles;
-        if (titles.isEmpty) {
-          return SizedBox(
-            height: 100.h,
-            child: Center(
-              child: Text(
-                '칭호가 없어요.',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
+          ),
+          error: (e, _) => SizedBox(
+            height: 120.h,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '칭호 목록을 불러오지 못했어요.',
+                  style: TextStyle(color: AppColors.dMuted, fontSize: 13.sp),
                 ),
-              ),
+                SizedBox(height: 8.h),
+                TextButton(
+                  onPressed: () => ref.invalidate(myRoomProvider),
+                  child: const Text('다시 시도'),
+                ),
+              ],
             ),
-          );
-        }
-        return Column(
-          children: titles
-              .map((t) => _buildTitleItem(t, myRoom.equippedTitle))
-              .toList(),
+          ),
+          data: (myRoom) {
+            final titles = myRoom.titles;
+            if (titles.isEmpty) {
+              return SizedBox(
+                height: 100.h,
+                child: Center(
+                  child: Text(
+                    '칭호가 없어요.',
+                    style:
+                        TextStyle(color: AppColors.dMuted, fontSize: 13.sp),
+                  ),
+                ),
+              );
+            }
+            return Column(
+              children: titles
+                  .map((t) => _buildTitleItem(t, myRoom.equippedTitle))
+                  .toList(),
+            );
+          },
         );
-      },
-    );
   }
 
   Widget _buildTitleItem(MyRoomTitleItem title, String equippedTitle) {
@@ -443,23 +425,23 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
     final rarityColor = _rarityColor(title.rarity);
 
     return Padding(
-      padding: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.only(bottom: 10.h),
       child: GestureDetector(
         onTap: !isOwned || _isEquippingTitle || isEquipped
             ? null
             : () => _onEquipTitle(title),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: EdgeInsets.all(AppSpacing.md),
+          padding: EdgeInsets.all(16.r),
           decoration: BoxDecoration(
             color: isEquipped
-                ? AppColors.primary.withValues(alpha: 0.06)
+                ? AppColors.dAccent.withValues(alpha: 0.10)
                 : !isOwned
-                    ? AppColors.divider.withValues(alpha: 0.5)
-                    : Colors.white,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                    ? AppColors.dCard2
+                    : AppColors.dCard,
+            borderRadius: BorderRadius.circular(18.r),
             border: Border.all(
-              color: isEquipped ? AppColors.primary : AppColors.divider,
+              color: isEquipped ? AppColors.dAccent : AppColors.dLine,
               width: isEquipped ? 1.5 : 1,
             ),
           ),
@@ -472,12 +454,12 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
                   width: 10.r,
                   height: 10.r,
                   decoration: BoxDecoration(
-                    color: isOwned ? rarityColor : AppColors.textSecondary,
+                    color: isOwned ? rarityColor : AppColors.dFaint,
                     shape: BoxShape.circle,
                   ),
                 ),
               ),
-              SizedBox(width: AppSpacing.sm),
+              SizedBox(width: 10.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -487,20 +469,22 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
                         Expanded(
                           child: Text(
                             title.name,
-                            style: AppTextStyles.bodySmall.copyWith(
+                            style: TextStyle(
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w700,
                               color: isOwned
-                                  ? AppColors.textPrimary
-                                  : AppColors.textSecondary,
+                                  ? AppColors.dText
+                                  : AppColors.dMuted,
                             ),
                           ),
                         ),
                         Text(
                           title.rarity,
-                          style: AppTextStyles.labelSmall.copyWith(
-                            color: isOwned ? rarityColor : AppColors.textSecondary,
+                          style: TextStyle(
+                            color: isOwned ? rarityColor : AppColors.dFaint,
                             fontSize: 10.sp,
                             fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ],
@@ -509,9 +493,9 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
                       SizedBox(height: 4.h),
                       Text(
                         title.description,
-                        style: AppTextStyles.labelSmall.copyWith(
-                          color: AppColors.textSecondary,
-                          fontSize: 10.sp,
+                        style: TextStyle(
+                          color: AppColors.dFaint,
+                          fontSize: 10.5.sp,
                           height: 1.4,
                         ),
                         maxLines: 2,
@@ -521,33 +505,30 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
                   ],
                 ),
               ),
-              SizedBox(width: AppSpacing.sm),
+              SizedBox(width: 10.w),
               if (isEquipped)
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                  padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 3.h),
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                    color: AppColors.dAccent,
+                    borderRadius: BorderRadius.circular(999.r),
                   ),
                   child: Text(
                     'ON',
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: const Color(0xFF160D06),
                       fontWeight: FontWeight.w800,
                       fontSize: 9.sp,
                     ),
                   ),
                 )
               else if (!isOwned)
-                Icon(Icons.lock_rounded, size: 16.r, color: AppColors.textSecondary)
+                Icon(Icons.lock_rounded, size: 16.r, color: AppColors.dFaint)
               else
                 Padding(
                   padding: EdgeInsets.only(top: 2.h),
-                  child: Icon(
-                    Icons.chevron_right_rounded,
-                    size: 20.r,
-                    color: AppColors.textSecondary,
-                  ),
+                  child: Icon(Icons.chevron_right_rounded,
+                      size: 20.r, color: AppColors.dMuted),
                 ),
             ],
           ),
@@ -557,10 +538,10 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
   }
 
   Color _rarityColor(String rarity) => switch (rarity) {
-        'RARE' => AppColors.info,
-        'EPIC' => AppColors.primary,
-        'LEGENDARY' => AppColors.warning,
-        _ => AppColors.textSecondary,
+        'RARE' => AppColors.dTitleBlue,
+        'EPIC' => AppColors.dAccentBright,
+        'LEGENDARY' => AppColors.dGold,
+        _ => AppColors.dMuted,
       };
 
   Future<void> _onEquipTitle(MyRoomTitleItem title) async {
@@ -601,9 +582,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
       child: Center(
         child: Text(
           'Coming soon',
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: TextStyle(color: AppColors.dMuted, fontSize: 14.sp),
         ),
       ),
     );

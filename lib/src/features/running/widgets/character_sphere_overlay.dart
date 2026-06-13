@@ -8,6 +8,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:logger/logger.dart';
 
 import '../../../common/widgets/character_sphere_widget.dart';
+import '../../../common/widgets/rarity_title_badge.dart';
 import '../../../core/character/character_style.dart';
 
 final _logger = Logger();
@@ -25,6 +26,7 @@ class CharacterSphereOverlay extends StatefulWidget {
     required this.characterStyle,
     this.size = 48.0,
     this.titleName,
+    this.titleRarity = 'NORMAL',
     this.nickname,
   });
 
@@ -38,7 +40,10 @@ class CharacterSphereOverlay extends StatefulWidget {
   /// 장착 칭호 표시 이름. null이면 배지 숨김.
   final String? titleName;
 
-  /// 닉네임 — 칭호 위에 표시. null이면 숨김.
+  /// 칭호 rarity — RarityTitleBadge 스타일 결정.
+  final String titleRarity;
+
+  /// 닉네임 — 구체 위에 표시. null이면 숨김.
   final String? nickname;
 
   @override
@@ -155,12 +160,19 @@ class _CharacterSphereOverlayState extends State<CharacterSphereOverlay> {
                   ),
                 ),
               ),
-            // 칭호 배지 — 구체 아래
+            // 칭호 배지 — 구체 아래 (rarity 스타일 적용)
             if (title != null)
               Positioned(
                 top: s + 2.h,
                 child: UnconstrainedBox(
-                  child: _LabelBadge(text: title),
+                  child: Transform.scale(
+                    scale: 0.62,
+                    alignment: Alignment.topCenter,
+                    child: RarityTitleBadge(
+                      title: title,
+                      rarity: widget.titleRarity,
+                    ),
+                  ),
                 ),
               ),
           ],

@@ -12,6 +12,7 @@ import 'package:logger/logger.dart';
 
 import '../../../core/character/character_provider.dart';
 import '../../../core/character/character_style.dart';
+import '../../profile/constants/title_presets.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_map_styles.dart';
 import '../../../core/constants/app_spacing.dart';
@@ -720,6 +721,7 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
               mapController: _mapCtrl!,
               characterStyle: characterStyle,
               titleName: ref.watch(myEquippedTitleNameProvider),
+              titleRarity: ref.watch(myEquippedTitleRarityProvider),
             ),
 
           // ── 참가자 오버레이 (상대방 캐릭터 — 그림자 + 회색 구체 + 닉네임) ────
@@ -741,6 +743,9 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
                   ),
                   nickname: p.nickname ?? '러너 ${p.memberId}',
                   titleName: p.titleName,
+                  titleRarity: p.titleName != null
+                      ? TitlePresets.rarityForName(p.titleName!)
+                      : 'NORMAL',
                 ),
               ];
             }),

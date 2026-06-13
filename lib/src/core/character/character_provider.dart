@@ -25,6 +25,13 @@ final myEquippedTitleNameProvider = Provider<String?>((ref) {
   );
 });
 
+/// 현재 유저의 장착 칭호 rarity. 없으면 'NORMAL'.
+final myEquippedTitleRarityProvider = Provider<String>((ref) {
+  final name = ref.watch(myEquippedTitleNameProvider);
+  if (name == null || name.isEmpty) return 'NORMAL';
+  return TitlePresets.rarityForName(name);
+});
+
 final _logger = Logger();
 
 /// Global selected character style.

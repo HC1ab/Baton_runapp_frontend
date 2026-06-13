@@ -121,6 +121,15 @@ abstract final class TitlePresets {
     }
   }
 
+  /// 칭호 표시 이름 → rarity 문자열. 없으면 'NORMAL'.
+  static String rarityForName(String name) {
+    try {
+      return all.firstWhere((t) => t.name == name).rarity;
+    } catch (_) {
+      return 'NORMAL';
+    }
+  }
+
   /// 칭호 코드 → 한 줄 서브텍스트.
   static String subtitleFor(String titleCode) => switch (titleCode) {
         'TITLE_001_START' => '러닝 앱 첫 시작',

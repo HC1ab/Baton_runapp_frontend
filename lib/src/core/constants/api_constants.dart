@@ -33,6 +33,9 @@ abstract final class ApiConstants {
   static const spots = '/api/v1/spots';
   static const spotsNearby = '/api/v1/spots/nearby';
   static const spotsCooldowns = '/api/v1/spots/cooldowns';
+  // 점령 지도 — 점령된 스팟 목록 (백엔드 구현 예정)
+  static const spotsOccupied = '/api/v1/spots/occupied'; // 전체 점령
+  static const spotsOccupiedMe = '/api/v1/spots/occupied/me'; // 내 점령
 
   // Endpoints — MyRoom
   static const myRoom = '/api/v1/myroom';

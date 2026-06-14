@@ -41,6 +41,7 @@ class SpotDetail {
     required this.longitude,
     this.occupierMemberId,
     this.occupierCheckinCount,
+    this.myCheckinCount,
   });
 
   final int id;
@@ -53,6 +54,8 @@ class SpotDetail {
   final int? occupierMemberId;
   /// 현재 점령자의 해당 스팟 누적 체크인 수
   final int? occupierCheckinCount;
+  /// 조회한 사용자(나)의 해당 스팟 누적 체크인 수
+  final int? myCheckinCount;
 
   factory SpotDetail.fromJson(Map<String, Object?> json) {
     return SpotDetail(
@@ -64,6 +67,7 @@ class SpotDetail {
       longitude: (json['longitude'] as num).toDouble(),
       occupierMemberId: (json['occupierMemberId'] as num?)?.toInt(),
       occupierCheckinCount: (json['occupierCheckinCount'] as num?)?.toInt(),
+      myCheckinCount: (json['myCheckinCount'] as num?)?.toInt(),
     );
   }
 }

@@ -148,9 +148,10 @@ class _RunDetailScreenState extends ConsumerState<RunDetailScreen> {
                   color: AppColors.dText, size: 22.r),
               tooltip: '공유 카드',
               onPressed: () async {
+                final router = GoRouter.of(context);
                 final snapshot = await _mapController?.takeSnapshot();
                 if (!mounted) return;
-                context.push(
+                router.push(
                   AppRoutes.runShare,
                   extra: RunShareData.fromDetail(
                     detail,

@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../profile/screens/member_public_profile_screen.dart';
 import '../../profile/services/member_profile_service.dart';
 import '../providers/spot_providers.dart';
 
@@ -173,6 +174,61 @@ class SpotDetailScreen extends ConsumerWidget {
                     ],
                   ),
           ),
+
+          SizedBox(height: 24.h),
+
+          // ── 나의 체크인 ──────────────────────────────────────────────
+          Text(
+            '나의 체크인',
+            style: AppTextStyles.labelLarge.copyWith(
+              color: AppColors.dMuted,
+              letterSpacing: 0.8,
+            ),
+          ),
+          SizedBox(height: 12.h),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: AppColors.dCard,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+              border: Border.all(color: AppColors.dLine, width: 1),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48.r,
+                  height: 48.r,
+                  decoration: BoxDecoration(
+                    color: AppColors.dAccentSoft,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.how_to_reg_rounded,
+                    color: AppColors.dAccentBright,
+                    size: 24.r,
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Text(
+                    '이 스팟에 체크인한 횟수',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.dMuted,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Text(
+                  '${detail.myCheckinCount ?? 0}회',
+                  style: AppTextStyles.headlineMedium.copyWith(
+                    color: AppColors.dText,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -210,10 +266,20 @@ class _OccupierCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(memberPublicProfileProvider(memberId));
-    final nickname = profileAsync.whenOrNull(data: (p) => p.nickname);
-    final level = profileAsync.whenOrNull(data: (p) => p.level);
+    final profile = profileAsync.value;
+    final nickname = profile?.nickname;
+    final level = profile?.level;
 
-    return Row(
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+      onTap: profile == null
+          ? null
+          : () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => MemberPublicProfileScreen(profile: profile),
+                ),
+              ),
+      child: Row(
       children: [
         Container(
           width: 48.r,
@@ -276,6 +342,7 @@ class _OccupierCard extends ConsumerWidget {
           ),
         ),
       ],
+      ),
     );
   }
 }

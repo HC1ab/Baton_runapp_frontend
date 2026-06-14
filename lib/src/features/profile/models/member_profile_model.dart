@@ -75,6 +75,15 @@ class MemberPublicProfile {
   final String equippedTitleName;
   final String coreColorCode;
 
+  /// 백엔드가 "분 단위 소수"로 내려주므로(예: 0.97 = 0.97분/km) 60을 곱해 총 초로 환산 후 분/초로 분해
+  String get avgPaceText {
+    if (avgPace <= 0) return "0'00\"";
+    final totalSec = (avgPace * 60).round();
+    final m = totalSec ~/ 60;
+    final s = totalSec % 60;
+    return "$m'${s.toString().padLeft(2, '0')}\"";
+  }
+
   factory MemberPublicProfile.fromJson(Map<String, dynamic> json) {
     return MemberPublicProfile(
       memberId: (json['memberId'] as num? ?? 0).toInt(),

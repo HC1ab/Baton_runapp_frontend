@@ -8,7 +8,7 @@ import '../constants/app_routes.dart';
 
 class _TabNotifier extends Notifier<int> {
   @override
-  int build() => AppTabs.running;
+  int build() => AppTabs.occupation;
 
   void switchTo(int index) => state = index;
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'tab_registry.dart';
 
 import '../../features/running/screens/running_screen.dart';
+import '../../features/occupation/screens/occupation_screen.dart';
 import '../../features/profile/screens/my_room_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/social/social_feed_screen.dart';
@@ -19,13 +20,16 @@ final tabRegistryProvider = Provider<List<TabEntry>>((ref) {
     // Tab 1: Spot
     const TabEntry(builder: _buildSpot),
 
-    // Tab 2: Social
+    // Tab 2: Occupation (점령)
+    const TabEntry(builder: _buildOccupation),
+
+    // Tab 3: Social
     const TabEntry(builder: _buildSocial),
 
-    // Tab 3: My Room
+    // Tab 4: My Room
     const TabEntry(builder: _buildMyRoom),
 
-    // Tab 4: Profile
+    // Tab 5: Profile
     const TabEntry(builder: _buildProfile),
   ];
 });
@@ -35,6 +39,8 @@ Widget _buildMyRoom(BuildContext _) => const MyRoomScreen();
 Widget _buildRunning(BuildContext _) => const RunningScreen();
 
 Widget _buildSpot(BuildContext _) => const SpotScreen();
+
+Widget _buildOccupation(BuildContext _) => const OccupationScreen();
 
 Widget _buildSocial(BuildContext _) => const SocialFeedScreen();
 

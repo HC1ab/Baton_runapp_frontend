@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../core/constants/app_colors.dart';
 
@@ -49,9 +50,11 @@ class CustomInputField extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         Container(
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: _fieldBackground,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(20.r),
+            border: Border.all(color: AppColors.dLine, width: 1),
           ),
           child: TextField(
             controller: controller,

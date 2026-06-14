@@ -21,6 +21,7 @@ class DraggableStatWidget extends ConsumerWidget {
     required this.value,
     this.prefixIcon,
     this.label,
+    this.sublabel,
   });
 
   final StatItemConfig stat;
@@ -33,6 +34,9 @@ class DraggableStatWidget extends ConsumerWidget {
 
   /// 한글 스타일: 수치 위에 표시할 한글 레이블 (거리 / 시간 / 평균 페이스)
   final String? label;
+
+  /// dark/orange 스타일: 수치 아래에 표시할 한글 서브라벨
+  final String? sublabel;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -70,7 +74,13 @@ class DraggableStatWidget extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(8.r),
                   )
                 : null,
-            child: label != null
+            child: sublabel != null
+                ? _SublabelStatContent(
+                    sublabel: sublabel!,
+                    value: value,
+                    stat: stat,
+                  )
+                : label != null
                 ? _KoreanStatContent(
                     label: label!,
                     value: value,
@@ -231,6 +241,54 @@ class _KoreanStatContent extends StatelessWidget {
                 offset: Offset(0, 2),
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── 서브라벨 (dark/orange): 값 크게, 아래 작은 설명 ─────────────────────────────
+
+class _SublabelStatContent extends StatelessWidget {
+  const _SublabelStatContent({
+    required this.sublabel,
+    required this.value,
+    required this.stat,
+  });
+
+  final String sublabel;
+  final String value;
+  final StatItemConfig stat;
+
+  @override
+  Widget build(BuildContext context) {
+    final sublabelSize = (stat.fontSize * 0.32).clamp(10.0, 16.0);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: stat.fontSize,
+            fontWeight: FontWeight.w700,
+            color: stat.color,
+            letterSpacing: -1,
+            height: 1.0,
+            shadows: const [
+              Shadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2)),
+            ],
+          ),
+        ),
+        Text(
+          sublabel,
+          style: TextStyle(
+            fontSize: sublabelSize,
+            fontWeight: FontWeight.w500,
+            color: stat.color.withValues(alpha: 0.65),
+            letterSpacing: 0.2,
+            height: 1.3,
           ),
         ),
       ],

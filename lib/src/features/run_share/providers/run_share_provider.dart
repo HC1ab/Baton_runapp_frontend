@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/share_overlay_config.dart';
 import '../models/stat_item_config.dart';
-export '../models/share_overlay_config.dart' show CardStyle;
+export '../models/share_overlay_config.dart' show CardStyle, NrcBackground, ShareOverlayConfig;
 
 class RunShareNotifier extends Notifier<ShareOverlayConfig> {
   @override
@@ -51,6 +51,9 @@ class RunShareNotifier extends Notifier<ShareOverlayConfig> {
   /// 스타일 전환 시 각 스타일 기본 위치로 리셋 (색상은 유지)
   void setCardStyle(CardStyle style) {
     state = switch (style) {
+      CardStyle.dark => state.resetToDark(),
+      CardStyle.orange => state.resetToOrange(),
+      CardStyle.history => state.resetToHistory(),
       CardStyle.nrc => state.resetToNrc(),
       CardStyle.korean => state.resetToKorean(),
       CardStyle.freestyle => state.resetToFreestyle(),
@@ -66,6 +69,10 @@ class RunShareNotifier extends Notifier<ShareOverlayConfig> {
         ),
       _ => state.copyWith(cardStyle: style, selectedStatId: null),
     };
+  }
+
+  void setNrcBackground(NrcBackground bg) {
+    state = state.copyWith(nrcBackground: bg);
   }
 
   // ── 표시 여부 ─────────────────────────────────────────────────────────────

@@ -7,11 +7,14 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../models/share_overlay_config.dart';
 import '../models/stat_item_config.dart';
-import '../providers/run_share_provider.dart';
+import '../providers/run_share_provider.dart' show runShareProvider;
 
 /// 스탯별 표시 여부 토글 + 색상 팔레트
 class ShareCustomizeSheet extends ConsumerWidget {
-  const ShareCustomizeSheet({super.key});
+  const ShareCustomizeSheet({super.key, this.hasCustomImage = false});
+
+  /// 갤러리 이미지가 삽입된 경우 true → NRC 배경 선택 비활성
+  final bool hasCustomImage;
 
   static const _palette = [
     Colors.white,
@@ -65,8 +68,12 @@ class ShareCustomizeSheet extends ConsumerWidget {
           ),
           SizedBox(height: 12.h),
 
-          // 자유 배치 모드: 글로우 경로 토글 + 색상 + 두께
-          if (config.cardStyle == CardStyle.freestyle || config.cardStyle == CardStyle.baton2) ...[
+          // 경로 토글 + 색상 + 두께 (자유/dark/orange/history)
+          if (config.cardStyle == CardStyle.freestyle ||
+              config.cardStyle == CardStyle.baton2 ||
+              config.cardStyle == CardStyle.dark ||
+              config.cardStyle == CardStyle.orange ||
+              config.cardStyle == CardStyle.history) ...[
             _ToggleRow(
               label: '글로우 경로',
               value: config.showRoute,

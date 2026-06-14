@@ -22,7 +22,6 @@ import '../../group_running/providers/run_location_provider.dart';
 import '../../group_running/services/group_run_api_service.dart';
 import '../../group_running/widgets/participant_marker_builder.dart';
 import '../models/run_path_point_model.dart';
-import '../models/lap_record_model.dart';
 import '../models/run_record_model.dart';
 import '../models/spot_model.dart';
 import '../providers/running_provider.dart';
@@ -33,6 +32,7 @@ import 'widgets/run_finish_card.dart';
 import 'widgets/running_mock_panel.dart';
 import 'widgets/check_in_result_card.dart';
 import 'widgets/spot_in_range_card.dart';
+import 'widgets/running_info_panel.dart';
 import '../../../core/constants/app_env.dart';
 
 final _logger = Logger();
@@ -77,8 +77,9 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
   Position? _mockPos;
   double _mockHeading = 0.0; // 0° = 북, 시계방향
 
-  // Bottom panel expand
-  bool _bottomExpanded = false;
+  // Bottom panel minimize
+  bool _isBottomMinimized = false;
+  bool _showInfoPanel = false;
 
   // 카운트다운
   bool _isCountingDown = false;
@@ -619,7 +620,16 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
     return Scaffold(
       backgroundColor: AppColors.dScreen,
       resizeToAvoidBottomInset: false, // 키보드 inset이 지도 크기를 변경하지 않도록 방지
-      body: Stack(
+      body: GestureDetector(
+        onHorizontalDragEnd: (details) {
+          // 오른쪽 → 왼쪽 스와이프: 러닝 정보 패널 열기
+          if (details.primaryVelocity != null &&
+              details.primaryVelocity! < -300 &&
+              !_showInfoPanel) {
+            setState(() => _showInfoPanel = true);
+          }
+        },
+        child: Stack(
         children: [
           // ── Full-screen Google Map ────────────────────────────────────────
           Positioned.fill(
@@ -807,37 +817,37 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
             ),
 
           // ── Bottom panel ──────────────────────────────────────────────────
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: MediaQuery.of(context).padding.bottom + 70.h + AppSpacing.sm - 40.h,
-            child: _BottomPanel(
-              record: record,
-              isDev: ref.read(useMockGpsProvider),
-              mockStepMeters: _mockStepMeters,
-              mockAutoWalk: _mockAutoWalk,
-              bottomExpanded: _bottomExpanded,
-              onToggleExpand: () =>
-                  setState(() => _bottomExpanded = !_bottomExpanded),
-              onStart: () => setState(() => _isCountingDown = true),
-              onFinish: () => ref.read(runningProvider.notifier).finishRun(),
-              onLocateMe: () async {
-                final pos = _mockPos;
-                if (pos != null) await _updateCamera(pos);
-              },
-              onChangeStep: (v) => setState(() => _mockStepMeters = v),
-              onToggleAutoWalk: _toggleMockAutoWalk,
-              onNudge: () {
-                final rad = _mockHeading * math.pi / 180;
-                _nudgeMock(
-                  eastMeters: _mockStepMeters * math.sin(rad),
-                  northMeters: _mockStepMeters * math.cos(rad),
-                );
-              },
-              onDismissError: () =>
-                  ref.read(runningProvider.notifier).clearError(),
+          if (!_isBottomMinimized)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: MediaQuery.of(context).padding.bottom + 15.h + 4.w,
+              child: _BottomPanel(
+                record: record,
+                isDev: ref.read(useMockGpsProvider),
+                mockStepMeters: _mockStepMeters,
+                mockAutoWalk: _mockAutoWalk,
+                onMinimize: () =>
+                    setState(() => _isBottomMinimized = true),
+                onStart: () => setState(() => _isCountingDown = true),
+                onFinish: () => ref.read(runningProvider.notifier).finishRun(),
+                onLocateMe: () async {
+                  final pos = _mockPos;
+                  if (pos != null) await _updateCamera(pos);
+                },
+                onChangeStep: (v) => setState(() => _mockStepMeters = v),
+                onToggleAutoWalk: _toggleMockAutoWalk,
+                onNudge: () {
+                  final rad = _mockHeading * math.pi / 180;
+                  _nudgeMock(
+                    eastMeters: _mockStepMeters * math.sin(rad),
+                    northMeters: _mockStepMeters * math.cos(rad),
+                  );
+                },
+                onDismissError: () =>
+                    ref.read(runningProvider.notifier).clearError(),
+              ),
             ),
-          ),
 
           // ── 카운트다운 오버레이 ────────────────────────────────────────────
           if (_isCountingDown)
@@ -870,7 +880,49 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
                 ),
               ),
             ),
+
+          // ── 최소화 복원 버튼 (카드 숨김 시만) ───────────────────────────────
+          if (_isBottomMinimized)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: MediaQuery.of(context).padding.bottom + 15.h + 4.w,
+              child: Center(
+                child: GestureDetector(
+                  onTap: () => setState(() => _isBottomMinimized = false),
+                  child: Container(
+                    width: 44.r,
+                    height: 28.r,
+                    decoration: BoxDecoration(
+                      color: const Color(0xE61E1E21),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                      border: Border.all(color: AppColors.dLine, width: 1),
+                    ),
+                    child: Icon(
+                      Icons.keyboard_arrow_up_rounded,
+                      color: AppColors.dMuted,
+                      size: 20.r,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+          // ── 러닝 정보 패널 (오른쪽에서 슬라이드 인) ─────────────────────────
+          if (_showInfoPanel)
+            Positioned.fill(
+              child: AnimatedSlide(
+                offset: Offset.zero,
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                child: RunningInfoPanel(
+                  record: record,
+                  onClose: () => setState(() => _showInfoPanel = false),
+                ),
+              ),
+            ),
         ],
+        ),
       ),
     );
   }
@@ -886,8 +938,7 @@ class _BottomPanel extends StatelessWidget {
     required this.isDev,
     required this.mockStepMeters,
     required this.mockAutoWalk,
-    required this.bottomExpanded,
-    required this.onToggleExpand,
+    required this.onMinimize,
     required this.onStart,
     required this.onFinish,
     required this.onLocateMe,
@@ -901,8 +952,7 @@ class _BottomPanel extends StatelessWidget {
   final bool isDev;
   final double mockStepMeters;
   final bool mockAutoWalk;
-  final bool bottomExpanded;
-  final VoidCallback onToggleExpand;
+  final VoidCallback onMinimize;
   final VoidCallback onStart;
   final VoidCallback onFinish;
   final VoidCallback onLocateMe;
@@ -956,25 +1006,36 @@ class _BottomPanel extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(height: AppSpacing.verticalMd),
+                  SizedBox(height: 8.h),
 
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                    padding: EdgeInsets.symmetric(horizontal: 8.w).copyWith(left: 8.w + 8.h),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        _MetricBlock(
-                          label: '거리 (KM)',
-                          value: (record.distanceMeters / 1000)
-                              .toStringAsFixed(2),
-                          labelColor: AppColors.dAccent,
+                        Expanded(
+                          child: _MetricBlock(
+                            label: '거리 (KM)',
+                            value: (record.distanceMeters / 1000)
+                                .toStringAsFixed(2),
+                            labelColor: AppColors.dAccent,
+                            valueFontSize: 26,
+                          ),
                         ),
-                        SizedBox(width: AppSpacing.lg),
-                        _MetricBlock(
-                          label: '페이스',
-                          value: record.formattedCurrentPace,
+                        Expanded(
+                          child: _MetricBlock(
+                            label: '페이스',
+                            value: record.formattedCurrentPace,
+                            valueFontSize: 26,
+                          ),
                         ),
-                        const Spacer(),
+                        Expanded(
+                          child: _MetricBlock(
+                            label: '시간',
+                            value: _formatDuration(record.duration),
+                            valueFontSize: 26,
+                          ),
+                        ),
                         Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -984,13 +1045,11 @@ class _BottomPanel extends StatelessWidget {
                             ),
                             SizedBox(height: 4.h),
                             GestureDetector(
-                              onTap: onToggleExpand,
+                              onTap: onMinimize,
                               child: Icon(
-                                bottomExpanded
-                                    ? Icons.keyboard_arrow_up_rounded
-                                    : Icons.keyboard_arrow_down_rounded,
+                                Icons.remove_rounded,
                                 color: AppColors.dMuted,
-                                size: 24.r,
+                                size: 20.r,
                               ),
                             ),
                           ],
@@ -999,48 +1058,8 @@ class _BottomPanel extends StatelessWidget {
                     ),
                   ),
 
-                  if (bottomExpanded) ...[
-                    SizedBox(height: AppSpacing.verticalMd),
-                    Padding(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                      child: Row(
-                        children: [
-                          _MetricBlock(
-                            label: '시간',
-                            value: _formatDuration(record.duration),
-                            valueFontSize: 28,
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (record.laps.isNotEmpty) ...[
-                      SizedBox(height: AppSpacing.verticalMd),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              '랩',
-                              style: AppTextStyles.labelSmall.copyWith(
-                                color: AppColors.dMuted,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            SizedBox(height: 6.h),
-                            ...record.laps.reversed.map(
-                              (lap) => _LapRow(lap: lap),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
-
                   if (record.spotPoints > 0) ...[
-                    SizedBox(height: AppSpacing.sm),
+                    SizedBox(height: 4.h),
                     Padding(
                       padding:
                           EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -1076,7 +1095,7 @@ class _BottomPanel extends StatelessWidget {
                     ),
                   ],
 
-                  SizedBox(height: AppSpacing.verticalMd),
+                  SizedBox(height: 8.h),
                 ],
               ),
             ),
@@ -1102,7 +1121,7 @@ class _RunButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = isRunning ? 62.r : 66.r;
+    final size = isRunning ? 44.r : 66.r;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1251,54 +1270,3 @@ class _ErrorBanner extends StatelessWidget {
   }
 }
 
-class _LapRow extends StatelessWidget {
-  const _LapRow({required this.lap});
-  final LapRecord lap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 3.h),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 28.w,
-            child: Text(
-              '${lap.lapNumber}',
-              style: AppTextStyles.labelSmall.copyWith(
-                color: AppColors.dMuted,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Row(
-              children: [
-                Text(
-                  lap.formattedDuration,
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.dText,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(width: 4.w),
-                Text(
-                  '1km',
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.dMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            lap.formattedPace,
-            style: AppTextStyles.labelSmall.copyWith(
-              color: AppColors.dMuted,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

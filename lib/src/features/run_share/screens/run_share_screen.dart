@@ -124,7 +124,7 @@ class _RunShareScreenState extends ConsumerState<RunShareScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => const ShareCustomizeSheet(),
+      builder: (_) => ShareCustomizeSheet(hasCustomImage: _backgroundImage != null),
     );
   }
 
@@ -321,19 +321,19 @@ class _StyleToggle extends StatelessWidget {
       child: Row(
         children: [
           _Tab(
-            label: '자유',
-            selected: current == CardStyle.freestyle,
-            onTap: () => onChanged(CardStyle.freestyle),
+            label: '히스토리',
+            selected: current == CardStyle.history,
+            onTap: () => onChanged(CardStyle.history),
           ),
           _Tab(
-            label: 'NRC',
-            selected: current == CardStyle.nrc,
-            onTap: () => onChanged(CardStyle.nrc),
+            label: '다크',
+            selected: current == CardStyle.dark,
+            onTap: () => onChanged(CardStyle.dark),
           ),
           _Tab(
-            label: '한글',
-            selected: current == CardStyle.korean,
-            onTap: () => onChanged(CardStyle.korean),
+            label: '오렌지',
+            selected: current == CardStyle.orange,
+            onTap: () => onChanged(CardStyle.orange),
           ),
         ],
       ),

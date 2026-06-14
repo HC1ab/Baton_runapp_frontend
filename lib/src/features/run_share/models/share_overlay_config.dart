@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import 'stat_item_config.dart';
 
+enum NrcBackground { dark, orange }
+
 enum CardStyle {
   /// 개별 드래그/리사이즈/색상 자유 배치
   freestyle,
@@ -21,6 +23,15 @@ enum CardStyle {
 
   /// BATON3 — 추후 추가 예정
   baton3,
+
+  /// 히스토리 — 지도 스냅샷 배경 + 드래그 스탯 + 경로
+  history,
+
+  /// 다크 — 검정 단색 배경 + 경로 + 드래그 스탯
+  dark,
+
+  /// 오렌지 — 주황 단색 배경 + 경로 + 드래그 스탯
+  orange,
 }
 
 /// 공유 카드 오버레이 전체 설정.
@@ -39,6 +50,7 @@ class ShareOverlayConfig {
     this.routeOffsetY = 0.5,
     this.routeScale = 1.0,
     this.routeSelected = false,
+    this.nrcBackground = NrcBackground.dark,
   });
 
   final StatItemConfig distanceStat;
@@ -70,6 +82,9 @@ class ShareOverlayConfig {
   /// 글로우 경로 선택 상태.
   final bool routeSelected;
 
+  /// NRC 스타일 배경 테마 (dark: 검정, orange: 주황).
+  final NrcBackground nrcBackground;
+
   List<StatItemConfig> get stats => [distanceStat, durationStat, paceStat];
 
   StatItemConfig getStat(String id) => switch (id) {
@@ -100,6 +115,7 @@ class ShareOverlayConfig {
     double? routeOffsetY,
     double? routeScale,
     bool? routeSelected,
+    NrcBackground? nrcBackground,
   }) {
     return ShareOverlayConfig(
       distanceStat: distanceStat ?? this.distanceStat,
@@ -116,6 +132,7 @@ class ShareOverlayConfig {
       routeOffsetY: routeOffsetY ?? this.routeOffsetY,
       routeScale: routeScale ?? this.routeScale,
       routeSelected: routeSelected ?? this.routeSelected,
+      nrcBackground: nrcBackground ?? this.nrcBackground,
     );
   }
 
@@ -124,48 +141,32 @@ class ShareOverlayConfig {
   // ── 기본 초기 설정 ───────────────────────────────────────────────────────────
 
   static ShareOverlayConfig initial() => const ShareOverlayConfig(
-        distanceStat: StatItemConfig(
-          id: 'distance',
-          dx: 0.5,
-          dy: 0.5,
-          fontSize: 52,
-          color: Colors.white,
-        ),
-        durationStat: StatItemConfig(
-          id: 'duration',
-          dx: 0.22,
-          dy: 0.82,
-          fontSize: 26,
-          color: Colors.white,
-        ),
-        paceStat: StatItemConfig(
-          id: 'pace',
-          dx: 0.78,
-          dy: 0.82,
-          fontSize: 26,
-          color: Colors.white,
-        ),
+        cardStyle: CardStyle.dark,
+        showRoute: true,
+        distanceStat: _nrcDistanceStat,
+        durationStat: _nrcDurationStat,
+        paceStat: _nrcPaceStat,
       );
 
-  /// NRC 스타일 초기 위치: 하단 3분할 가로 배열
+  /// NRC 스타일 초기 위치: 페이스/시간 위 행, 거리 아래 행
   static const _nrcDistanceStat = StatItemConfig(
     id: 'distance',
-    dx: 0.5,
-    dy: 0.88,
-    fontSize: 28,
+    dx: 0.28,
+    dy: 0.91,
+    fontSize: 52,
     color: Colors.white,
   );
   static const _nrcDurationStat = StatItemConfig(
     id: 'duration',
-    dx: 0.2,
-    dy: 0.88,
+    dx: 0.72,
+    dy: 0.79,
     fontSize: 22,
     color: Colors.white,
   );
   static const _nrcPaceStat = StatItemConfig(
     id: 'pace',
-    dx: 0.8,
-    dy: 0.88,
+    dx: 0.25,
+    dy: 0.79,
     fontSize: 22,
     color: Colors.white,
   );
@@ -176,6 +177,35 @@ class ShareOverlayConfig {
         durationStat: _nrcDurationStat.copyWith(color: durationStat.color),
         paceStat: _nrcPaceStat.copyWith(color: paceStat.color),
         cardStyle: CardStyle.nrc,
+      );
+
+  ShareOverlayConfig resetToDark() => ShareOverlayConfig(
+        distanceStat: _nrcDistanceStat.copyWith(color: Colors.white),
+        durationStat: _nrcDurationStat.copyWith(color: Colors.white),
+        paceStat: _nrcPaceStat.copyWith(color: Colors.white),
+        cardStyle: CardStyle.dark,
+        showRoute: true,
+        routeScale: 0.7,
+        routeOffsetY: 0.35,
+      );
+
+  ShareOverlayConfig resetToOrange() => ShareOverlayConfig(
+        distanceStat: _nrcDistanceStat.copyWith(color: Colors.white),
+        durationStat: _nrcDurationStat.copyWith(color: Colors.white),
+        paceStat: _nrcPaceStat.copyWith(color: Colors.white),
+        cardStyle: CardStyle.orange,
+        showRoute: true,
+        routeColor: Colors.white,
+        routeScale: 0.7,
+        routeOffsetY: 0.35,
+      );
+
+  ShareOverlayConfig resetToHistory() => ShareOverlayConfig(
+        distanceStat: _nrcDistanceStat.copyWith(color: Colors.white),
+        durationStat: _nrcDurationStat.copyWith(color: Colors.white),
+        paceStat: _nrcPaceStat.copyWith(color: Colors.white),
+        cardStyle: CardStyle.history,
+        showRoute: true,
       );
 
   /// freestyle 스타일로 전환 시 위치/크기를 freestyle 기본값으로 리셋

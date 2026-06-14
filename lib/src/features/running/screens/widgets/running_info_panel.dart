@@ -3,12 +3,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/constants/app_text_styles.dart';
 import '../../models/lap_record_model.dart';
 import '../../models/run_record_model.dart';
 
-/// 우→좌 스와이프로 슬라이드 인되는 러닝 정보 풀스크린 패널.
-/// 러닝 중이 아니면 메트릭을 숨기고 안내 문구만 표시.
 class RunningInfoPanel extends StatelessWidget {
   const RunningInfoPanel({
     super.key,
@@ -22,6 +19,7 @@ class RunningInfoPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final isRunning = record.isRunning;
 
     return GestureDetector(
       onHorizontalDragEnd: (details) {
@@ -30,117 +28,144 @@ class RunningInfoPanel extends StatelessWidget {
         }
       },
       child: Container(
-        color: const Color(0xF0141416),
+        color: const Color(0xF5141416),
         child: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenHorizontal),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(height: AppSpacing.verticalMd),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── 닫기 핸들 ──────────────────────────────────────────────────
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenHorizontal,
+                  vertical: 8.h,
+                ),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: GestureDetector(
+                    onTap: onClose,
+                    child: Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppColors.dMuted,
+                      size: 28.r,
+                    ),
+                  ),
+                ),
+              ),
 
-                // ── 헤더 ─────────────────────────────────────────────────────
-                Row(
+              // ── 거리 블록 ──────────────────────────────────────────────────
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.screenHorizontal,
+                  12.h,
+                  AppSpacing.screenHorizontal,
+                  0,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '러닝 정보',
-                      style: AppTextStyles.headlineLarge.copyWith(
+                      isRunning
+                          ? (record.distanceMeters / 1000).toStringAsFixed(2)
+                          : '--',
+                      style: TextStyle(
+                        fontSize: 72.sp,
+                        fontWeight: FontWeight.w800,
                         color: Colors.white,
-                        fontWeight: FontWeight.w700,
+                        height: 1.0,
+                        letterSpacing: -2,
                       ),
                     ),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: onClose,
-                      child: Icon(
-                        Icons.chevron_right_rounded,
+                    SizedBox(height: 4.h),
+                    Text(
+                      '킬로미터',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w500,
                         color: AppColors.dMuted,
-                        size: 28.r,
+                        letterSpacing: 0.2,
                       ),
                     ),
                   ],
                 ),
+              ),
 
-                SizedBox(height: AppSpacing.verticalLg),
+              SizedBox(height: 28.h),
 
-                if (!record.isRunning)
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        '러닝을 시작하면\n정보가 표시됩니다',
-                        textAlign: TextAlign.center,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.dMuted,
-                          height: 1.6,
+              // ── 페이스 · 시간 · 스팟 3열 ────────────────────────────────────
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenHorizontal,
+                ),
+                child: Row(
+                  children: [
+                    _MetricCell(
+                      icon: Icons.double_arrow_rounded,
+                      value: isRunning ? record.formattedCurrentPace : "--'--\"",
+                      label: '현재 페이스',
+                    ),
+                    _VertDivider(),
+                    _MetricCell(
+                      icon: Icons.timer_outlined,
+                      value: isRunning ? _fmt(record.duration) : '--:--',
+                      label: '시간',
+                    ),
+                    _VertDivider(),
+                    _MetricCell(
+                      icon: Icons.location_on_outlined,
+                      value: isRunning
+                          ? '${record.checkedInSpotIds.length}'
+                          : '0',
+                      label: '스팟',
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 28.h),
+
+              // ── 구분선 ─────────────────────────────────────────────────────
+              Divider(color: AppColors.dLine, height: 1, thickness: 1),
+
+              // ── 랩 목록 ────────────────────────────────────────────────────
+              Expanded(
+                child: record.laps.isEmpty
+                    ? Center(
+                        child: Text(
+                          '아직 완료된 랩이 없어요',
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            color: AppColors.dMuted,
+                          ),
                         ),
+                      )
+                    : ListView.separated(
+                        padding: EdgeInsets.fromLTRB(
+                          AppSpacing.screenHorizontal,
+                          12.h,
+                          AppSpacing.screenHorizontal,
+                          bottomPadding + 16.h,
+                        ),
+                        itemCount: record.laps.length,
+                        separatorBuilder: (_, __) => Divider(
+                          color: AppColors.dLine,
+                          height: 1,
+                          thickness: 1,
+                        ),
+                        itemBuilder: (_, i) {
+                          // 최신 랩이 위 → reversed index
+                          final lap = record.laps[record.laps.length - 1 - i];
+                          return _LapRow(lap: lap);
+                        },
                       ),
-                    ),
-                  )
-                else
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _InfoRow(
-                            label: '거리',
-                            value:
-                                '${(record.distanceMeters / 1000).toStringAsFixed(2)} km',
-                          ),
-                          _Divider(),
-                          _InfoRow(
-                            label: '시간',
-                            value: _formatDuration(record.duration),
-                          ),
-                          _Divider(),
-                          _InfoRow(
-                            label: '현재 페이스',
-                            value: record.formattedCurrentPace,
-                          ),
-                          _Divider(),
-                          _InfoRow(
-                            label: '평균 페이스',
-                            value: record.formattedAveragePace,
-                          ),
-                          if (record.laps.isNotEmpty) ...[
-                            _Divider(),
-                            SizedBox(height: AppSpacing.verticalMd),
-                            Text(
-                              '랩',
-                              style: AppTextStyles.labelSmall.copyWith(
-                                color: AppColors.dMuted,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            SizedBox(height: AppSpacing.sm),
-                            ...record.laps.reversed.map(
-                              (lap) => _LapItem(lap: lap),
-                            ),
-                          ],
-                          if (record.spotPoints > 0) ...[
-                            _Divider(),
-                            _InfoRow(
-                              label: '스팟 포인트',
-                              value:
-                                  '${record.checkedInSpotIds.length}개 · +${record.spotPoints}P',
-                              valueColor: AppColors.dAccentBright,
-                            ),
-                          ],
-                          SizedBox(height: bottomPadding + AppSpacing.verticalLg),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  String _formatDuration(Duration d) {
+  static String _fmt(Duration d) {
     final h = d.inHours;
     final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
@@ -148,38 +173,44 @@ class RunningInfoPanel extends StatelessWidget {
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.label,
+// ── 3열 메트릭 셀 ──────────────────────────────────────────────────────────────
+
+class _MetricCell extends StatelessWidget {
+  const _MetricCell({
+    required this.icon,
     required this.value,
-    this.valueColor,
+    required this.label,
   });
 
-  final String label;
+  final IconData icon;
   final String value;
-  final Color? valueColor;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: AppSpacing.verticalMd),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              label,
-              style: AppTextStyles.labelLarge.copyWith(
-                color: AppColors.dMuted,
-              ),
-            ),
-          ),
+          Icon(icon, size: 18.r, color: AppColors.dMuted),
+          SizedBox(height: 4.h),
           Text(
             value,
-            style: AppTextStyles.headlineMedium.copyWith(
-              color: valueColor ?? Colors.white,
+            style: TextStyle(
+              fontSize: 26.sp,
               fontWeight: FontWeight.w700,
+              color: Colors.white,
               letterSpacing: -0.5,
+              height: 1.1,
+            ),
+          ),
+          SizedBox(height: 2.h),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.sp,
+              color: AppColors.dMuted,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -188,60 +219,74 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-class _Divider extends StatelessWidget {
+class _VertDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Divider(
+    return Container(
+      width: 1,
+      height: 48.h,
       color: AppColors.dLine,
-      height: 1,
-      thickness: 1,
+      margin: EdgeInsets.symmetric(horizontal: 12.w),
     );
   }
 }
 
-class _LapItem extends StatelessWidget {
-  const _LapItem({required this.lap});
+// ── 랩 행 ─────────────────────────────────────────────────────────────────────
+
+class _LapRow extends StatelessWidget {
+  const _LapRow({required this.lap});
   final LapRecord lap;
 
   @override
   Widget build(BuildContext context) {
-    final m = lap.duration.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = lap.duration.inSeconds.remainder(60).toString().padLeft(2, '0');
-    final pace = lap.duration.inSeconds > 0 && lap.distanceMeters > 0
-        ? Duration(
-            seconds: (lap.duration.inSeconds / (lap.distanceMeters / 1000))
-                .round(),
-          )
-        : null;
-    final paceStr = pace != null
-        ? "${pace.inMinutes}'${(pace.inSeconds.remainder(60)).toString().padLeft(2, '0')}\""
-        : '--';
-
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 6.h),
+      padding: EdgeInsets.symmetric(vertical: 12.h),
       child: Row(
         children: [
-          Text(
-            '${lap.lapNumber}',
-            style: AppTextStyles.labelSmall.copyWith(color: AppColors.dMuted),
+          // 랩 번호
+          SizedBox(
+            width: 32.w,
+            child: Text(
+              '${lap.lapNumber}',
+              style: TextStyle(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w600,
+                color: AppColors.dMuted,
+              ),
+            ),
           ),
-          SizedBox(width: AppSpacing.md),
+          // 거리
           Text(
             '${(lap.distanceMeters / 1000).toStringAsFixed(2)} km',
-            style: AppTextStyles.bodySmall.copyWith(color: Colors.white70),
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w500,
+              color: Colors.white70,
+            ),
           ),
           const Spacer(),
+          // 랩 시간
           Text(
-            '$m:$s',
-            style: AppTextStyles.bodySmall.copyWith(color: Colors.white70),
+            lap.formattedDuration,
+            style: TextStyle(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              letterSpacing: -0.3,
+            ),
           ),
-          SizedBox(width: AppSpacing.md),
+          SizedBox(width: 16.w),
+          // 랩 페이스
           SizedBox(
-            width: 52.w,
+            width: 56.w,
             child: Text(
-              paceStr,
+              lap.formattedPace,
               textAlign: TextAlign.right,
-              style: AppTextStyles.bodySmall.copyWith(color: AppColors.dMuted),
+              style: TextStyle(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w500,
+                color: AppColors.dMuted,
+              ),
             ),
           ),
         ],

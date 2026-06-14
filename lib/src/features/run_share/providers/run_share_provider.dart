@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/share_overlay_config.dart';
 import '../models/stat_item_config.dart';
-export '../models/share_overlay_config.dart' show CardStyle, NrcBackground, ShareOverlayConfig;
+export '../models/share_overlay_config.dart' show CardStyle;
 
 class RunShareNotifier extends Notifier<ShareOverlayConfig> {
   @override
@@ -48,16 +48,23 @@ class RunShareNotifier extends Notifier<ShareOverlayConfig> {
 
   // ── 카드 스타일 전환 ──────────────────────────────────────────────────────
 
-  /// 스타일 전환 시 각 스타일 기본 위치로 리셋 (색상은 유지)
   void setCardStyle(CardStyle style) {
-    state = switch (style) {
-      CardStyle.dark => state.resetToDark(),
-      CardStyle.orange => state.resetToOrange(),
-      CardStyle.history => state.resetToHistory(),
-      CardStyle.nrc => state.resetToNrc(),
-      CardStyle.korean => state.resetToKorean(),
-      CardStyle.freestyle => state.resetToFreestyle(),
-      CardStyle.baton2 => state.copyWith(
+    switch (style) {
+      case CardStyle.freestyle:
+        // 자유 1 초기 배치
+        state = state.copyWith(
+          cardStyle: style,
+          selectedStatId: null,
+          distanceStat: const StatItemConfig(
+              id: 'distance', dx: 0.5, dy: 0.5, fontSize: 52, color: Colors.white),
+          durationStat: const StatItemConfig(
+              id: 'duration', dx: 0.22, dy: 0.82, fontSize: 26, color: Colors.white),
+          paceStat: const StatItemConfig(
+              id: 'pace', dx: 0.78, dy: 0.82, fontSize: 26, color: Colors.white),
+        );
+      case CardStyle.baton2:
+        // 자유 2 초기 배치: 상단 대형 거리 + 하단 페이스·시간
+        state = state.copyWith(
           cardStyle: style,
           selectedStatId: null,
           distanceStat: const StatItemConfig(
@@ -66,13 +73,10 @@ class RunShareNotifier extends Notifier<ShareOverlayConfig> {
               id: 'duration', dx: 0.58, dy: 0.87, fontSize: 22, color: Colors.white),
           paceStat: const StatItemConfig(
               id: 'pace', dx: 0.20, dy: 0.87, fontSize: 22, color: Colors.white),
-        ),
-      _ => state.copyWith(cardStyle: style, selectedStatId: null),
-    };
-  }
-
-  void setNrcBackground(NrcBackground bg) {
-    state = state.copyWith(nrcBackground: bg);
+        );
+      default:
+        state = state.copyWith(cardStyle: style, selectedStatId: null);
+    }
   }
 
   // ── 표시 여부 ─────────────────────────────────────────────────────────────

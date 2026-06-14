@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../../core/constants/app_colors.dart';
 import '../models/run_share_data.dart';
 import '../models/share_overlay_config.dart';
 import '../models/stat_item_config.dart';
 import '../providers/run_share_provider.dart';
 import 'draggable_route_widget.dart';
 import 'draggable_stat_widget.dart';
+import 'share_nrc_bar_widget.dart';
 
 class ShareCanvasWidget extends ConsumerWidget {
   const ShareCanvasWidget({
@@ -36,6 +36,8 @@ class ShareCanvasWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(runShareProvider.notifier);
+    final isFreestyle = config.cardStyle == CardStyle.freestyle ||
+        config.cardStyle == CardStyle.baton2;
 
     return RepaintBoundary(
       key: repaintKey,
@@ -55,23 +57,33 @@ class ShareCanvasWidget extends ConsumerWidget {
                   Positioned.fill(
                     child: GestureDetector(
                       onTap: () => notifier.selectStat(null),
-                      child: _buildBackground(),
+                      child: isFreestyle
+                          ? _buildDarkBackground()     // 자유1·자유2: 다크 단색
+                          : _buildMapBackground(),     // BATON1·BATON2: 지도 스냅샷
                     ),
                   ),
 
-                  // ── BATON 2 정적 레이아웃 ──────────────────────────────────
-                  if (config.cardStyle == CardStyle.baton3)
+                  // ── BATON 1 ─────────────────────────────────────────────────
+                  if (config.cardStyle == CardStyle.baton1)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: ShareNrcBarWidget(data: data, config: config),
+                    )
+
+                  // ── BATON 2 (baton3) ─────────────────────────────────────────
+                  else if (config.cardStyle == CardStyle.baton3)
                     _Baton2Layout(data: data)
+
+                  // ── 자유 1 / 자유 2 — 드래그 배치 ───────────────────────────
                   else ...[
-                    if (config.showRoute &&
-                        data.path.length >= 2 &&
-                        config.cardStyle != CardStyle.history)
+                    if (config.showRoute && data.path.length >= 2)
                       DraggableRouteWidget(
                         path: data.path,
                         config: config,
                         canvasSize: canvasSize,
                       ),
-                    // ── 스탯 (freestyle/nrc/korean/baton1/baton2 드래그 가능) ─
                     for (final stat in config.stats)
                       if (stat.visible)
                         _buildStatItem(stat, canvasSize, config),
@@ -85,64 +97,30 @@ class ShareCanvasWidget extends ConsumerWidget {
     );
   }
 
-  /// NRC 스타일: stat id → 아이콘
-  IconData? _nrcIcon(String id) => switch (id) {
-        'duration' => Icons.timer_outlined,
-        'pace' => Icons.speed_outlined,
-        _ => null,
-      };
-
-  /// 한글 스타일: stat id → 한글 레이블
-  String? _koreanLabel(String id) => switch (id) {
-        'distance' => '거리',
-        'duration' => '시간',
-        'pace' => '평균 페이스',
-        _ => null,
-      };
-
-  /// dark/orange 스타일: stat id → 값 아래 서브라벨
-  String? _sublabel(String id) => switch (id) {
-        'duration' => '총 시간',
-        'pace' => '평균 페이스',
-        _ => null,
-      };
-
-  Widget _buildStatItem(
-    StatItemConfig stat,
-    Size canvasSize,
-    ShareOverlayConfig config,
-  ) {
-    final isDarkOrange = config.cardStyle == CardStyle.dark ||
-        config.cardStyle == CardStyle.orange;
+  Widget _buildStatItem(StatItemConfig stat, Size canvasSize, ShareOverlayConfig cfg) {
     final alignment = Alignment(stat.dx * 2 - 1, stat.dy * 2 - 1);
     return Align(
       alignment: alignment,
       child: DraggableStatWidget(
         stat: stat,
         canvasSize: canvasSize,
-        isSelected: config.selectedStatId == stat.id,
+        isSelected: cfg.selectedStatId == stat.id,
         value: _value(stat.id),
-        prefixIcon: config.cardStyle == CardStyle.nrc ? _nrcIcon(stat.id) : null,
-        label: config.cardStyle == CardStyle.korean ? _koreanLabel(stat.id) : null,
-        sublabel: isDarkOrange ? _sublabel(stat.id) : null,
       ),
     );
   }
 
-  Widget _buildBackground() {
+  // 자유1·자유2 배경: 갤러리 이미지 > 다크 단색
+  Widget _buildDarkBackground() {
     if (backgroundImage != null) return Image.file(backgroundImage!, fit: BoxFit.cover);
-    return switch (config.cardStyle) {
-      CardStyle.dark => Container(color: const Color(0xFF141416)),
-      CardStyle.orange => Container(color: AppColors.primary),
-      CardStyle.history ||
-      CardStyle.nrc ||
-      CardStyle.korean ||
-      CardStyle.baton1 =>
-        data.mapSnapshot != null
-            ? Image.memory(data.mapSnapshot!, fit: BoxFit.cover)
-            : Container(color: const Color(0xFF1A1612)),
-      _ => Container(color: const Color(0xFF2C2420)),
-    };
+    return Container(color: const Color(0xFF2C2420));
+  }
+
+  // BATON1·BATON2 배경: 갤러리 이미지 > 지도 스냅샷 > 다크 단색
+  Widget _buildMapBackground() {
+    if (backgroundImage != null) return Image.file(backgroundImage!, fit: BoxFit.cover);
+    if (data.mapSnapshot != null) return Image.memory(data.mapSnapshot!, fit: BoxFit.cover);
+    return Container(color: const Color(0xFF1A1612));
   }
 }
 

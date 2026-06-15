@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,16 +12,21 @@ import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'firebase_options.dart';
 import 'src/app.dart';
 import 'src/core/storage/shared_prefs_provider.dart';
-import 'src/features/notifications/services/ios_push_notification_service.dart';
 
 final _logger = Logger();
 
 const _env = String.fromEnvironment('ENV', defaultValue: 'dev');
 
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  _logger.i('Background push message: ${message.messageId}');
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await IosPushNotificationService().initialize();
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   // Google Maps 플랫폼 뷰 설정
   // ① initializeWithRenderer(LATEST): Play Services가 지원하면 SurfaceView 렌더러 사용

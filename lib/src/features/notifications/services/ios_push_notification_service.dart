@@ -1,14 +1,26 @@
+import 'dart:async';
+
+import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
+
+import '../../../core/constants/api_constants.dart';
+import '../../../core/network/dio_client.dart';
 
 final _logger = Logger();
 
 class IosPushNotificationService {
-  IosPushNotificationService({FirebaseMessaging? messaging})
-    : _messaging = messaging ?? FirebaseMessaging.instance;
+  IosPushNotificationService({required Dio dio, FirebaseMessaging? messaging})
+    : _dio = dio,
+      _messaging = messaging ?? FirebaseMessaging.instance;
 
+  final Dio _dio;
   final FirebaseMessaging _messaging;
+  StreamSubscription<String>? _tokenRefreshSubscription;
+  StreamSubscription<RemoteMessage>? _foregroundMessageSubscription;
+  StreamSubscription<RemoteMessage>? _messageOpenedSubscription;
 
   Future<void> initialize() async {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) return;
@@ -34,18 +46,48 @@ class IosPushNotificationService {
 
       final apnsToken = await _messaging.getAPNSToken();
       final fcmToken = await _messaging.getToken();
-      _logger.i('APNs token: $apnsToken');
-      _logger.i('FCM token: $fcmToken');
+      _logger.i('APNs token available: ${apnsToken != null}');
+      _logger.i('FCM token available: ${fcmToken != null}');
+
+      if (fcmToken != null) {
+        await _saveFcmToken(fcmToken);
+      }
     } catch (e) {
       _logger.w('Failed to initialize iOS push notifications', error: e);
     }
 
-    FirebaseMessaging.onMessage.listen((message) {
+    _tokenRefreshSubscription ??= _messaging.onTokenRefresh.listen(
+      (token) async {
+        await _saveFcmToken(token);
+      },
+      onError: (Object e) {
+        _logger.w('FCM token refresh listener failed', error: e);
+      },
+    );
+
+    _foregroundMessageSubscription ??= FirebaseMessaging.onMessage.listen((
+      message,
+    ) {
       _logger.i('Foreground push message: ${message.messageId}');
     });
 
-    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+    _messageOpenedSubscription ??= FirebaseMessaging.onMessageOpenedApp.listen((
+      message,
+    ) {
       _logger.i('Opened from push message: ${message.messageId}');
     });
   }
+
+  Future<void> _saveFcmToken(String token) async {
+    try {
+      await _dio.post(ApiConstants.fcmToken, data: {'fcmToken': token});
+      _logger.i('FCM token saved to server');
+    } catch (e) {
+      _logger.w('Failed to save FCM token to server', error: e);
+    }
+  }
 }
+
+final iosPushNotificationServiceProvider = Provider<IosPushNotificationService>(
+  (ref) => IosPushNotificationService(dio: ref.watch(dioProvider)),
+);

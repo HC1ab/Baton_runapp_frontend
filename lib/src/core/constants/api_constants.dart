@@ -29,6 +29,13 @@ abstract final class ApiConstants {
   // Endpoints — Notice
   static const notices = '/api/v1/notices';
 
+  // Endpoints — Notification
+  static const notifications = '/api/v1/notifications';
+  static const notificationUnreadCount = '/api/v1/notifications/unread-count';
+  static String notificationRead(int notificationId) =>
+      '/api/v1/notifications/$notificationId/read';
+  static const notificationReadAll = '/api/v1/notifications/read-all';
+
   // Endpoints — Spot
   static const spots = '/api/v1/spots';
   static const spotsNearby = '/api/v1/spots/nearby';
@@ -60,8 +67,10 @@ abstract final class ApiConstants {
   static const followRequests = '/api/v1/follows/requests';
   static const followFollowers = '/api/v1/follows/followers';
   static const followFollowings = '/api/v1/follows/followings';
-  static String followAccept(String followId) => '/api/v1/follows/$followId/accept';
-  static String followReject(String followId) => '/api/v1/follows/$followId/reject';
+  static String followAccept(String followId) =>
+      '/api/v1/follows/$followId/accept';
+  static String followReject(String followId) =>
+      '/api/v1/follows/$followId/reject';
   static String followDelete(String followId) => '/api/v1/follows/$followId';
 
   // Endpoints — Colors

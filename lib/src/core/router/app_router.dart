@@ -7,6 +7,7 @@ import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/signup_screen.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/home/home_screen.dart';
+import '../../features/notifications/screens/notification_list_screen.dart';
 import '../../features/profile/screens/history_screen.dart';
 import '../../features/profile/screens/run_detail_screen.dart';
 import '../../features/settings/data/legal_documents.dart';
@@ -37,10 +38,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       if (authState is AuthStateUnauthenticated) {
-        final allowedAuthPaths = {
-          AppRoutes.login,
-          AppRoutes.signup,
-        };
+        final allowedAuthPaths = {AppRoutes.login, AppRoutes.signup};
         return allowedAuthPaths.contains(location) ? null : AppRoutes.login;
       }
 
@@ -53,30 +51,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(
-        path: AppRoutes.splash,
-        builder: (_, __) => const SplashScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.login,
-        builder: (_, __) => const LoginScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.signup,
-        builder: (_, __) => const SignupScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.home,
-        builder: (_, __) => const HomeScreen(),
-      ),
+      GoRoute(path: AppRoutes.splash, builder: (_, __) => const SplashScreen()),
+      GoRoute(path: AppRoutes.login, builder: (_, __) => const LoginScreen()),
+      GoRoute(path: AppRoutes.signup, builder: (_, __) => const SignupScreen()),
+      GoRoute(path: AppRoutes.home, builder: (_, __) => const HomeScreen()),
       GoRoute(
         path: AppRoutes.history,
         builder: (_, __) => const HistoryScreen(),
       ),
-      GoRoute(
-        path: AppRoutes.shop,
-        builder: (_, __) => const ShopScreen(),
-      ),
+      GoRoute(path: AppRoutes.shop, builder: (_, __) => const ShopScreen()),
       GoRoute(
         path: AppRoutes.history,
         builder: (_, __) => const HistoryScreen(),
@@ -112,6 +95,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const NoticeListScreen(),
       ),
       GoRoute(
+        path: AppRoutes.notifications,
+        builder: (_, __) => const NotificationListScreen(),
+      ),
+      GoRoute(
         path: '/notices/:noticeId',
         builder: (_, state) => NoticeDetailScreen(
           noticeId: int.parse(state.pathParameters['noticeId']!),
@@ -120,15 +107,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '${AppRoutes.runDetail}/:runId',
-        builder: (_, state) => RunDetailScreen(
-          runId: int.parse(state.pathParameters['runId']!),
-        ),
+        builder: (_, state) =>
+            RunDetailScreen(runId: int.parse(state.pathParameters['runId']!)),
       ),
       GoRoute(
         path: AppRoutes.runShare,
-        builder: (_, state) => RunShareScreen(
-          data: state.extra as RunShareData,
-        ),
+        builder: (_, state) =>
+            RunShareScreen(data: state.extra as RunShareData),
       ),
       GoRoute(
         path: '${AppRoutes.spotDetail}/:spotId',

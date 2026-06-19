@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/share_overlay_config.dart';
 import '../models/stat_item_config.dart';
-export '../models/share_overlay_config.dart' show CardStyle;
+export '../models/share_overlay_config.dart' show CardStyle, TagStyle;
 
 class RunShareNotifier extends Notifier<ShareOverlayConfig> {
   @override
@@ -77,6 +77,12 @@ class RunShareNotifier extends Notifier<ShareOverlayConfig> {
       default:
         state = state.copyWith(cardStyle: style, selectedStatId: null);
     }
+  }
+
+  // ── 태그 스타일 ───────────────────────────────────────────────────────────
+
+  void setTagStyle(TagStyle style) {
+    state = state.copyWith(tagStyle: style);
   }
 
   // ── 표시 여부 ─────────────────────────────────────────────────────────────

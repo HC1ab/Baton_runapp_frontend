@@ -63,6 +63,13 @@ class ShareCanvasWidget extends ConsumerWidget {
                     ),
                   ),
 
+                  // ── 우측 상단 브랜드 태그 ───────────────────────────────────
+                  Positioned(
+                    top: 24.r,
+                    right: 0,
+                    child: _BatonBrandTag(tagStyle: config.tagStyle),
+                  ),
+
                   // ── BATON 1 ─────────────────────────────────────────────────
                   if (config.cardStyle == CardStyle.baton1)
                     Positioned(
@@ -225,6 +232,41 @@ class _StatCell extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── 우측 상단 브랜드 태그 (Garmin 스타일) ─────────────────────────────────────
+
+class _BatonBrandTag extends StatelessWidget {
+  const _BatonBrandTag({required this.tagStyle});
+  final TagStyle tagStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = tagStyle == TagStyle.dark;
+    final bgColor = isDark ? Colors.black : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black;
+
+    return Container(
+      width: 28.r,
+      padding: EdgeInsets.symmetric(vertical: 12.r),
+      decoration: BoxDecoration(
+        color: bgColor,
+      ),
+      alignment: Alignment.center,
+      child: RotatedBox(
+        quarterTurns: 1,
+        child: Text(
+          'BATON',
+          style: TextStyle(
+            fontSize: 11.sp,
+            fontWeight: FontWeight.w700,
+            color: textColor,
+            letterSpacing: 2,
+          ),
+        ),
+      ),
     );
   }
 }

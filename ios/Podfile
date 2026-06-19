@@ -43,4 +43,22 @@ post_install do |installer|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '26.4'
     end
   end
+
+  # objective_c.framework의 IOSSIMULATOR 플랫폼 마커를 IOS로 교체
+  # flutter의 objective_c 패키지가 simulator 슬라이스로 빌드되어 App Store 업로드 시 거부되는 문제 방지
+  runner_project = installer.aggregate_targets.first.user_project
+  runner_project.targets.each do |target|
+    next unless target.name == 'Runner'
+    phase = target.new_shell_script_build_phase('Fix objective_c Framework Platform')
+    phase.shell_script = <<~'SCRIPT'
+      FRAMEWORK="${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}/objective_c.framework/objective_c"
+      if [ -f "$FRAMEWORK" ]; then
+        MINOS=$(defaults read "${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}/objective_c.framework/Info.plist" MinimumOSVersion 2>/dev/null || echo "13.0")
+        SDK=$(xcrun --sdk iphoneos --show-sdk-version 2>/dev/null || echo "17.0")
+        xcrun vtool -set-build-version ios "$MINOS" "$SDK" -replace -output "${FRAMEWORK}.tmp" "$FRAMEWORK" 2>/dev/null || true
+        [ -f "${FRAMEWORK}.tmp" ] && mv "${FRAMEWORK}.tmp" "$FRAMEWORK"
+      fi
+    SCRIPT
+  end
+  runner_project.save
 end

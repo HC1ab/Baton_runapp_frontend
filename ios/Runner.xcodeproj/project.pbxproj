@@ -207,6 +207,9 @@
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				634D1C8BCEFDBF24FFE8A644 /* [CP] Embed Pods Frameworks */,
 				8A917EBE22744504248AD8FB /* [CP] Copy Pods Resources */,
+				0644616E4BC18CCA83C9796D /* Fix objective_c Framework Platform */,
+				030976CC8CBE03B2A9B31581 /* Fix objective_c Framework Platform */,
+				435A7DD2C22B87AC3329EA92 /* Fix objective_c Framework Platform */,
 			);
 			buildRules = (
 			);
@@ -279,6 +282,42 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		030976CC8CBE03B2A9B31581 /* Fix objective_c Framework Platform */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Fix objective_c Framework Platform";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "FRAMEWORK=\"${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}/objective_c.framework/objective_c\"\nif [ -f \"$FRAMEWORK\" ]; then\n  MINOS=$(defaults read \"${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}/objective_c.framework/Info.plist\" MinimumOSVersion 2>/dev/null || echo \"13.0\")\n  SDK=$(xcrun --sdk iphoneos --show-sdk-version 2>/dev/null || echo \"17.0\")\n  xcrun vtool -set-build-version ios \"$MINOS\" \"$SDK\" -replace -output \"${FRAMEWORK}.tmp\" \"$FRAMEWORK\" 2>/dev/null || true\n  [ -f \"${FRAMEWORK}.tmp\" ] && mv \"${FRAMEWORK}.tmp\" \"$FRAMEWORK\"\nfi\n";
+		};
+		0644616E4BC18CCA83C9796D /* Fix objective_c Framework Platform */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Fix objective_c Framework Platform";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "FRAMEWORK=\"${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}/objective_c.framework/objective_c\"\nif [ -f \"$FRAMEWORK\" ]; then\n  xcrun vtool -set-build-version ios 14.0 14.0 -replace -output \"${FRAMEWORK}.tmp\" \"$FRAMEWORK\" 2>/dev/null || true\n  [ -f \"${FRAMEWORK}.tmp\" ] && mv \"${FRAMEWORK}.tmp\" \"$FRAMEWORK\"\nfi\n";
+		};
 		3B06AD1E1E4923F5004D2608 /* Thin Binary */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -294,6 +333,24 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
+		};
+		435A7DD2C22B87AC3329EA92 /* Fix objective_c Framework Platform */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Fix objective_c Framework Platform";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "FRAMEWORK=\"${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}/objective_c.framework/objective_c\"\nif [ -f \"$FRAMEWORK\" ]; then\n  MINOS=$(defaults read \"${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}/objective_c.framework/Info.plist\" MinimumOSVersion 2>/dev/null || echo \"13.0\")\n  SDK=$(xcrun --sdk iphoneos --show-sdk-version 2>/dev/null || echo \"17.0\")\n  xcrun vtool -set-build-version ios \"$MINOS\" \"$SDK\" -replace -output \"${FRAMEWORK}.tmp\" \"$FRAMEWORK\" 2>/dev/null || true\n  [ -f \"${FRAMEWORK}.tmp\" ] && mv \"${FRAMEWORK}.tmp\" \"$FRAMEWORK\"\nfi\n";
 		};
 		4F74574721804154ACEF18A2 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -325,13 +382,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -346,13 +399,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;

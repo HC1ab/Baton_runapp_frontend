@@ -23,37 +23,41 @@ class IosPushNotificationService {
   StreamSubscription<RemoteMessage>? _messageOpenedSubscription;
 
   Future<void> initialize() async {
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) return;
+    if (kIsWeb) return;
 
     try {
       final settings = await _messaging.requestPermission(
         alert: true,
-        announcement: false,
-        badge: true,
-        carPlay: false,
-        criticalAlert: false,
-        provisional: false,
-        sound: true,
-      );
-
-      await _messaging.setForegroundNotificationPresentationOptions(
-        alert: true,
         badge: true,
         sound: true,
       );
 
-      _logger.i('iOS notification permission: ${settings.authorizationStatus}');
+      _logger.i('Notification permission: ${settings.authorizationStatus}');
 
-      final apnsToken = await _messaging.getAPNSToken();
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        await _messaging.setForegroundNotificationPresentationOptions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+        // APNs 토큰이 준비될 때까지 최대 10초 대기 — 없으면 getToken()이 null 반환
+        String? apnsToken;
+        for (var i = 0; i < 10; i++) {
+          apnsToken = await _messaging.getAPNSToken();
+          if (apnsToken != null) break;
+          await Future.delayed(const Duration(seconds: 1));
+        }
+        _logger.i('APNs token available: ${apnsToken != null}');
+      }
+
       final fcmToken = await _messaging.getToken();
-      _logger.i('APNs token available: ${apnsToken != null}');
       _logger.i('FCM token available: ${fcmToken != null}');
 
       if (fcmToken != null) {
         await _saveFcmToken(fcmToken);
       }
     } catch (e) {
-      _logger.w('Failed to initialize iOS push notifications', error: e);
+      _logger.w('Failed to initialize push notifications', error: e);
     }
 
     _tokenRefreshSubscription ??= _messaging.onTokenRefresh.listen(

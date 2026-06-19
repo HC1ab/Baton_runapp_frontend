@@ -319,6 +319,11 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
           try {
             if (!mounted) return;
             _myLatLng = LatLng(pos.latitude, pos.longitude);
+            // iOS에서 FlutterCompass가 위치 권한 초기화 전에 구독돼 이벤트를 못 받는 경우
+            // Geolocator의 heading(CLLocationManager course)을 fallback으로 사용
+            if (pos.speed > 0.5 && pos.heading >= 0 && !pos.heading.isNaN) {
+              setState(() => _currentHeading = _normalizeBearing(pos.heading));
+            }
             await ref.read(runningProvider.notifier).onPositionUpdate(pos);
             if (!mounted) return;
             await _updateCamera(pos);

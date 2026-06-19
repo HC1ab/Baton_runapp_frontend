@@ -918,6 +918,12 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
                 child: RunningInfoPanel(
                   record: record,
                   onClose: () => setState(() => _showInfoPanel = false),
+                  onStart: () => setState(() {
+                    _showInfoPanel = false;
+                    _isCountingDown = true;
+                  }),
+                  onFinish: () =>
+                      ref.read(runningProvider.notifier).finishRun(),
                 ),
               ),
             ),

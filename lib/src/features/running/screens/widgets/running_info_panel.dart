@@ -11,10 +11,14 @@ class RunningInfoPanel extends StatelessWidget {
     super.key,
     required this.record,
     required this.onClose,
+    required this.onStart,
+    required this.onFinish,
   });
 
   final RunRecordModel record;
   final VoidCallback onClose;
+  final VoidCallback onStart;
+  final VoidCallback onFinish;
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +56,7 @@ class RunningInfoPanel extends StatelessWidget {
                 ),
               ),
 
-              // ── 거리 블록 ──────────────────────────────────────────────────
+              // ── 거리 블록 (중앙 정렬) ───────────────────────────────────────
               Padding(
                 padding: EdgeInsets.fromLTRB(
                   AppSpacing.screenHorizontal,
@@ -61,7 +65,7 @@ class RunningInfoPanel extends StatelessWidget {
                   0,
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
                       isRunning
@@ -143,7 +147,7 @@ class RunningInfoPanel extends StatelessWidget {
                           AppSpacing.screenHorizontal,
                           12.h,
                           AppSpacing.screenHorizontal,
-                          bottomPadding + 16.h,
+                          16.h,
                         ),
                         itemCount: record.laps.length,
                         separatorBuilder: (_, __) => Divider(
@@ -152,11 +156,35 @@ class RunningInfoPanel extends StatelessWidget {
                           thickness: 1,
                         ),
                         itemBuilder: (_, i) {
-                          // 최신 랩이 위 → reversed index
                           final lap = record.laps[record.laps.length - 1 - i];
                           return _LapRow(lap: lap);
                         },
                       ),
+              ),
+
+              // ── 시작 / 종료 버튼 ────────────────────────────────────────────
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.screenHorizontal,
+                  12.h,
+                  AppSpacing.screenHorizontal,
+                  bottomPadding + 20.h,
+                ),
+                child: Center(
+                  child: isRunning
+                      ? _ActionButton(
+                          icon: Icons.stop_rounded,
+                          label: '종료',
+                          color: AppColors.dRouteEnd,
+                          onTap: onFinish,
+                        )
+                      : _ActionButton(
+                          icon: Icons.play_arrow_rounded,
+                          label: '시작',
+                          color: AppColors.dAccent,
+                          onTap: onStart,
+                        ),
+                ),
               ),
             ],
           ),
@@ -243,7 +271,6 @@ class _LapRow extends StatelessWidget {
       padding: EdgeInsets.symmetric(vertical: 12.h),
       child: Row(
         children: [
-          // 랩 번호
           SizedBox(
             width: 32.w,
             child: Text(
@@ -255,7 +282,6 @@ class _LapRow extends StatelessWidget {
               ),
             ),
           ),
-          // 거리
           Text(
             '${(lap.distanceMeters / 1000).toStringAsFixed(2)} km',
             style: TextStyle(
@@ -265,7 +291,6 @@ class _LapRow extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          // 랩 시간
           Text(
             lap.formattedDuration,
             style: TextStyle(
@@ -276,7 +301,6 @@ class _LapRow extends StatelessWidget {
             ),
           ),
           SizedBox(width: 16.w),
-          // 랩 페이스
           SizedBox(
             width: 56.w,
             child: Text(
@@ -290,6 +314,52 @@ class _LapRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── 시작/종료 액션 버튼 ────────────────────────────────────────────────────────
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 36.w, vertical: 14.h),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(50.r),
+          border: Border.all(color: color.withValues(alpha: 0.5), width: 1.5),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 22.r),
+            SizedBox(width: 8.w),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

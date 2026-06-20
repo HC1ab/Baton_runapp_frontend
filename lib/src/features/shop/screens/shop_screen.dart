@@ -27,7 +27,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
   int? _purchasingItemId;
   int _selectedTab = 0;
 
-  static const List<String> _tabs = ['Colors', 'Auras', 'Inventory'];
+  static const List<String> _tabs = ['Colors', 'Auras', 'Booster'];
 
   @override
   Widget build(BuildContext context) {

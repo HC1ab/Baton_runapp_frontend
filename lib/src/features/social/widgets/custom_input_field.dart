@@ -61,7 +61,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
   @override
   Widget build(BuildContext context) {
     final isMultiline = widget.maxLines > 1;
-    final radius = BorderRadius.circular(16.r);
+    final radius = BorderRadius.circular(18.r);
     final borderColor = _isFocused ? _borderFocused : _borderNormal;
 
     return Column(
@@ -80,6 +80,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
         SizedBox(height: 8.h),
         AnimatedContainer(
           duration: const Duration(milliseconds: 180),
+          clipBehavior: Clip.antiAlias, // 안쪽 TextField를 둥근 모서리에 맞춰 클리핑
           decoration: BoxDecoration(
             color: _background,
             borderRadius: radius,

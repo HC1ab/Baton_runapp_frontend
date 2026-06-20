@@ -156,7 +156,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Baton Shop',
+                    '상점',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16.sp,
@@ -366,7 +366,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
   }
 
   void _showLockedMessage() {
-    AppSnackBar.info(context, 'Baton Shop에서 구매 후 사용할 수 있어요.');
+    AppSnackBar.info(context, '상점에서 구매 후 사용할 수 있어요.');
   }
 
   // ── Titles Tab ───────────────────────────────────────────────────────────

@@ -17,8 +17,8 @@ import '../../profile/services/member_profile_service.dart';
 import '../../spot/providers/spot_providers.dart';
 import '../providers/occupation_providers.dart';
 
-/// 점령 지도 — BATON(전체 점령) / 내 점령 토글 + 2D 탑다운 지도.
-/// 점령된 스팟을 회색 원으로 표시하고, BATON에서 원을 누르면
+/// 점령 지도 — 차지(전체 점령) / 내 점령 토글 + 2D 탑다운 지도.
+/// 점령된 스팟을 회색 원으로 표시하고, 차지에서 원을 누르면
 /// 점령자 정보를 보여주는 미니 상세 시트가 아래에서 올라온다.
 class OccupationScreen extends ConsumerStatefulWidget {
   const OccupationScreen({super.key});
@@ -56,7 +56,7 @@ class _OccupationScreenState extends ConsumerState<OccupationScreen> {
         if (mounted && _showMap) setState(() => _showMap = false);
       }
     });
-    // 토글(BATON/내 점령) 전환 시 해당 모드 데이터에 맞춰 카메라를 다시 잡도록.
+    // 토글(차지/내 점령) 전환 시 해당 모드 데이터에 맞춰 카메라를 다시 잡도록.
     ref.listenManual<OccupationMode>(occupationModeProvider, (prev, next) {
       _cameraPositioned = false;
     });
@@ -137,7 +137,7 @@ class _OccupationScreenState extends ConsumerState<OccupationScreen> {
                     mapToolbarEnabled: false,
                     rotateGesturesEnabled: false,
                     tiltGesturesEnabled: false, // 2D 고정
-                    // BATON(전체 점령) 화면은 줌을 고정 — 축소/확대 제한
+                    // 차지(전체 점령) 화면은 줌을 고정 — 축소/확대 제한
                     zoomGesturesEnabled: mode != OccupationMode.all,
                     circles: _buildCircles(spots),
                     onMapCreated: (ctrl) {
@@ -167,7 +167,7 @@ class _OccupationScreenState extends ConsumerState<OccupationScreen> {
             ),
           ),
 
-          // ── 상단 토글 (BATON / 내 점령) ───────────────────────────────────
+          // ── 상단 토글 (차지 / 내 점령) ───────────────────────────────────
           Positioned(
             top: topPadding + 12.h,
             left: 0,
@@ -271,7 +271,7 @@ class _OccupationScreenState extends ConsumerState<OccupationScreen> {
   }
 }
 
-// ── 토글 (BATON / 내 점령) ────────────────────────────────────────────────────
+// ── 토글 (차지 / 내 점령) ────────────────────────────────────────────────────
 class _ModeToggle extends StatelessWidget {
   const _ModeToggle({required this.mode, required this.onChanged});
 
@@ -290,7 +290,7 @@ class _ModeToggle extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _segment('BATON', OccupationMode.all),
+          _segment('차지', OccupationMode.all),
           _segment('내 점령', OccupationMode.mine),
           _segment('스팟', OccupationMode.spot),
         ],

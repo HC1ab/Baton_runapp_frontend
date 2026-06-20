@@ -331,12 +331,12 @@ class _StyleToggle extends StatelessWidget {
             onTap: () => onChanged(CardStyle.baton2),
           ),
           _Tab(
-            label: 'BATON 1',
+            label: '차지 1',
             selected: current == CardStyle.baton1,
             onTap: () => onChanged(CardStyle.baton1),
           ),
           _Tab(
-            label: 'BATON 2',
+            label: '차지 2',
             selected: current == CardStyle.baton3,
             onTap: () => onChanged(CardStyle.baton3),
           ),

@@ -468,12 +468,13 @@ class _FollowSectionState extends ConsumerState<_FollowSection> {
         );
 
       // ── 친구 → 팔로잉/팔로워 배지 + 삭제 ──────────────────────────────
-      // iActuallyFollow=true  → 내가 팔로우 중 → "팔로잉"
+      // 백엔드 FRIEND = 수락된 팔로우 관계 (대칭 처리)
+      // iActuallyFollow=true  → 내가 팔로우 중 → "팔로잉" / "맞팔"
       // theyFollowMe=true     → 상대가 나를 팔로우 중 → "팔로워"
       // 둘 다 false = 캐시 로딩 중 → "팔로잉"(서버 FRIEND 신뢰)
       case RelationStatus.friend:
         final badgeLabel = iActuallyFollow
-            ? '팔로잉'
+            ? (theyFollowMe ? '맞팔' : '팔로잉')
             : theyFollowMe
                 ? '팔로워'
                 : '팔로잉';

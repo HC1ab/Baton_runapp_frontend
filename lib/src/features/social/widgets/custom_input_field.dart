@@ -88,7 +88,9 @@ class _CustomInputFieldState extends State<CustomInputField> {
               width: _isFocused ? 1.5 : 1.0,
             ),
           ),
-          child: TextField(
+          child: ClipRRect(
+            borderRadius: radius,
+            child: TextField(
             controller: widget.controller,
             focusNode: _focusNode,
             keyboardType: widget.keyboardType ??
@@ -114,7 +116,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
               ),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 18.w,
-                vertical: isMultiline ? 14.h : 0,
+                vertical: 14.h,
               ),
               suffixIcon: widget.suffixIcon != null
                   ? Padding(
@@ -129,7 +131,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
                 minWidth: 44.w,
                 minHeight: 44.h,
               ),
-              isCollapsed: !isMultiline,
+              isCollapsed: false,
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
@@ -137,6 +139,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
               errorBorder: InputBorder.none,
               focusedErrorBorder: InputBorder.none,
             ),
+          ),
           ),
         ),
       ],

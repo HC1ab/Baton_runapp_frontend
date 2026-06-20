@@ -209,10 +209,11 @@ class _FollowingTab extends ConsumerWidget {
 
     try {
       await ref.read(followServiceProvider).deleteFollow(member.followId);
-      ref.invalidate(followingsProvider);
     } catch (e) {
       if (!context.mounted) return;
       AppSnackBar.error(context, '삭제에 실패했어요. 다시 시도해주세요.');
+    } finally {
+      ref.invalidate(followingsProvider);
     }
   }
 }

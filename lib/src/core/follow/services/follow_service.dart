@@ -133,7 +133,10 @@ class FollowService {
   /// 팔로잉 삭제 (내가 팔로우한 관계 제거).
   Future<void> deleteFollow(String followId) async {
     try {
-      await _dio.delete(ApiConstants.followDelete(followId));
+      await _dio.delete(
+        ApiConstants.followDelete(followId),
+        options: Options(responseType: ResponseType.bytes),
+      );
     } on AppException {
       rethrow;
     } on DioException catch (e) {

@@ -13,6 +13,7 @@ import '../../../core/constants/app_routes.dart';
 import '../../../core/myroom/my_room_service.dart';
 import '../../../core/shell/tab_providers.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../occupation/providers/occupation_providers.dart';
 import '../services/profile_service.dart';
 
 /// ProfileScreen — 프로필 탭: API 기반 닉네임/타이틀/레벨/러닝 통계 표시 + 로그아웃 버튼.
@@ -98,9 +99,14 @@ class ProfileScreen extends ConsumerWidget {
                       subtitle: '저장된 코스 확인',
                       filled: true,
                       fillColor: AppColors.dGold,
-                      onTap: () => ref
-                          .read(currentTabProvider.notifier)
-                          .switchTo(AppTabs.spot),
+                      onTap: () {
+                        ref
+                            .read(currentTabProvider.notifier)
+                            .switchTo(AppTabs.occupation);
+                        ref
+                            .read(occupationModeProvider.notifier)
+                            .set(OccupationMode.spot);
+                      },
                     ),
                   ),
                 ],
@@ -123,7 +129,7 @@ class ProfileScreen extends ConsumerWidget {
   Widget _buildEquippedTitleBadge(WidgetRef ref, String equippedTitleName) {
     if (equippedTitleName.isEmpty) {
       return Text(
-        'No Title',
+        '칭호 없음',
         textAlign: TextAlign.center,
         style: const TextStyle(
           fontSize: 15,

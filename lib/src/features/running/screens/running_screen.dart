@@ -1021,7 +1021,7 @@ class _BottomPanel extends StatelessWidget {
                       children: [
                         Expanded(
                           child: _MetricBlock(
-                            label: '거리 (KM)',
+                            label: '거리 km',
                             value: (record.distanceMeters / 1000)
                                 .toStringAsFixed(2),
                             labelColor: AppColors.dAccent,

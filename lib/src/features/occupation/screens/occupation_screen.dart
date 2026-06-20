@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 
@@ -11,6 +13,8 @@ import '../../../core/constants/app_map_styles.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/shell/tab_providers.dart';
+import '../../spot/models/spot_cooldown_model.dart';
+import '../../spot/providers/spot_providers.dart';
 import '../providers/occupation_providers.dart';
 
 /// 점령 지도 — BATON(전체 점령) / 내 점령 토글 + 2D 탑다운 지도.
@@ -34,15 +38,17 @@ class _OccupationScreenState extends ConsumerState<OccupationScreen> {
   bool _cameraPositioned = false;
 
   /// 탭 활성화 후 레이아웃이 안정된 다음 프레임에 지도를 삽입하기 위한 플래그.
-  /// 활성화되는 그 프레임에 지도를 만들면 안드로이드 플랫폼 뷰가 잘못된 초기 크기로
-  /// 잡혀 상단 일부만 렌더되고 나머지가 검게 남는 문제를 방지한다.
   bool _showMap = false;
+
+  /// 스팟 쿨다운 카운트다운용 타이머
+  Timer? _spotTicker;
 
   @override
   void initState() {
     super.initState();
-    // 점령 탭을 떠나면 GoogleMap 서브트리가 해제되며 컨트롤러가 무효화되므로
-    // 참조를 비워 두었다가 재진입 시 다시 안정화 후 삽입한다.
+    _spotTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
     ref.listenManual<int>(currentTabProvider, (prev, next) {
       if (next != AppTabs.occupation) {
         _mapCtrl = null;
@@ -50,6 +56,12 @@ class _OccupationScreenState extends ConsumerState<OccupationScreen> {
         if (mounted && _showMap) setState(() => _showMap = false);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _spotTicker?.cancel();
+    super.dispose();
   }
 
   @override
@@ -71,9 +83,22 @@ class _OccupationScreenState extends ConsumerState<OccupationScreen> {
     }
 
     final mode = ref.watch(occupationModeProvider);
-    final spotsAsync = ref.watch(occupiedSpotsProvider);
     final topPadding = MediaQuery.of(context).padding.top;
 
+    // 스팟 모드 — 지도 없이 스팟 목록만 표시
+    if (mode == OccupationMode.spot) {
+      return Scaffold(
+        backgroundColor: AppColors.dScreen,
+        body: _SpotModeBody(
+          topPadding: topPadding,
+          mode: mode,
+          onModeChanged: (m) =>
+              ref.read(occupationModeProvider.notifier).set(m),
+        ),
+      );
+    }
+
+    final spotsAsync = ref.watch(occupiedSpotsProvider);
     final spots = spotsAsync.value ?? const <OccupiedSpot>[];
 
     // 지도가 준비된 뒤 데이터가 들어오면 한 번만 결정론적으로 카메라 위치 지정
@@ -261,6 +286,7 @@ class _ModeToggle extends StatelessWidget {
         children: [
           _segment('BATON', OccupationMode.all),
           _segment('내 점령', OccupationMode.mine),
+          _segment('스팟', OccupationMode.spot),
         ],
       ),
     );
@@ -505,6 +531,379 @@ class _StatusCard extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── 스팟 모드 바디 ─────────────────────────────────────────────────────────────
+
+class _SpotModeBody extends ConsumerWidget {
+  const _SpotModeBody({
+    required this.topPadding,
+    required this.mode,
+    required this.onModeChanged,
+  });
+
+  final double topPadding;
+  final OccupationMode mode;
+  final ValueChanged<OccupationMode> onModeChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final spotsAsync = ref.watch(spotCooldownsProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── 헤더 + 토글 ────────────────────────────────────────────────────
+        Padding(
+          padding: EdgeInsets.fromLTRB(22.w, topPadding + 8.h, 22.w, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '스팟',
+                style: TextStyle(
+                  color: AppColors.dAccent,
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 2.0,
+                ),
+              ),
+              SizedBox(height: 6.h),
+              Text(
+                '내가 방문한 스팟',
+                style: TextStyle(
+                  color: AppColors.dText,
+                  fontSize: 28.sp,
+                  fontWeight: FontWeight.w800,
+                  height: 1.1,
+                ),
+              ),
+              SizedBox(height: 16.h),
+              Center(
+                child: _ModeToggle(mode: mode, onChanged: onModeChanged),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 20.h),
+
+        // ── 목록 ────────────────────────────────────────────────────────────
+        Expanded(
+          child: spotsAsync.when(
+            loading: () => const Center(
+              child: CircularProgressIndicator(color: AppColors.dAccent),
+            ),
+            error: (_, __) => Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.error_outline_rounded,
+                      size: 40.r, color: AppColors.dRouteEnd),
+                  SizedBox(height: 12.h),
+                  Text(
+                    '목록을 불러오지 못했어요.',
+                    style: TextStyle(color: AppColors.dMuted, fontSize: 14.sp),
+                  ),
+                  SizedBox(height: 12.h),
+                  TextButton(
+                    onPressed: () => ref.invalidate(spotCooldownsProvider),
+                    child: const Text('다시 시도'),
+                  ),
+                ],
+              ),
+            ),
+            data: (spots) => RefreshIndicator(
+              color: AppColors.dAccent,
+              backgroundColor: AppColors.dCard,
+              onRefresh: () async => ref.invalidate(spotCooldownsProvider),
+              child: spots.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.45,
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.location_off_rounded,
+                                  size: 52.r,
+                                  color: AppColors.dAccent.withValues(alpha: 0.3),
+                                ),
+                                SizedBox(height: 16.h),
+                                Text(
+                                  '아직 방문한 스팟이 없어요',
+                                  style: TextStyle(
+                                    color: AppColors.dText,
+                                    fontSize: 17.sp,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                SizedBox(height: 8.h),
+                                Text(
+                                  '러닝 중 스팟 근처를 지나면\n자동으로 체크인돼요!',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: AppColors.dMuted,
+                                    fontSize: 14.sp,
+                                    height: 1.45,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.fromLTRB(22.w, 0, 22.w, 110.h),
+                      itemCount: spots.length,
+                      separatorBuilder: (_, __) => SizedBox(height: 12.h),
+                      itemBuilder: (_, i) => _SpotCard(spot: spots[i]),
+                    ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── 스팟 카드 ─────────────────────────────────────────────────────────────────
+
+class _SpotCard extends StatelessWidget {
+  const _SpotCard({required this.spot});
+  final SpotCooldownModel spot;
+
+  @override
+  Widget build(BuildContext context) {
+    final isAvailable = spot.isAvailable;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(22.r),
+      onTap: () => context.push('${AppRoutes.spotDetail}/${spot.spotId}'),
+      child: Container(
+        padding: EdgeInsets.all(14.r),
+        decoration: BoxDecoration(
+          color: AppColors.dCard,
+          borderRadius: BorderRadius.circular(22.r),
+          border: Border.all(color: AppColors.dLine, width: 1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 40.r,
+                  height: 40.r,
+                  decoration: BoxDecoration(
+                    color: isAvailable
+                        ? AppColors.primary
+                        : AppColors.spotNeutral.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Icon(
+                    Icons.location_on_rounded,
+                    color: isAvailable ? Colors.white : AppColors.spotNeutral,
+                    size: 22.r,
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 2.h),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          spot.spotName,
+                          style: TextStyle(
+                            fontSize: 15.5.sp,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.dText,
+                            height: 1.25,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: 5.h),
+                        Text(
+                          '마지막 방문 · ${DateFormat('yyyy.MM.dd').format(spot.lastCheckinAt)}',
+                          style: TextStyle(
+                            fontSize: 12.5.sp,
+                            color: AppColors.dFaint,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                _CooldownRing(
+                  progress: spot.cooldownProgress,
+                  isAvailable: isAvailable,
+                  remainingSeconds: spot.liveRemainingSeconds,
+                ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                _RewardBadge(
+                  icon: Icons.bolt_rounded,
+                  label: '+${spot.expAmount} EXP',
+                  dim: spot.expAmount <= 0,
+                  isGold: false,
+                ),
+                SizedBox(width: 8.w),
+                _RewardBadge(
+                  icon: Icons.monetization_on_rounded,
+                  label: '${spot.rewardAmount} P',
+                  dim: false,
+                  isGold: true,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── 쿨타임 원형 인디케이터 ─────────────────────────────────────────────────────
+
+class _CooldownRing extends StatelessWidget {
+  const _CooldownRing({
+    required this.progress,
+    required this.isAvailable,
+    required this.remainingSeconds,
+  });
+
+  final double progress;
+  final bool isAvailable;
+  final int remainingSeconds;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 44.r,
+          height: 44.r,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 44.r,
+                height: 44.r,
+                child: CircularProgressIndicator(
+                  value: 1.0,
+                  strokeWidth: 3.r,
+                  color: Colors.white.withValues(alpha: 0.10),
+                ),
+              ),
+              SizedBox(
+                width: 44.r,
+                height: 44.r,
+                child: CircularProgressIndicator(
+                  value: isAvailable ? 1.0 : progress,
+                  strokeWidth: 3.r,
+                  strokeCap: StrokeCap.round,
+                  color: AppColors.dAccent,
+                  backgroundColor: Colors.transparent,
+                ),
+              ),
+              if (isAvailable)
+                Icon(Icons.check_rounded, color: AppColors.dAccent, size: 18.r),
+            ],
+          ),
+        ),
+        SizedBox(height: 6.h),
+        Text(
+          isAvailable ? '체크인 가능' : _formatRemaining(remainingSeconds),
+          style: TextStyle(
+            fontSize: 11.5.sp,
+            fontWeight: FontWeight.w800,
+            color: AppColors.dAccent,
+            letterSpacing: isAvailable ? 0 : 0.4,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatRemaining(int seconds) {
+    final h = seconds ~/ 3600;
+    final m = (seconds % 3600) ~/ 60;
+    final s = seconds % 60;
+    return '${h.toString().padLeft(2, '0')}:'
+        '${m.toString().padLeft(2, '0')}:'
+        '${s.toString().padLeft(2, '0')}';
+  }
+}
+
+// ── 보상 배지 ─────────────────────────────────────────────────────────────────
+
+class _RewardBadge extends StatelessWidget {
+  const _RewardBadge({
+    required this.icon,
+    required this.label,
+    required this.dim,
+    required this.isGold,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool dim;
+  final bool isGold;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg;
+    final Color fg;
+    if (dim) {
+      bg = Colors.white.withValues(alpha: 0.05);
+      fg = AppColors.dMuted;
+    } else if (isGold) {
+      bg = AppColors.dGoldSoft;
+      fg = AppColors.dGold;
+    } else {
+      bg = AppColors.dAccentSoft;
+      fg = AppColors.dAccentBright;
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: fg, size: 13.r),
+          SizedBox(width: 5.w),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12.5.sp,
+              fontWeight: FontWeight.w700,
+              color: fg,
+            ),
+          ),
+        ],
       ),
     );
   }

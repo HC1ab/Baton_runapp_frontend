@@ -33,10 +33,10 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
   bool _isEquippingTitle = false;
 
   static const List<String> _tabs = [
-    'Core Colors',
-    'Aura',
-    'Titles',
-    'Inventory'
+    '코어 색상',
+    '오라',
+    '칭호',
+    '인벤토리'
   ];
 
   @override
@@ -165,7 +165,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
                   ),
                   SizedBox(height: 2.h),
                   Text(
-                    'GET EXCLUSIVE ITEMS',
+                    '전용 아이템 구매하기',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.85),
                       fontSize: 11.5.sp,
@@ -535,7 +535,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
                     borderRadius: BorderRadius.circular(999.r),
                   ),
                   child: Text(
-                    'ON',
+                    '착용',
                     style: TextStyle(
                       color: const Color(0xFF160D06),
                       fontWeight: FontWeight.w800,
@@ -602,7 +602,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
       height: 100.h,
       child: Center(
         child: Text(
-          'Coming soon',
+          '준비 중',
           style: TextStyle(color: AppColors.dMuted, fontSize: 14.sp),
         ),
       ),

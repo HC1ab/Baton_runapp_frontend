@@ -13,6 +13,9 @@ enum OccupationMode {
 
   /// 내 점령 — 내가 점령한 스팟
   mine,
+
+  /// 스팟 — 내가 방문한 스팟 목록
+  spot,
 }
 
 final occupationApiProvider = Provider<OccupationApi>((ref) {
@@ -51,5 +54,6 @@ final occupiedSpotsProvider =
   return switch (mode) {
     OccupationMode.all => ref.watch(allOccupiedSpotsProvider.future),
     OccupationMode.mine => ref.watch(myOccupiedSpotsProvider.future),
+    OccupationMode.spot => const [],
   };
 });

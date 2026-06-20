@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/foundation.dart';
 
 import '../../profile/models/run_detail_model.dart';

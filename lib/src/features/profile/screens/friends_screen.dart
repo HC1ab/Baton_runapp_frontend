@@ -275,7 +275,7 @@ class _FriendTileState extends ConsumerState<_FriendTile> {
     final colorCode = colorAsync.when(
       data: (c) => c ?? 'CORE_ORANGE',
       loading: () => 'CORE_ORANGE',
-      error: (_, __) => 'CORE_ORANGE',
+      error: (_, _) => 'CORE_ORANGE',
     );
     final style = CharacterStylePresets.fromCode(colorCode);
 

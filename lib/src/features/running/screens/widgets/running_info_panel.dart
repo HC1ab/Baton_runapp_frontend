@@ -150,7 +150,7 @@ class RunningInfoPanel extends StatelessWidget {
                           16.h,
                         ),
                         itemCount: record.laps.length,
-                        separatorBuilder: (_, __) => Divider(
+                        separatorBuilder: (_, _) => Divider(
                           color: AppColors.dLine,
                           height: 1,
                           thickness: 1,

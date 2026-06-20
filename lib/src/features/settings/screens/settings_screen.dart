@@ -234,7 +234,7 @@ class _SettingsTile extends StatelessWidget {
               ),
             ),
             const Spacer(),
-            if (trailing != null) trailing!,
+            ?trailing,
             if (trailing == null && showArrow)
               Icon(Icons.arrow_forward_ios_rounded,
                   size: 14.r, color: AppColors.dMuted),

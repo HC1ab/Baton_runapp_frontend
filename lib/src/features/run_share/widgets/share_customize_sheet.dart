@@ -5,7 +5,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_text_styles.dart';
-import '../models/share_overlay_config.dart';
 import '../models/stat_item_config.dart';
 import '../providers/run_share_provider.dart';
 

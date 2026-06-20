@@ -13,7 +13,7 @@ import '../../../core/constants/app_map_styles.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/shell/tab_providers.dart';
-import '../../spot/models/spot_cooldown_model.dart';
+import '../../profile/services/member_profile_service.dart';
 import '../../spot/providers/spot_providers.dart';
 import '../providers/occupation_providers.dart';
 
@@ -55,6 +55,10 @@ class _OccupationScreenState extends ConsumerState<OccupationScreen> {
         _cameraPositioned = false;
         if (mounted && _showMap) setState(() => _showMap = false);
       }
+    });
+    // 토글(BATON/내 점령) 전환 시 해당 모드 데이터에 맞춰 카메라를 다시 잡도록.
+    ref.listenManual<OccupationMode>(occupationModeProvider, (prev, next) {
+      _cameraPositioned = false;
     });
   }
 
@@ -133,6 +137,8 @@ class _OccupationScreenState extends ConsumerState<OccupationScreen> {
                     mapToolbarEnabled: false,
                     rotateGesturesEnabled: false,
                     tiltGesturesEnabled: false, // 2D 고정
+                    // BATON(전체 점령) 화면은 줌을 고정 — 축소/확대 제한
+                    zoomGesturesEnabled: mode != OccupationMode.all,
                     circles: _buildCircles(spots),
                     onMapCreated: (ctrl) {
                       setState(() => _mapCtrl = ctrl);
@@ -320,14 +326,24 @@ class _ModeToggle extends StatelessWidget {
 }
 
 // ── 점령자 미니 상세 시트 ──────────────────────────────────────────────────────
-class _OccupierDetailSheet extends StatelessWidget {
+class _OccupierDetailSheet extends ConsumerWidget {
   const _OccupierDetailSheet({required this.spot});
 
   final OccupiedSpot spot;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final occupiedAt = spot.occupiedAt;
+    // 점령자/내 체크인 횟수는 스팟 상세, 점령자 레벨은 공개 프로필에서 가져옴
+    final detail = ref.watch(spotDetailProvider(spot.spotId)).value;
+    final occupierCheckins = detail?.occupierCheckinCount ?? 0;
+    final myCheckins = detail?.myCheckinCount ?? 0;
+    final profile =
+        ref.watch(memberPublicProfileProvider(spot.occupierMemberId)).value;
+    final level = profile?.level;
+    final nickname = spot.occupierNickname.isNotEmpty
+        ? spot.occupierNickname
+        : (profile?.nickname ?? '멤버 #${spot.occupierMemberId}');
 
     return SafeArea(
       top: false,
@@ -356,112 +372,142 @@ class _OccupierDetailSheet extends StatelessWidget {
               ),
             ),
 
-            // 점령자 + 점령 시간
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 44.r,
-                  height: 44.r,
-                  decoration: const BoxDecoration(
-                    color: AppColors.dCard2,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.person_rounded,
-                    color: AppColors.dMuted,
-                    size: 24.r,
-                  ),
-                ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '점령자',
-                        style: TextStyle(
-                          fontSize: 11.5.sp,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.dFaint,
-                        ),
-                      ),
-                      SizedBox(height: 3.h),
-                      Text(
-                        spot.occupierNickname.isEmpty
-                            ? '멤버 #${spot.occupierMemberId}'
-                            : spot.occupierNickname,
-                        style: TextStyle(
-                          fontSize: 18.sp,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.dText,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(width: 12.w),
-                // 오른쪽: 점령된 시간
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '점령 시각',
-                      style: TextStyle(
-                        fontSize: 11.5.sp,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.dFaint,
-                      ),
-                    ),
-                    SizedBox(height: 3.h),
-                    Text(
-                      occupiedAt == null
-                          ? '—'
-                          : DateFormat('M월 d일').format(occupiedAt),
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.dText,
-                      ),
-                    ),
-                    if (occupiedAt != null) ...[
-                      SizedBox(height: 1.h),
-                      Text(
-                        DateFormat('HH:mm').format(occupiedAt),
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.dMuted,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-
-            SizedBox(height: 18.h),
-            Divider(color: AppColors.dLine2, height: 1),
-            SizedBox(height: 16.h),
-
-            // 스팟 이름
+            // ── 스팟 이름 (작은 헤더) ──────────────────────────────────
             Row(
               children: [
                 Icon(Icons.location_on_rounded,
-                    color: AppColors.dAccentBright, size: 20.r),
-                SizedBox(width: 8.w),
+                    color: AppColors.dAccentBright, size: 18.r),
+                SizedBox(width: 6.w),
                 Expanded(
                   child: Text(
                     spot.name.isEmpty ? '이름 없는 스팟' : spot.name,
                     style: TextStyle(
-                      fontSize: 16.sp,
+                      fontSize: 13.5.sp,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.dText,
+                      color: AppColors.dMuted,
                     ),
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+
+            SizedBox(height: 14.h),
+
+            // ── 점령자 강조 카드 ───────────────────────────────────────
+            Container(
+              padding: EdgeInsets.all(14.r),
+              decoration: BoxDecoration(
+                color: AppColors.dCard2,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                border: Border.all(
+                  color: AppColors.dGold.withValues(alpha: 0.35),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 52.r,
+                    height: 52.r,
+                    decoration: const BoxDecoration(
+                      color: AppColors.dGoldSoft,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.emoji_events_rounded,
+                      color: AppColors.dGold,
+                      size: 28.r,
+                    ),
+                  ),
+                  SizedBox(width: 14.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '현재 점령자',
+                          style: TextStyle(
+                            fontSize: 11.5.sp,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.dFaint,
+                          ),
+                        ),
+                        SizedBox(height: 3.h),
+                        Text(
+                          nickname,
+                          style: TextStyle(
+                            fontSize: 20.sp,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.dText,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (level != null) ...[
+                          SizedBox(height: 2.h),
+                          Text(
+                            'Lv.$level',
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.dFaint,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
+                  // 점령자 체크인 — 골드 배지로 강조
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                    decoration: BoxDecoration(
+                      color: AppColors.dGold,
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                    ),
+                    child: Text(
+                      '체크인 $occupierCheckins회',
+                      style: TextStyle(
+                        fontSize: 12.5.sp,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF1A0E06),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            SizedBox(height: 14.h),
+
+            // ── 내 체크인 + 점령 시각 (작게, 구분) ─────────────────────
+            Row(
+              children: [
+                Icon(Icons.how_to_reg_rounded,
+                    color: AppColors.dMuted, size: 15.r),
+                SizedBox(width: 5.w),
+                Text(
+                  '내 체크인 $myCheckins회',
+                  style: TextStyle(
+                    fontSize: 12.5.sp,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.dMuted,
+                  ),
+                ),
+                const Spacer(),
+                Icon(Icons.schedule_rounded, color: AppColors.dFaint, size: 14.r),
+                SizedBox(width: 4.w),
+                Text(
+                  occupiedAt == null
+                      ? '점령 시각 —'
+                      : '${DateFormat('M월 d일').format(occupiedAt)} '
+                          '${DateFormat('HH:mm').format(occupiedAt)}',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.dFaint,
                   ),
                 ),
               ],
@@ -596,7 +642,7 @@ class _SpotModeBody extends ConsumerWidget {
             loading: () => const Center(
               child: CircularProgressIndicator(color: AppColors.dAccent),
             ),
-            error: (_, __) => Center(
+            error: (_, _) => Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -663,7 +709,7 @@ class _SpotModeBody extends ConsumerWidget {
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: EdgeInsets.fromLTRB(22.w, 0, 22.w, 110.h),
                       itemCount: spots.length,
-                      separatorBuilder: (_, __) => SizedBox(height: 12.h),
+                      separatorBuilder: (_, _) => SizedBox(height: 12.h),
                       itemBuilder: (_, i) => _SpotCard(spot: spots[i]),
                     ),
             ),

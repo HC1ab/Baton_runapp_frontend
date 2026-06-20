@@ -42,7 +42,7 @@ class NoticeListScreen extends ConsumerWidget {
                 child: ListView.separated(
                   padding: EdgeInsets.symmetric(vertical: 8.h),
                   itemCount: notices.length,
-                  separatorBuilder: (_, __) =>
+                  separatorBuilder: (_, _) =>
                       Divider(height: 1, color: AppColors.dLine),
                   itemBuilder: (_, i) {
                     final notice = notices[i];

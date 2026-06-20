@@ -174,7 +174,7 @@ class MemberProfileScreen extends ConsumerWidget {
     final colorCode = colorAsync.when(
       data: (c) => c ?? 'CORE_ORANGE',
       loading: () => 'CORE_ORANGE',
-      error: (_, __) => 'CORE_ORANGE',
+      error: (_, _) => 'CORE_ORANGE',
     );
     return Center(
       child: CharacterSphereWidget(
@@ -313,7 +313,7 @@ class _FollowSectionState extends ConsumerState<_FollowSection> {
   Future<String?> _resolveFollowId() async {
     final nickname = widget.profile.nickname;
 
-    String? _findIn(List list) {
+    String? findIn(List list) {
       for (final m in list) {
         if (m.nickname == nickname) return m.followId as String;
       }
@@ -321,11 +321,11 @@ class _FollowSectionState extends ConsumerState<_FollowSection> {
     }
 
     final followings = await ref.read(followingsProvider.future);
-    final id1 = _findIn(followings);
+    final id1 = findIn(followings);
     if (id1 != null) return id1;
 
     final followers = await ref.read(followersProvider.future);
-    final id2 = _findIn(followers);
+    final id2 = findIn(followers);
     if (id2 != null) return id2;
 
     // 캐시 miss 가능성 → 강제 새로고침
@@ -333,11 +333,11 @@ class _FollowSectionState extends ConsumerState<_FollowSection> {
     ref.invalidate(followersProvider);
 
     final freshFollowings = await ref.read(followingsProvider.future);
-    final id3 = _findIn(freshFollowings);
+    final id3 = findIn(freshFollowings);
     if (id3 != null) return id3;
 
     final freshFollowers = await ref.read(followersProvider.future);
-    return _findIn(freshFollowers);
+    return findIn(freshFollowers);
   }
 
   Future<void> _handleRequest(Future<void> Function() action) async {
@@ -553,7 +553,7 @@ class _PendingReceivedActions extends ConsumerWidget {
               strokeWidth: 2, color: AppColors.primary),
         ),
       ),
-      error: (_, __) => Center(
+      error: (_, _) => Center(
         child: Text(
           '신청 정보를 불러오지 못했어요.',
           style: TextStyle(fontSize: 13.sp, color: AppColors.dMuted),

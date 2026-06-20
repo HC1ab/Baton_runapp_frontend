@@ -15,7 +15,7 @@ class NotificationBellWidget extends ConsumerWidget {
     final count = requestsAsync.when(
       data: (list) => list.length,
       loading: () => 0,
-      error: (_, __) => 0,
+      error: (_, _) => 0,
     );
 
     return GestureDetector(

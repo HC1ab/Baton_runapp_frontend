@@ -15,12 +15,7 @@ class ApiException implements Exception {
       'ApiException(statusCode: $statusCode, code: $code, message: $message)';
 }
 
-String formatApiErrorMessage(ApiException e) {
-  if (e.statusCode != null) {
-    return '[${e.statusCode}] ${e.message}';
-  }
-  return e.message;
-}
+String formatApiErrorMessage(ApiException e) => e.message;
 
 /// Social 기능 전용 Dio — tokenStorageProvider에서 토큰을 비동기로 읽어 헤더에 부착.
 /// 기존 session_controller 의존을 tokenStorageProvider로 교체.

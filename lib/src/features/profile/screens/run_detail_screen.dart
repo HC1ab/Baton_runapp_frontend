@@ -488,7 +488,7 @@ class _RunDetailScreenState extends ConsumerState<RunDetailScreen> {
                       size: 40.r, color: AppColors.dRouteEnd),
                   SizedBox(height: 12.h),
                   Text(
-                    '상세 정보를 불러오지 못했어요.\n$e',
+                    '상세 정보를 불러오지 못했어요.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: AppColors.dMuted, fontSize: 13.sp),
                   ),

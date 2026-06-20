@@ -10,7 +10,13 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_map_styles.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/error_messages.dart';
+import '../../core/constants/app_routes.dart';
+import '../../core/constants/storage_keys.dart';
+import '../../core/shell/tab_providers.dart';
+import '../../core/storage/shared_prefs_provider.dart';
+import '../../core/storage/token_storage.dart';
 import '../../core/utils/app_snack_bar.dart';
+import '../../core/utils/jwt_utils.dart';
 import '../group_running/services/group_run_api_service.dart';
 import '../profile/screens/member_profile_screen.dart';
 import 'models/run_card_data.dart';
@@ -45,10 +51,12 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
   bool _isJoining = false;
   // nickname → coreColorCode
   Map<String, String> _participantColors = {};
+  String? _myNickname;
 
   @override
   void initState() {
     super.initState();
+    _myNickname = ref.read(sharedPreferencesProvider).getString(StorageKeys.myNickname);
     _fetchDetail();
   }
 
@@ -59,13 +67,10 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
       final json =
           await ref.read(groupApiProvider).getDetail(groupId: groupId);
       _logger.d('[RoomDetail] raw json: $json');
-      var detail = RunCardData.fromServerJson(json);
-      _logger.d('[RoomDetail] lat=${detail.latitude} lng=${detail.longitude}');
-      // GroupDetail 응답에 isHost / isParticipating 필드 없음 → 목록 카드 값 유지
-      detail = detail.copyWith(
-        isHost: widget.card.isHost,
-        isParticipating: widget.card.isParticipating,
-      );
+      final pair = await ref.read(tokenStorageProvider).read();
+      final myMemberId = memberIdFromAccessToken(pair?.accessToken);
+      final detail = RunCardData.fromServerJson(json, myMemberId: myMemberId);
+      _logger.d('[RoomDetail] lat=${detail.latitude} lng=${detail.longitude} isHost=${detail.isHost} isParticipating=${detail.isParticipating}');
       if (mounted) setState(() => _detail = detail);
 
       // 참여자 색상 비동기 로드
@@ -129,7 +134,7 @@ class _RoomDetailScreenState extends ConsumerState<RoomDetailScreen> {
                   AppSpacing.screenHorizontal,
                   AppSpacing.verticalLg,
                 ),
-                child: _DetailCard(card: _card, colorMap: _participantColors),
+                child: _DetailCard(card: _card, colorMap: _participantColors, myNickname: _myNickname),
               ),
             ),
           ),
@@ -381,10 +386,11 @@ class _RealMiniMap extends StatelessWidget {
 }
 
 class _DetailCard extends StatelessWidget {
-  const _DetailCard({required this.card, required this.colorMap});
+  const _DetailCard({required this.card, required this.colorMap, this.myNickname});
 
   final RunCardData card;
   final Map<String, String> colorMap;
+  final String? myNickname;
 
   @override
   Widget build(BuildContext context) {
@@ -458,6 +464,7 @@ class _DetailCard extends StatelessWidget {
                 nicknames: card.participantNicknames,
                 hostNickname: card.hostNickname,
                 colorMap: colorMap,
+                myNickname: myNickname,
               ),
             ],
             SizedBox(height: AppSpacing.verticalMd),
@@ -576,11 +583,13 @@ class _ParticipantList extends StatelessWidget {
     required this.nicknames,
     required this.hostNickname,
     required this.colorMap,
+    this.myNickname,
   });
 
   final List<String> nicknames;
   final String? hostNickname;
   final Map<String, String> colorMap;
+  final String? myNickname;
 
   @override
   Widget build(BuildContext context) {
@@ -612,6 +621,7 @@ class _ParticipantList extends StatelessWidget {
                     nickname: name,
                     isHost: isHost,
                     characterStyle: CharacterStylePresets.fromCode(colorCode),
+                    isSelf: myNickname != null && name == myNickname,
                   );
                 }).toList(),
               ),
@@ -623,25 +633,34 @@ class _ParticipantList extends StatelessWidget {
   }
 }
 
-class _ParticipantChip extends StatelessWidget {
+class _ParticipantChip extends ConsumerWidget {
   const _ParticipantChip({
     required this.nickname,
     required this.isHost,
     required this.characterStyle,
+    this.isSelf = false,
   });
 
   final String nickname;
   final bool isHost;
   final CharacterStyle characterStyle;
+  final bool isSelf;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => MemberProfileScreen(nickname: nickname),
-        ),
-      ),
+      onTap: () {
+        if (isSelf) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+          ref.read(currentTabProvider.notifier).switchTo(AppTabs.profile);
+        } else {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => MemberProfileScreen(nickname: nickname),
+            ),
+          );
+        }
+      },
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

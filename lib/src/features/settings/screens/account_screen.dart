@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/app_snack_bar.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/network/api_client.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/services/auth_service.dart';
 import '../providers/notice_providers.dart';
@@ -229,7 +230,8 @@ class AccountScreen extends ConsumerWidget {
                             } catch (e) {
                               setSheetState(() => isLoading = false);
                               if (ctx.mounted) {
-                                AppSnackBar.error(ctx, e.toString());
+                                AppSnackBar.error(ctx,
+                                  e is ApiException ? e.message : '비밀번호 변경에 실패했어요. 다시 시도해주세요.');
                               }
                             }
                           },
@@ -308,7 +310,8 @@ class AccountScreen extends ConsumerWidget {
                 await ref.read(authProvider.notifier).forceLogout();
               } catch (e) {
                 if (context.mounted) {
-                  AppSnackBar.error(context, e.toString());
+                  AppSnackBar.error(context,
+                    e is ApiException ? e.message : '회원 탈퇴에 실패했어요. 다시 시도해주세요.');
                 }
               }
             },

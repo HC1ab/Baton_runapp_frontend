@@ -100,8 +100,8 @@ class HistoryApi {
       final response = await _dio.get(
         '/api/v1/members/me/runs',
         queryParameters: {
-          if (year != null) 'year': year,
-          if (month != null) 'month': month,
+          'year': ?year,
+          'month': ?month,
         },
       );
       final unwrapped = unwrapApiResponse(response.data);

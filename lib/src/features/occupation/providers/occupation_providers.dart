@@ -8,18 +8,21 @@ export '../models/occupied_spot_model.dart' show OccupiedSpot;
 
 /// 점령 지도 토글 모드.
 enum OccupationMode {
-  /// BATON — 모든 사용자의 점령 스팟
+  /// 차지 — 모든 사용자의 점령 스팟
   all,
 
   /// 내 점령 — 내가 점령한 스팟
   mine,
+
+  /// 스팟 — 내가 방문한 스팟 목록
+  spot,
 }
 
 final occupationApiProvider = Provider<OccupationApi>((ref) {
   return OccupationApi(ref.watch(dioProvider));
 });
 
-/// 현재 선택된 점령 토글 (BATON / 내 점령)
+/// 현재 선택된 점령 토글 (차지 / 내 점령)
 class _OccupationModeNotifier extends Notifier<OccupationMode> {
   @override
   OccupationMode build() => OccupationMode.all;
@@ -51,5 +54,6 @@ final occupiedSpotsProvider =
   return switch (mode) {
     OccupationMode.all => ref.watch(allOccupiedSpotsProvider.future),
     OccupationMode.mine => ref.watch(myOccupiedSpotsProvider.future),
+    OccupationMode.spot => const [],
   };
 });

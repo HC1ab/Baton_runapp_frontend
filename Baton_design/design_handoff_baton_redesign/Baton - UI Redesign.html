@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Baton — UI Redesign</title>
+<link rel="preconnect" href="https://fastly.jsdelivr.net" />
+<link rel="stylesheet" href="https://fastly.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<link rel="stylesheet" href="baton.css?v=7" />
+</head>
+<body>
+<div class="canvas">
+  <header class="canvas-head">
+    <div class="canvas-eyebrow">Baton · Visual Refresh</div>
+    <h1 class="canvas-title">Baton — 모던 리디자인</h1>
+    <p class="canvas-sub">기존 오렌지 컬러 시스템은 그대로 유지하고, 형태·간격·타이포·컴포넌트를 더 모던하고 정제된 다크 UI로 통일했습니다. 전체 5개 화면.</p>
+  </header>
+
+  <div class="gallery" id="gallery"></div>
+</div>
+
+<!-- =========================================================
+     SCREEN TEMPLATES — each .screen is rendered into a phone
+========================================================= -->
+
+<!-- ① 러닝 / 라이브 -->
+<template id="scr-running">
+  <div class="map map-warm">__MAP_RUN__</div>
+  <div class="run-haze"></div>
+
+  <div class="body" style="padding:4px 16px 0; z-index:10;">
+    <!-- mock runner control -->
+    <section class="mock card">
+      <div class="mock-head">
+        <span class="mock-dot"></span>
+        <span class="mock-title">Mock Runner</span>
+      </div>
+      <div class="mock-speed">속도 3.33 m/s · 5'00" /km</div>
+      <div class="pace-row">
+        <button class="pace">6'00</button>
+        <button class="pace on">5'00</button>
+        <button class="pace">4'00</button>
+        <button class="pace">3'00</button>
+      </div>
+      <div class="mock-actions">
+        <button class="auto-btn">__ICON_PLAY__ 자동 이동</button>
+        <button class="mini-btn">__ICON_ARROW__</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- runner puck + play -->
+  <div class="live-stack">
+    <div class="puck-ground"></div>
+    <div class="puck">
+      <div class="orb puck-orb"></div>
+      <div class="puck-pin">__ICON_PIN_SM__</div>
+    </div>
+    <button class="play-fab">__ICON_PLAY_LG__</button>
+  </div>
+
+  <div class="tabbar" data-nav="0"></div>
+</template>
+
+<!-- ② 스팟 -->
+<template id="scr-spot">
+  <div class="body"><div class="body-scroll">
+    <div style="height:8px;"></div>
+    <div class="eyebrow">Spot</div>
+    <h1 class="page-title" style="margin-top:8px;">내가 방문한 스팟</h1>
+
+    <div class="spot-list">
+      <article class="spot card">
+        <div class="spot-main">
+          <div class="spot-ic">__ICON_PIN__</div>
+          <div class="spot-info">
+            <h3>구서동 중앙천로 산책로</h3>
+            <p>마지막 방문 · 2026.06.08</p>
+          </div>
+          <div class="ring" style="--p:100;"><svg class="ring-svg" viewBox="0 0 36 36"><circle class="ring-bg" cx="18" cy="18" r="15.6"/><circle class="ring-fg" cx="18" cy="18" r="15.6" pathLength="100"/></svg><span>00:20:33</span></div>
+        </div>
+        <div class="spot-foot">
+          <span class="badge exp">__ICON_BOLT__ +15 EXP</span>
+          <span class="badge pt">__ICON_COIN__ 50 P</span>
+        </div>
+      </article>
+
+      <article class="spot card">
+        <div class="spot-main">
+          <div class="spot-ic">__ICON_PIN__</div>
+          <div class="spot-info">
+            <h3>구서역 GS 편의점</h3>
+            <p>마지막 방문 · 2026.06.08</p>
+          </div>
+          <div class="ring" style="--p:78;"><svg class="ring-svg" viewBox="0 0 36 36"><circle class="ring-bg" cx="18" cy="18" r="15.6"/><circle class="ring-fg" cx="18" cy="18" r="15.6" pathLength="100"/></svg><span>00:20:22</span></div>
+        </div>
+        <div class="spot-foot">
+          <span class="badge exp dim">__ICON_BOLT__ +0 EXP</span>
+          <span class="badge pt">__ICON_COIN__ 100 P</span>
+        </div>
+      </article>
+
+      <article class="spot card">
+        <div class="spot-main">
+          <div class="spot-ic">__ICON_PIN__</div>
+          <div class="spot-info">
+            <h3>구서역 1번 출구 광장</h3>
+            <p>마지막 방문 · 2026.06.08</p>
+          </div>
+          <div class="ring" style="--p:55;"><svg class="ring-svg" viewBox="0 0 36 36"><circle class="ring-bg" cx="18" cy="18" r="15.6"/><circle class="ring-fg" cx="18" cy="18" r="15.6" pathLength="100"/></svg><span>00:19:59</span></div>
+        </div>
+        <div class="spot-foot">
+          <span class="badge exp">__ICON_BOLT__ +5 EXP</span>
+          <span class="badge pt">__ICON_COIN__ 10 P</span>
+        </div>
+      </article>
+    </div>
+    <div class="tab-spacer"></div>
+  </div></div>
+  <div class="tabbar" data-nav="1"></div>
+</template>
+
+<!-- ③ 마이 룸 -->
+<template id="scr-room">
+  <div class="body"><div class="body-scroll">
+    <div style="height:6px;"></div>
+    <h1 class="page-title">마이 룸</h1>
+
+    <div class="room-orb-wrap">
+      <div class="orb room-orb"></div>
+    </div>
+
+    <div class="equip">
+      <div class="equip-lbl">Equipped Title</div>
+      <span class="title-badge">스피드 킹</span>
+    </div>
+
+    <a class="shop">
+      <div class="shop-ic">__ICON_SHOP__</div>
+      <div class="shop-txt">
+        <strong>Baton Shop</strong>
+        <span>Get exclusive items</span>
+      </div>
+      <div class="shop-chev">__ICON_CHEV__</div>
+    </a>
+
+    <div class="seg room-seg">
+      <button class="on">Core Colors</button>
+      <button>Aura</button>
+      <button>Titles</button>
+      <button>Inventory</button>
+    </div>
+
+    <div class="swatch-grid">
+      <div class="swatch sel" style="--c:#EC6E2C;">__ICON_CHECK__</div>
+      <div class="swatch lock">__ICON_LOCK__</div>
+      <div class="swatch lock">__ICON_LOCK__</div>
+      <div class="swatch lock">__ICON_LOCK__</div>
+      <div class="swatch lock">__ICON_LOCK__</div>
+      <div class="swatch" style="--c:#3A57D6;"></div>
+      <div class="swatch lock">__ICON_LOCK__</div>
+      <div class="swatch lock">__ICON_LOCK__</div>
+    </div>
+    <div class="tab-spacer"></div>
+  </div></div>
+  <div class="tabbar" data-nav="3"></div>
+</template>
+
+<!-- ④ 활동 / Baton -->
+<template id="scr-activity">
+  <div class="body"><div class="body-scroll">
+    <header class="topbar">
+      <button class="icon-btn">__ICON_BACK__</button>
+      <span class="brand">Baton</span>
+      <button class="icon-btn">__ICON_BELL__</button>
+    </header>
+
+    <div class="seg" data-period-seg style="margin-top:6px;">
+      <button data-period="week">Week</button>
+      <button data-period="month" class="on">Month</button>
+      <button data-period="year">Year</button>
+    </div>
+
+    <div class="month-row">
+      <span data-period-label>June 2026</span> __ICON_CHEV_DOWN__
+    </div>
+
+    <section class="card stat-card">
+      <div class="stat-lbl">Kilometers</div>
+      <div class="stat-big" data-stat-km>6.3<span>km</span></div>
+      <div class="stat-trio">
+        <div><b data-stat-runs>17</b><span>Runs</span></div>
+        <i></i>
+        <div><b data-stat-pace>4'58"</b><span>Avg Pace</span></div>
+        <i></i>
+        <div><b data-stat-time>0:31:17</b><span>Time</span></div>
+      </div>
+      <div class="bars"><div class="chart" data-chart></div></div>
+    </section>
+
+    <h2 class="sec-title">Recent Activities</h2>
+    <div class="act-list">
+      <article class="act card">
+        <div class="act-map">__ROUTE_A__</div>
+        <div class="act-info">
+          <div class="act-top"><h3>Monday Evening Run</h3><span>Jun 8</span></div>
+          <div class="act-stats"><b>0.21</b><em>km</em><b>3'40"</b><em>pace</em><b>0:00:46</b><em>time</em></div>
+        </div>
+        <div class="act-chev">__ICON_CHEV__</div>
+      </article>
+      <article class="act card">
+        <div class="act-map">__ROUTE_B__</div>
+        <div class="act-info">
+          <div class="act-top"><h3>Monday Dawn Run</h3><span>Jun 8</span></div>
+          <div class="act-stats"><b>1.07</b><em>km</em><b>0'58"</b><em>pace</em><b>0:01:02</b><em>time</em></div>
+        </div>
+        <div class="act-chev">__ICON_CHEV__</div>
+      </article>
+      <article class="act card">
+        <div class="act-map">__ROUTE_C__</div>
+        <div class="act-info">
+          <div class="act-top"><h3>Monday Dawn Run</h3><span>Jun 8</span></div>
+          <div class="act-stats"><b>0.20</b><em>km</em><b>6'01"</b><em>pace</em><b>0:01:12</b><em>time</em></div>
+        </div>
+        <div class="act-chev">__ICON_CHEV__</div>
+      </article>
+    </div>
+    <div style="height:24px;"></div>
+  </div></div>
+</template>
+
+<!-- ⑤ 러닝 상세 -->
+<template id="scr-detail">
+  <div class="detail-map">
+    <div class="map map-warm">__MAP_DETAIL__</div>
+    <button class="icon-btn float-back">__ICON_BACK__</button>
+    <span class="gmaps">Google</span>
+  </div>
+  <div class="body"><div class="body-scroll detail-scroll">
+    <section class="card detail-stats">
+      <div><div class="ds-ic">__ICON_RULER__</div><b>0.21</b><span>km</span></div>
+      <i></i>
+      <div><div class="ds-ic">__ICON_TIMER__</div><b>0:00:46</b><span>time</span></div>
+      <i></i>
+      <div><div class="ds-ic">__ICON_GAUGE__</div><b>3'40"</b><span>pace</span></div>
+    </section>
+
+    <h2 class="sec-title sm">KM Splits</h2>
+    <div class="split">
+      <span class="split-l"><i></i>+0.21 km</span>
+      <span class="split-r">3'40" <em>/km</em></span>
+    </div>
+    <div style="height:24px;"></div>
+  </div></div>
+</template>
+
+<script>
+/* Baton — SVG assets: icons, maps, charts, routes */
+window.ICONS = (() => {
+  const s = '#9D938A'; // default stroke handled via currentColor
+  return {
+    // --- status bar ---
+    signal: `<svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0.5" width="3" height="11.5" rx="1"/></svg>`,
+    wifi: `<svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><path d="M8.5 11.5 11 8.4a3.6 3.6 0 0 0-5 0l2.5 3.1Z"/><path d="M8.5 4.2a8 8 0 0 1 5.6 2.3l1.5-1.9a10.6 10.6 0 0 0-14.2 0l1.5 1.9A8 8 0 0 1 8.5 4.2Z" opacity="0.95"/></svg>`,
+    battery: `<svg width="27" height="13" viewBox="0 0 27 13" fill="none"><rect x="0.5" y="0.5" width="23" height="12" rx="3.5" stroke="currentColor" stroke-opacity="0.5"/><rect x="2.5" y="2.5" width="18" height="8" rx="2" fill="currentColor"/><path d="M25 4.5v4a2 2 0 0 0 0-4Z" fill="currentColor" fill-opacity="0.5"/></svg>`,
+
+    // --- tab bar (24) ---
+    nav_run: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="14.5" cy="4.6" r="1.9" fill="currentColor" stroke="none"/><path d="M13.2 8.1 9.7 10l1.9 2.7-1.2 5M11.6 12.7 16 14l1.4 4.3M9.7 10 6 9.5M14 11.7l3.4-1.2 2.4 1.6"/></svg>`,
+    nav_spot: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 21c4.2-4.2 6.5-7.4 6.5-10.5a6.5 6.5 0 1 0-13 0C5.5 13.6 7.8 16.8 12 21Z"/><circle cx="12" cy="10.3" r="2.3"/></svg>`,
+    nav_social: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.7" cy="9" r="2.7"/><path d="M3.5 19c.6-2.9 2.7-4.4 5.2-4.4S13.3 16.1 13.9 19"/><circle cx="16.6" cy="8.2" r="2.2"/><path d="M15 14.4c2 .2 3.7 1.6 4.2 4.2"/></svg>`,
+    nav_home: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19v-8.5Z"/><path d="M9.5 20.5v-6h5v6"/></svg>`,
+    nav_profile: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c.7-3.6 3.4-5.4 7-5.4S18.3 16.4 19 20"/></svg>`,
+
+    // --- ui glyphs ---
+    play: `<svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.8 13 8 4 13.2V2.8Z"/></svg>`,
+    play_lg: `<svg width="26" height="26" viewBox="0 0 24 24" fill="#fff"><path d="M7 4.5 19 12 7 19.5V4.5Z"/></svg>`,
+    arrow_up: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6 12l6-6 6 6"/></svg>`,
+    pin: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 21c4.2-4.2 6.5-7.4 6.5-10.5a6.5 6.5 0 1 0-13 0C5.5 13.6 7.8 16.8 12 21Z"/><circle cx="12" cy="10.3" r="2.2"/></svg>`,
+    pin_sm: `<svg width="13" height="13" viewBox="0 0 24 24" fill="#fff"><path d="M12 22c4.2-4.4 6.5-7.6 6.5-10.6a6.5 6.5 0 1 0-13 0C5.5 14.4 7.8 17.6 12 22Z"/><circle cx="12" cy="10.6" r="2.3" fill="#EC6E2C"/></svg>`,
+    bolt: `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2 4 13.5h6L9 22l10-12h-6.5L13.5 2Z"/></svg>`,
+    coin: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7.5v9M9.5 9.8c0-1.2 1.1-1.9 2.5-1.9s2.5.7 2.5 1.9-1.1 1.7-2.5 1.7-2.5.6-2.5 1.8 1.1 1.9 2.5 1.9 2.5-.7 2.5-1.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+    shop: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"><path d="M4 9.5 5 4.5h14l1 5M4 9.5h16M4 9.5c0 1.4 1 2.3 2.2 2.3S8.4 10.9 8.4 9.5c0 1.4 1 2.3 2.3 2.3s2.3-.9 2.3-2.3c0 1.4 1 2.3 2.3 2.3s2.2-.9 2.2-2.3M5.5 11.7V19a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-7.3"/></svg>`,
+    chev: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>`,
+    chev_down: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`,
+    check: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19.5 7"/></svg>`,
+    lock: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="9.5" rx="2.4"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>`,
+    back: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>`,
+    bell: `<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 1.5 6.5 1.5 6.5h-15S6 14 6 9ZM10 19a2 2 0 0 0 4 0"/></svg>`,
+    ruler: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><rect x="2.5" y="7" width="19" height="10" rx="2" transform="rotate(0 12 12)"/><path d="M7 7v3M11 7v4M15 7v3M19 7v4" stroke-linecap="round"/></svg>`,
+    timer: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M9.5 2.5h5M12 6V3"/></svg>`,
+    gauge: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4.2-5"/><circle cx="12" cy="18" r="1.4" fill="currentColor" stroke="none"/></svg>`,
+  };
+})();
+
+/* ---- procedural dark map ---- */
+window.MAPS = {
+  run() {
+    return `<svg viewBox="0 0 360 760" preserveAspectRatio="xMidYMid slice">
+      <rect width="360" height="760" fill="#15110d"/>
+      <g class="road" stroke-width="14">
+        <path d="M-20 250 L380 180"/><path d="M-20 470 L380 540"/>
+        <path d="M120 -20 L60 780"/><path d="M260 -20 L320 780"/>
+      </g>
+      <g class="road" stroke-width="6">
+        <path d="M-20 360 L380 330"/><path d="M-20 620 L380 660"/>
+        <path d="M190 -20 L160 780"/><path d="M40 -20 L80 780"/>
+      </g>
+      <g class="road" stroke-width="2.5" stroke-opacity="0.4">
+        <path d="M0 120 H360"/><path d="M0 700 H360"/><path d="M300 0 V760"/>
+      </g>
+      <ellipse cx="180" cy="430" rx="150" ry="120" fill="#EC6E2C" opacity="0.05"/>
+    </svg>`;
+  },
+  detail() {
+    return `<svg viewBox="0 0 360 330" preserveAspectRatio="xMidYMid slice">
+      <rect width="360" height="330" fill="#1a120e"/>
+      <g class="road" stroke-width="13">
+        <path d="M-20 130 L380 90"/><path d="M-20 240 L380 280"/>
+        <path d="M150 -20 L110 350"/><path d="M280 -20 L300 350"/>
+      </g>
+      <g class="road" stroke-width="5">
+        <path d="M-20 60 L380 40"/><path d="M60 -20 L30 350"/><path d="M210 -20 L240 350"/>
+      </g>
+      <text class="map-label" x="20" y="55" transform="rotate(-6 20 55)">Powell St</text>
+      <text class="map-label" x="120" y="170">Ellis St</text>
+      <!-- route -->
+      <path d="M150 150 L235 205" stroke="#EC6E2C" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+      <circle cx="150" cy="150" r="9" fill="#36C26B" stroke="#0b0908" stroke-width="3"/>
+      <circle cx="235" cy="205" r="9" fill="#E8503A" stroke="#0b0908" stroke-width="3"/>
+    </svg>`;
+  },
+  // small route thumbnail for activity cards
+  route(seed) {
+    const paths = {
+      a: "M10 44 C20 30 26 38 34 26 S50 14 58 22",
+      b: "M10 40 C18 26 28 34 34 22 S48 30 58 16",
+      c: "M12 42 C18 24 30 36 36 24 S46 18 56 24",
+    };
+    const d = paths[seed] || paths.a;
+    // derive endpoints
+    const m = d.match(/^M([\d.]+) ([\d.]+)/);
+    const sx = m[1], sy = m[2];
+    const e = d.match(/([\d.]+) ([\d.]+)$/);
+    const ex = e[1], ey = e[2];
+    return `<svg viewBox="0 0 68 68" preserveAspectRatio="xMidYMid meet">
+      <rect width="68" height="68" rx="14" fill="#120e0b"/>
+      <g class="road" stroke-width="6"><path d="M-4 24 L72 14"/><path d="M40 -4 L30 72"/></g>
+      <path d="${d}" fill="none" stroke="#EC6E2C" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="${sx}" cy="${sy}" r="4" fill="#36C26B"/>
+      <circle cx="${ex}" cy="${ey}" r="4" fill="#E8503A"/>
+    </svg>`;
+  },
+  bars() { return ''; },
+  // categorical chart datasets per period
+  chartData: {
+    week: {
+      label: 'Jun 2 – 8',
+      km: '8.5', runs: '5', pace: "5'10\"", time: '0:44:02',
+      axis: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+      vals: [1.2, 0, 2.1, 0.8, 0, 3.4, 1.0],
+      hl: 5
+    },
+    month: {
+      label: 'June 2026', sectioned: true,
+      km: '6.3', runs: '17', pace: "4'58\"", time: '0:31:17',
+      axis: ['W1','W2','W3','W4','W5'],
+      vals: [1.1, 4.2, 0.5, 0.3, 0.2],
+      hl: 1
+    },
+    year: {
+      label: '2026',
+      km: '92.4', runs: '140', pace: "5'04\"", time: '7:38:11',
+      axis: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+      vals: [4.2, 6.1, 9.4, 12.2, 14.8, 6.3, 0, 0, 0, 0, 0, 0],
+      hl: 4
+    }
+  },
+  renderChart(root, period) {
+    const d = this.chartData[period];
+    const max = Math.max(...d.vals, 0.1);
+    const bars = d.vals.map((v) => {
+      const empty = v <= 0;
+      const h = empty ? 4 : Math.max(7, (v / max) * 100);
+      return `<div class="chart-col${empty ? ' empty' : ''}"><div class="bar2" style="height:${h}%"></div></div>`;
+    }).join('');
+    const axis = d.axis.map((a, i) =>
+      `<span class="${i === d.hl ? 'hl' : ''}">${a}</span>`
+    ).join('');
+    root.innerHTML =
+      `<div class="chart-bars${d.sectioned ? ' sectioned' : ''}">${bars}</div>` +
+      `<div class="chart-axis">${axis}</div>`;
+  }
+};
+
+/* Baton — build: assemble phones from templates + assets */
+(function () {
+  const I = window.ICONS, M = window.MAPS;
+
+  const TOK = {
+    __MAP_RUN__: M.run(), __MAP_DETAIL__: M.detail(),
+    __ROUTE_A__: M.route('a'), __ROUTE_B__: M.route('b'), __ROUTE_C__: M.route('c'),
+    __ICON_PLAY__: I.play, __ICON_PLAY_LG__: I.play_lg, __ICON_ARROW__: I.arrow_up,
+    __ICON_PIN_SM__: I.pin_sm, __ICON_PIN__: I.pin, __ICON_BOLT__: I.bolt, __ICON_COIN__: I.coin,
+    __ICON_SHOP__: I.shop, __ICON_CHEV__: I.chev, __ICON_CHEV_DOWN__: I.chev_down,
+    __ICON_CHECK__: I.check, __ICON_LOCK__: I.lock, __ICON_BACK__: I.back, __ICON_BELL__: I.bell,
+    __ICON_RULER__: I.ruler, __ICON_TIMER__: I.timer, __ICON_GAUGE__: I.gauge,
+  };
+
+  function fill(html) {
+    return html.replace(/__[A-Z_]+__/g, (m) => (m in TOK ? TOK[m] : m));
+  }
+
+  const NAV = [
+    { ic: 'nav_run',     lbl: '러닝' },
+    { ic: 'nav_spot',    lbl: '스팟' },
+    { ic: 'nav_social',  lbl: '소셜' },
+    { ic: 'nav_home',    lbl: '마이 룸' },
+    { ic: 'nav_profile', lbl: '프로필' },
+  ];
+  function tabbarHTML(active) {
+    return NAV.map((t, i) =>
+      `<div class="tab ${i === active ? 'active' : ''}">${I[t.ic]}<span class="lbl">${t.lbl}</span></div>`
+    ).join('');
+  }
+
+  function statusbar(time) {
+    return `<div class="statusbar">
+      <span class="sb-time">${time}</span>
+      <span class="sb-icons">${I.signal}${I.wifi}${I.battery}</span>
+    </div>`;
+  }
+
+  const SCREENS = [
+    { id: 'scr-running',  time: '11:00', n: '01 · Live',       t: '러닝' },
+    { id: 'scr-spot',     time: '11:00', n: '02 · Spot',       t: '스팟' },
+    { id: 'scr-room',     time: '11:01', n: '03 · My Room',    t: '마이 룸' },
+    { id: 'scr-activity', time: '11:01', n: '04 · Activity',   t: '활동' },
+    { id: 'scr-detail',   time: '11:01', n: '05 · Run Detail', t: '러닝 상세' },
+  ];
+
+  const gallery = document.getElementById('gallery');
+
+  SCREENS.forEach((sc) => {
+    const tpl = document.getElementById(sc.id);
+    let inner = fill(tpl.innerHTML);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'phone-wrap';
+    wrap.innerHTML = `
+      <div class="phone">
+        <div class="screen">
+          <div class="island"></div>
+          ${statusbar(sc.time)}
+          ${inner}
+        </div>
+      </div>
+      <div class="phone-cap"><div class="n">${sc.n}</div><div class="t">${sc.t}</div></div>`;
+
+    // hydrate tab bars
+    wrap.querySelectorAll('.tabbar[data-nav]').forEach((tb) => {
+      tb.innerHTML = tabbarHTML(parseInt(tb.dataset.nav, 10));
+    });
+
+    gallery.appendChild(wrap);
+  });
+
+  // ---- activity chart: period switching ----
+  document.querySelectorAll('[data-period-seg]').forEach((seg) => {
+    const scope = seg.closest('.body-scroll') || seg.parentElement;
+    const root  = scope.querySelector('[data-chart]');
+    const lbl   = scope.querySelector('[data-period-label]');
+    const km    = scope.querySelector('[data-stat-km]');
+    const runs  = scope.querySelector('[data-stat-runs]');
+    const pace  = scope.querySelector('[data-stat-pace]');
+    const time  = scope.querySelector('[data-stat-time]');
+    const btns  = [...seg.querySelectorAll('button')];
+    function set(period) {
+      const d = M.chartData[period];
+      btns.forEach((b) => b.classList.toggle('on', b.dataset.period === period));
+      lbl.textContent = d.label;
+      km.innerHTML = d.km + '<span>km</span>';
+      runs.textContent = d.runs;
+      pace.textContent = d.pace;
+      time.textContent = d.time;
+      M.renderChart(root, period);
+    }
+    btns.forEach((b) => b.addEventListener('click', () => set(b.dataset.period)));
+    set('month');
+  });
+})();
+
+</script>
+</body>
+</html>

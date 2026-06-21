@@ -195,7 +195,7 @@ class _Header extends StatelessWidget {
         ),
         SizedBox(height: 24.h),
         Text(
-          'BATON',
+          '차지',
           style: AppTextStyles.displayMedium.copyWith(
             color: AppColors.dText,
             fontWeight: FontWeight.bold,

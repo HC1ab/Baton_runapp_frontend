@@ -13,6 +13,7 @@ import '../../../core/constants/app_routes.dart';
 import '../../../core/myroom/my_room_service.dart';
 import '../../../core/shell/tab_providers.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../occupation/providers/occupation_providers.dart';
 import '../services/profile_service.dart';
 
 /// ProfileScreen — 프로필 탭: API 기반 닉네임/타이틀/레벨/러닝 통계 표시 + 로그아웃 버튼.
@@ -42,23 +43,23 @@ class ProfileScreen extends ConsumerWidget {
             padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 140.h),
             children: [
               _buildAppBar(context, ref),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               _buildHeroAvatar(characterStyle),
-              const SizedBox(height: 20),
+              SizedBox(height: 20.h),
               Text(
                 profile.nickname,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 24,
+                style: TextStyle(
+                  fontSize: 24.sp,
                   fontWeight: FontWeight.w800,
                   color: _textPrimary,
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6.h),
               _buildEquippedTitleBadge(ref, profile.equippedTitleName),
-              const SizedBox(height: 20),
+              SizedBox(height: 20.h),
               _buildLevelCard(profile.level),
-              const SizedBox(height: 14),
+              SizedBox(height: 14.h),
               Row(
                 children: [
                   Expanded(
@@ -68,7 +69,7 @@ class ProfileScreen extends ConsumerWidget {
                       value: '${profile.totalDistance.toStringAsFixed(1)} km',
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   Expanded(
                     child: _MetricCard(
                       icon: Icons.speed_rounded,
@@ -78,7 +79,7 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Row(
                 children: [
                   Expanded(
@@ -90,7 +91,7 @@ class ProfileScreen extends ConsumerWidget {
                       onTap: () => context.push(AppRoutes.history),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   Expanded(
                     child: _BigActionCard(
                       icon: Icons.place_rounded,
@@ -98,14 +99,19 @@ class ProfileScreen extends ConsumerWidget {
                       subtitle: '저장된 코스 확인',
                       filled: true,
                       fillColor: AppColors.dGold,
-                      onTap: () => ref
-                          .read(currentTabProvider.notifier)
-                          .switchTo(AppTabs.spot),
+                      onTap: () {
+                        ref
+                            .read(currentTabProvider.notifier)
+                            .switchTo(AppTabs.occupation);
+                        ref
+                            .read(occupationModeProvider.notifier)
+                            .set(OccupationMode.spot);
+                      },
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               _BigActionCard(
                 icon: Icons.people_rounded,
                 title: '친구',
@@ -123,10 +129,10 @@ class ProfileScreen extends ConsumerWidget {
   Widget _buildEquippedTitleBadge(WidgetRef ref, String equippedTitleName) {
     if (equippedTitleName.isEmpty) {
       return Text(
-        'No Title',
+        '칭호 없음',
         textAlign: TextAlign.center,
-        style: const TextStyle(
-          fontSize: 15,
+        style: TextStyle(
+          fontSize: 15.sp,
           color: _primary,
           fontWeight: FontWeight.w600,
         ),
@@ -148,7 +154,7 @@ class ProfileScreen extends ConsumerWidget {
     return RarityTitleBadge(
       title: equippedTitleName,
       rarity: rarity,
-      fontSize: 15,
+      fontSize: 15.sp,
     );
   }
 
@@ -216,28 +222,28 @@ class ProfileScreen extends ConsumerWidget {
 
   Widget _buildLevelCard(int level) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      padding: EdgeInsets.fromLTRB(20.w, 18.h, 20.w, 20.h),
       decoration: BoxDecoration(
         color: _cardLight,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(22.r),
         border: Border.all(color: AppColors.dLine, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '러닝 레벨',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 14.sp,
               color: _textSub,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6.h),
           Text(
             'Lv.$level',
-            style: const TextStyle(
-              fontSize: 38,
+            style: TextStyle(
+              fontSize: 38.sp,
               fontWeight: FontWeight.w900,
               color: _primary,
               height: 1.0,
@@ -267,30 +273,30 @@ class _MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 16.h),
       decoration: BoxDecoration(
         color: AppColors.dCard2,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(18.r),
         border: Border.all(color: AppColors.dLine),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppColors.dAccent, size: 22),
-          const SizedBox(height: 12),
+          Icon(icon, color: AppColors.dAccent, size: 22.r),
+          SizedBox(height: 12.h),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 12,
+            style: TextStyle(
+              fontSize: 12.sp,
               color: AppColors.dMuted,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4.h),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 18,
+            style: TextStyle(
+              fontSize: 18.sp,
               fontWeight: FontWeight.w800,
               color: AppColors.dText,
             ),
@@ -338,10 +344,10 @@ class _BigActionCard extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+        padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 18.h),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(22.r),
           border: filled
               ? null
               : Border.all(color: AppColors.dLine, width: 1),
@@ -350,28 +356,28 @@ class _BigActionCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 38,
-              height: 38,
+              width: 38.r,
+              height: 38.r,
               decoration: BoxDecoration(
                 color: iconBg,
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: iconColor, size: 20),
+              child: Icon(icon, color: iconColor, size: 20.r),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
             Text(
               title,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 16.sp,
                 fontWeight: FontWeight.w800,
                 color: fg,
               ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4.h),
             Text(
               subtitle,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 12.sp,
                 color: subFg,
                 fontWeight: FontWeight.w500,
               ),

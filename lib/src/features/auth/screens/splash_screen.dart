@@ -23,7 +23,7 @@ class SplashScreen extends StatelessWidget {
             ),
             SizedBox(height: 16.h),
             Text(
-              'Baton',
+              '차지',
               style: GoogleFonts.barlowCondensed(
                 fontSize: 32.sp,
                 fontWeight: FontWeight.w700,

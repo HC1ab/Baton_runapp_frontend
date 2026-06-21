@@ -27,7 +27,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
   int? _purchasingItemId;
   int _selectedTab = 0;
 
-  static const List<String> _tabs = ['Colors', 'Auras', 'Inventory'];
+  static const List<String> _tabs = ['색상', '오라', '부스터'];
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +81,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
           ),
           SizedBox(width: AppSpacing.sm),
           Text(
-            'Shop',
+            '상점',
             style: AppTextStyles.headlineMedium.copyWith(
               fontWeight: FontWeight.w800,
             ),

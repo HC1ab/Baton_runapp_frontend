@@ -33,10 +33,10 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
   bool _isEquippingTitle = false;
 
   static const List<String> _tabs = [
-    'Core Colors',
-    'Aura',
-    'Titles',
-    'Inventory'
+    '코어 색상',
+    '오라',
+    '칭호',
+    '인벤토리'
   ];
 
   @override
@@ -90,7 +90,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
   Widget _buildEquippedTitle() {
     return ref.watch(myRoomProvider).when(
           loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
+          error: (_, _) => const SizedBox.shrink(),
           data: (myRoom) {
             final equipped =
                 myRoom.titles.cast<MyRoomTitleItem?>().firstWhere(
@@ -156,7 +156,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Baton Shop',
+                    '상점',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16.sp,
@@ -165,7 +165,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
                   ),
                   SizedBox(height: 2.h),
                   Text(
-                    'GET EXCLUSIVE ITEMS',
+                    '전용 아이템 구매하기',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.85),
                       fontSize: 11.5.sp,
@@ -366,7 +366,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
   }
 
   void _showLockedMessage() {
-    AppSnackBar.info(context, 'Baton Shop에서 구매 후 사용할 수 있어요.');
+    AppSnackBar.info(context, '상점에서 구매 후 사용할 수 있어요.');
   }
 
   // ── Titles Tab ───────────────────────────────────────────────────────────
@@ -424,6 +424,13 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
     final isOwned = title.owned;
     final rarityColor = _rarityColor(title.rarity);
     final preset = TitlePresets.all.where((t) => t.id == title.titleId).firstOrNull;
+    // 보너스 비율은 백엔드(allTitlesProvider)의 실제 값을 사용.
+    // (TitlePresets는 비율이 0.0으로 하드코딩돼 있어 칩이 항상 +0%로 떴음)
+    final titleInfo = ref
+        .watch(allTitlesProvider)
+        .value
+        ?.where((t) => t.id == title.titleId)
+        .firstOrNull;
 
     return Padding(
       padding: EdgeInsets.only(bottom: 10.h),
@@ -509,14 +516,14 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
                         children: [
                           _BonusChip(
                             label: 'EXP',
-                            value: preset.expBonusRatio,
+                            value: titleInfo?.expBonusRatio ?? 0,
                             color: AppColors.dGold,
                             owned: isOwned,
                           ),
                           SizedBox(width: 6.w),
                           _BonusChip(
                             label: '포인트',
-                            value: preset.pointBonusRatio,
+                            value: titleInfo?.pointBonusRatio ?? 0,
                             color: AppColors.dTitleBlue,
                             owned: isOwned,
                           ),
@@ -535,7 +542,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
                     borderRadius: BorderRadius.circular(999.r),
                   ),
                   child: Text(
-                    'ON',
+                    '착용',
                     style: TextStyle(
                       color: const Color(0xFF160D06),
                       fontWeight: FontWeight.w800,
@@ -602,7 +609,7 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
       height: 100.h,
       child: Center(
         child: Text(
-          'Coming soon',
+          '준비 중',
           style: TextStyle(color: AppColors.dMuted, fontSize: 14.sp),
         ),
       ),

@@ -480,7 +480,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                       controller: _titleController,
                       hintText: '러닝 모집 제목을 입력하세요',
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20.h),
                     CustomInputField(
                       label: '모집 내용',
                       controller: _contentController,
@@ -488,13 +488,13 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                       minLines: 3,
                       maxLines: 5,
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20.h),
                     CustomInputField(
                       label: '장소명',
                       controller: _placeNameController,
                       hintText: '예: 반포 한강공원',
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20.h),
                     CustomInputField(
                       label: '주소',
                       controller: _addressController,
@@ -508,7 +508,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                         color: _accentBrown,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20.h),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -539,7 +539,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20.h),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

@@ -59,7 +59,7 @@ class ShareCanvasWidget extends ConsumerWidget {
                       onTap: () => notifier.selectStat(null),
                       child: isFreestyle
                           ? _buildDarkBackground()     // 자유1·자유2: 다크 단색
-                          : _buildMapBackground(),     // BATON1·BATON2: 지도 스냅샷
+                          : _buildMapBackground(),     // 차지1·차지2: 지도 스냅샷
                     ),
                   ),
 
@@ -70,7 +70,7 @@ class ShareCanvasWidget extends ConsumerWidget {
                     child: _BatonBrandTag(tagStyle: config.tagStyle),
                   ),
 
-                  // ── BATON 1 ─────────────────────────────────────────────────
+                  // ── 차지 1 ─────────────────────────────────────────────────
                   if (config.cardStyle == CardStyle.baton1)
                     Positioned(
                       left: 0,
@@ -79,7 +79,7 @@ class ShareCanvasWidget extends ConsumerWidget {
                       child: ShareNrcBarWidget(data: data, config: config),
                     )
 
-                  // ── BATON 2 (baton3) ─────────────────────────────────────────
+                  // ── 차지 2 (baton3) ─────────────────────────────────────────
                   else if (config.cardStyle == CardStyle.baton3)
                     _Baton2Layout(data: data)
 
@@ -123,7 +123,7 @@ class ShareCanvasWidget extends ConsumerWidget {
     return Container(color: const Color(0xFF2C2420));
   }
 
-  // BATON1·BATON2 배경: 갤러리 이미지 > 지도 스냅샷 > 다크 단색
+  // 차지1·차지2 배경: 갤러리 이미지 > 지도 스냅샷 > 다크 단색
   Widget _buildMapBackground() {
     if (backgroundImage != null) return Image.file(backgroundImage!, fit: BoxFit.cover);
     if (data.mapSnapshot != null) return Image.memory(data.mapSnapshot!, fit: BoxFit.cover);
@@ -131,7 +131,7 @@ class ShareCanvasWidget extends ConsumerWidget {
   }
 }
 
-// ── BATON 2 정적 레이아웃 ─────────────────────────────────────────────────────
+// ── 차지 2 정적 레이아웃 ─────────────────────────────────────────────────────
 
 class _Baton2Layout extends StatelessWidget {
   const _Baton2Layout({required this.data});

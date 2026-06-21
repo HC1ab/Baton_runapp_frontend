@@ -377,21 +377,11 @@ class _SocialFeedScreenState extends ConsumerState<SocialFeedScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'COMMUNITY FEED',
-                          style: TextStyle(
-                            color: AppColors.dAccent,
-                            fontSize: 13.sp,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.8,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
                           '소셜',
                           style: TextStyle(
                             color: AppColors.dText,
-                            fontSize: 22.sp,
-                            fontWeight: FontWeight.w900,
+                            fontSize: 30.sp,
+                            fontWeight: FontWeight.w800,
                             height: 1.1,
                           ),
                         ),

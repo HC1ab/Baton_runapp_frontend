@@ -209,10 +209,11 @@ class _FollowingTab extends ConsumerWidget {
 
     try {
       await ref.read(followServiceProvider).deleteFollow(member.followId);
-      ref.invalidate(followingsProvider);
     } catch (e) {
       if (!context.mounted) return;
       AppSnackBar.error(context, '삭제에 실패했어요. 다시 시도해주세요.');
+    } finally {
+      ref.invalidate(followingsProvider);
     }
   }
 }
@@ -274,7 +275,7 @@ class _FriendTileState extends ConsumerState<_FriendTile> {
     final colorCode = colorAsync.when(
       data: (c) => c ?? 'CORE_ORANGE',
       loading: () => 'CORE_ORANGE',
-      error: (_, __) => 'CORE_ORANGE',
+      error: (_, _) => 'CORE_ORANGE',
     );
     final style = CharacterStylePresets.fromCode(colorCode);
 

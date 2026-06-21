@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
@@ -38,7 +39,7 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
-    final spotsAsync = ref.watch(spotCooldownsProvider);
+    final spotsAsync = ref.watch(spotListProvider);
 
     return Scaffold(
       backgroundColor: AppColors.dScreen,
@@ -62,7 +63,7 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
                 ),
                 SizedBox(height: 6.h),
                 Text(
-                  '내가 방문한 스팟',
+                  '주변 체크인 스팟',
                   style: TextStyle(
                     color: AppColors.dText,
                     fontSize: 28.sp,
@@ -81,11 +82,13 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
               loading: () => const Center(
                 child: CircularProgressIndicator(color: AppColors.dAccent),
               ),
-              error: (e, _) => _buildError(),
+              error: (e, _) => e is LocationPermissionException
+                  ? _buildPermissionGuide()
+                  : _buildError(),
               data: (spots) => RefreshIndicator(
                 color: AppColors.dAccent,
                 backgroundColor: AppColors.dCard,
-                onRefresh: () async => ref.invalidate(spotCooldownsProvider),
+                onRefresh: () async => ref.invalidate(spotListProvider),
                 child: spots.isEmpty
                     ? ListView(
                         physics: const AlwaysScrollableScrollPhysics(),
@@ -100,7 +103,7 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: EdgeInsets.fromLTRB(22.w, 0, 22.w, 110.h),
                         itemCount: spots.length,
-                        separatorBuilder: (_, __) => SizedBox(height: 12.h),
+                        separatorBuilder: (_, _) => SizedBox(height: 12.h),
                         itemBuilder: (_, i) => _SpotCard(spot: spots[i]),
                       ),
               ),
@@ -123,7 +126,7 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
           ),
           SizedBox(height: 16.h),
           Text(
-            '아직 방문한 스팟이 없어요',
+            '주변에 스팟이 없어요',
             style: TextStyle(
               color: AppColors.dText,
               fontSize: 17.sp,
@@ -159,12 +162,81 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
           ),
           SizedBox(height: 12.h),
           TextButton(
-            onPressed: () => ref.invalidate(spotCooldownsProvider),
+            onPressed: () => ref.invalidate(spotListProvider),
             child: const Text('다시 시도'),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildPermissionGuide() {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 40.w),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.location_off_rounded,
+              size: 52.r,
+              color: AppColors.dAccent.withValues(alpha: 0.4),
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              '위치 권한이 필요해요',
+              style: TextStyle(
+                color: AppColors.dText,
+                fontSize: 17.sp,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              '주변 스팟을 찾으려면\n위치 권한을 켜주세요.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.dMuted,
+                fontSize: 14.sp,
+                height: 1.45,
+              ),
+            ),
+            SizedBox(height: 20.h),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.dAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14.r),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+              ),
+              onPressed: _requestLocationPermission,
+              child: Text(
+                '위치 권한 허용',
+                style: TextStyle(
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _requestLocationPermission() async {
+    var perm = await Geolocator.checkPermission();
+    if (perm == LocationPermission.denied) {
+      perm = await Geolocator.requestPermission();
+    }
+    // 영구 거부 상태면 시스템 설정 화면을 열어 직접 허용하도록 안내
+    if (perm == LocationPermission.deniedForever) {
+      await Geolocator.openAppSettings();
+    }
+    if (!mounted) return;
+    ref.invalidate(spotListProvider);
   }
 }
 
@@ -172,7 +244,7 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
 
 class _SpotCard extends StatelessWidget {
   const _SpotCard({required this.spot});
-  final SpotCooldownModel spot;
+  final SpotListItem spot;
 
   @override
   Widget build(BuildContext context) {
@@ -220,7 +292,7 @@ class _SpotCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        spot.spotName,
+                        spot.name,
                         style: TextStyle(
                           fontSize: 15.5.sp,
                           fontWeight: FontWeight.w700,
@@ -232,7 +304,9 @@ class _SpotCard extends StatelessWidget {
                       ),
                       SizedBox(height: 5.h),
                       Text(
-                        '마지막 방문 · ${_formatDate(spot.lastCheckinAt)}',
+                        spot.visited && spot.lastCheckinAt != null
+                            ? '마지막 방문 · ${_formatDate(spot.lastCheckinAt!)}'
+                            : '주변 스팟 · 미방문',
                         style: TextStyle(
                           fontSize: 12.5.sp,
                           color: AppColors.dFaint,
@@ -259,13 +333,15 @@ class _SpotCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              _RewardBadge(
-                icon: Icons.bolt_rounded,
-                label: '+${spot.expAmount} EXP',
-                dim: spot.expAmount <= 0,
-                isGold: false,
-              ),
-              SizedBox(width: 8.w),
+              if (spot.expAmount != null) ...[
+                _RewardBadge(
+                  icon: Icons.bolt_rounded,
+                  label: '+${spot.expAmount} EXP',
+                  dim: spot.expAmount! <= 0,
+                  isGold: false,
+                ),
+                SizedBox(width: 8.w),
+              ],
               _RewardBadge(
                 icon: Icons.monetization_on_rounded,
                 label: '${spot.rewardAmount} P',

@@ -11,6 +11,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:logger/logger.dart';
 
 import '../../../core/character/character_provider.dart';
+import '../../spot/screens/spot_info_sheet.dart';
 import '../../../core/character/character_style.dart';
 import '../../profile/constants/title_presets.dart';
 import '../../../core/constants/app_colors.dart';
@@ -485,7 +486,8 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
           anchor: const Offset(0.5, 0.5),
           infoWindow: InfoWindow.noText,
           consumeTapEvents: true,
-          // 터치 기능 없음 — 체크인은 _autoCheckIn(위치 기반)으로만 처리
+          // 마커 탭 → 스팟 정보 미니 시트 (체크인은 _autoCheckIn 위치 기반 별도 처리)
+          onTap: () => SpotInfoSheet.show(context, spot.id),
         ),
     };
   }
@@ -923,6 +925,12 @@ class _RunningScreenState extends ConsumerState<RunningScreen> {
                 child: RunningInfoPanel(
                   record: record,
                   onClose: () => setState(() => _showInfoPanel = false),
+                  onStart: () => setState(() {
+                    _showInfoPanel = false;
+                    _isCountingDown = true;
+                  }),
+                  onFinish: () =>
+                      ref.read(runningProvider.notifier).finishRun(),
                 ),
               ),
             ),
@@ -1020,7 +1028,7 @@ class _BottomPanel extends StatelessWidget {
                       children: [
                         Expanded(
                           child: _MetricBlock(
-                            label: '거리 (KM)',
+                            label: '거리 km',
                             value: (record.distanceMeters / 1000)
                                 .toStringAsFixed(2),
                             labelColor: AppColors.dAccent,

@@ -51,48 +51,59 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(path: AppRoutes.splash, builder: (_, __) => const SplashScreen()),
-      GoRoute(path: AppRoutes.login, builder: (_, __) => const LoginScreen()),
-      GoRoute(path: AppRoutes.signup, builder: (_, __) => const SignupScreen()),
-      GoRoute(path: AppRoutes.home, builder: (_, __) => const HomeScreen()),
       GoRoute(
-        path: AppRoutes.history,
-        builder: (_, __) => const HistoryScreen(),
+        path: AppRoutes.splash,
+        builder: (_, _) => const SplashScreen(),
       ),
-      GoRoute(path: AppRoutes.shop, builder: (_, __) => const ShopScreen()),
+      GoRoute(
+        path: AppRoutes.login,
+        builder: (_, _) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.signup,
+        builder: (_, _) => const SignupScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.home,
+        builder: (_, _) => const HomeScreen(),
+      ),
       GoRoute(
         path: AppRoutes.history,
-        builder: (_, __) => const HistoryScreen(),
+        builder: (_, _) => const HistoryScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.shop,
+        builder: (_, _) => const ShopScreen(),
       ),
       GoRoute(
         path: AppRoutes.friends,
-        builder: (_, __) => const FriendsScreen(),
+        builder: (_, _) => const FriendsScreen(),
       ),
       GoRoute(
         path: AppRoutes.settings,
-        builder: (_, __) => const SettingsScreen(),
+        builder: (_, _) => const SettingsScreen(),
       ),
       GoRoute(
         path: AppRoutes.account,
-        builder: (_, __) => const AccountScreen(),
+        builder: (_, _) => const AccountScreen(),
       ),
       GoRoute(
         path: AppRoutes.privacyPolicy,
-        builder: (_, __) => const LegalDocumentScreen(
+        builder: (_, _) => const LegalDocumentScreen(
           title: '개인정보처리방침',
           content: LegalDocuments.privacyPolicy,
         ),
       ),
       GoRoute(
         path: AppRoutes.termsOfService,
-        builder: (_, __) => const LegalDocumentScreen(
+        builder: (_, _) => const LegalDocumentScreen(
           title: '이용약관',
           content: LegalDocuments.termsOfService,
         ),
       ),
       GoRoute(
         path: AppRoutes.noticeList,
-        builder: (_, __) => const NoticeListScreen(),
+        builder: (_, _) => const NoticeListScreen(),
       ),
       GoRoute(
         path: AppRoutes.notifications,
@@ -132,7 +143,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 class _RouterNotifier extends ChangeNotifier {
   _RouterNotifier(this._ref) {
     // Listen to auth state — any change triggers GoRouter to re-run redirect.
-    _ref.listen<AuthState>(authProvider, (_, __) => notifyListeners());
+    _ref.listen<AuthState>(authProvider, (_, _) => notifyListeners());
   }
 
   final Ref _ref;

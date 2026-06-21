@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 
@@ -11,10 +13,12 @@ import '../../../core/constants/app_map_styles.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/shell/tab_providers.dart';
+import '../../profile/services/member_profile_service.dart';
+import '../../spot/providers/spot_providers.dart';
 import '../providers/occupation_providers.dart';
 
-/// 점령 지도 — BATON(전체 점령) / 내 점령 토글 + 2D 탑다운 지도.
-/// 점령된 스팟을 회색 원으로 표시하고, BATON에서 원을 누르면
+/// 점령 지도 — 차지(전체 점령) / 내 점령 토글 + 2D 탑다운 지도.
+/// 점령된 스팟을 회색 원으로 표시하고, 차지에서 원을 누르면
 /// 점령자 정보를 보여주는 미니 상세 시트가 아래에서 올라온다.
 class OccupationScreen extends ConsumerStatefulWidget {
   const OccupationScreen({super.key});
@@ -34,15 +38,17 @@ class _OccupationScreenState extends ConsumerState<OccupationScreen> {
   bool _cameraPositioned = false;
 
   /// 탭 활성화 후 레이아웃이 안정된 다음 프레임에 지도를 삽입하기 위한 플래그.
-  /// 활성화되는 그 프레임에 지도를 만들면 안드로이드 플랫폼 뷰가 잘못된 초기 크기로
-  /// 잡혀 상단 일부만 렌더되고 나머지가 검게 남는 문제를 방지한다.
   bool _showMap = false;
+
+  /// 스팟 쿨다운 카운트다운용 타이머
+  Timer? _spotTicker;
 
   @override
   void initState() {
     super.initState();
-    // 점령 탭을 떠나면 GoogleMap 서브트리가 해제되며 컨트롤러가 무효화되므로
-    // 참조를 비워 두었다가 재진입 시 다시 안정화 후 삽입한다.
+    _spotTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
     ref.listenManual<int>(currentTabProvider, (prev, next) {
       if (next != AppTabs.occupation) {
         _mapCtrl = null;
@@ -50,6 +56,16 @@ class _OccupationScreenState extends ConsumerState<OccupationScreen> {
         if (mounted && _showMap) setState(() => _showMap = false);
       }
     });
+    // 토글(차지/내 점령) 전환 시 해당 모드 데이터에 맞춰 카메라를 다시 잡도록.
+    ref.listenManual<OccupationMode>(occupationModeProvider, (prev, next) {
+      _cameraPositioned = false;
+    });
+  }
+
+  @override
+  void dispose() {
+    _spotTicker?.cancel();
+    super.dispose();
   }
 
   @override
@@ -71,9 +87,22 @@ class _OccupationScreenState extends ConsumerState<OccupationScreen> {
     }
 
     final mode = ref.watch(occupationModeProvider);
-    final spotsAsync = ref.watch(occupiedSpotsProvider);
     final topPadding = MediaQuery.of(context).padding.top;
 
+    // 스팟 모드 — 지도 없이 스팟 목록만 표시
+    if (mode == OccupationMode.spot) {
+      return Scaffold(
+        backgroundColor: AppColors.dScreen,
+        body: _SpotModeBody(
+          topPadding: topPadding,
+          mode: mode,
+          onModeChanged: (m) =>
+              ref.read(occupationModeProvider.notifier).set(m),
+        ),
+      );
+    }
+
+    final spotsAsync = ref.watch(occupiedSpotsProvider);
     final spots = spotsAsync.value ?? const <OccupiedSpot>[];
 
     // 지도가 준비된 뒤 데이터가 들어오면 한 번만 결정론적으로 카메라 위치 지정
@@ -108,6 +137,8 @@ class _OccupationScreenState extends ConsumerState<OccupationScreen> {
                     mapToolbarEnabled: false,
                     rotateGesturesEnabled: false,
                     tiltGesturesEnabled: false, // 2D 고정
+                    // 차지(전체 점령) 화면은 줌을 고정 — 축소/확대 제한
+                    zoomGesturesEnabled: mode != OccupationMode.all,
                     circles: _buildCircles(spots),
                     onMapCreated: (ctrl) {
                       setState(() => _mapCtrl = ctrl);
@@ -136,7 +167,7 @@ class _OccupationScreenState extends ConsumerState<OccupationScreen> {
             ),
           ),
 
-          // ── 상단 토글 (BATON / 내 점령) ───────────────────────────────────
+          // ── 상단 토글 (차지 / 내 점령) ───────────────────────────────────
           Positioned(
             top: topPadding + 12.h,
             left: 0,
@@ -240,7 +271,7 @@ class _OccupationScreenState extends ConsumerState<OccupationScreen> {
   }
 }
 
-// ── 토글 (BATON / 내 점령) ────────────────────────────────────────────────────
+// ── 토글 (차지 / 내 점령) ────────────────────────────────────────────────────
 class _ModeToggle extends StatelessWidget {
   const _ModeToggle({required this.mode, required this.onChanged});
 
@@ -259,8 +290,9 @@ class _ModeToggle extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _segment('BATON', OccupationMode.all),
+          _segment('차지', OccupationMode.all),
           _segment('내 점령', OccupationMode.mine),
+          _segment('스팟', OccupationMode.spot),
         ],
       ),
     );
@@ -294,14 +326,24 @@ class _ModeToggle extends StatelessWidget {
 }
 
 // ── 점령자 미니 상세 시트 ──────────────────────────────────────────────────────
-class _OccupierDetailSheet extends StatelessWidget {
+class _OccupierDetailSheet extends ConsumerWidget {
   const _OccupierDetailSheet({required this.spot});
 
   final OccupiedSpot spot;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final occupiedAt = spot.occupiedAt;
+    // 점령자/내 체크인 횟수는 스팟 상세, 점령자 레벨은 공개 프로필에서 가져옴
+    final detail = ref.watch(spotDetailProvider(spot.spotId)).value;
+    final occupierCheckins = detail?.occupierCheckinCount ?? 0;
+    final myCheckins = detail?.myCheckinCount ?? 0;
+    final profile =
+        ref.watch(memberPublicProfileProvider(spot.occupierMemberId)).value;
+    final level = profile?.level;
+    final nickname = spot.occupierNickname.isNotEmpty
+        ? spot.occupierNickname
+        : (profile?.nickname ?? '멤버 #${spot.occupierMemberId}');
 
     return SafeArea(
       top: false,
@@ -330,112 +372,142 @@ class _OccupierDetailSheet extends StatelessWidget {
               ),
             ),
 
-            // 점령자 + 점령 시간
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 44.r,
-                  height: 44.r,
-                  decoration: const BoxDecoration(
-                    color: AppColors.dCard2,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.person_rounded,
-                    color: AppColors.dMuted,
-                    size: 24.r,
-                  ),
-                ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '점령자',
-                        style: TextStyle(
-                          fontSize: 11.5.sp,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.dFaint,
-                        ),
-                      ),
-                      SizedBox(height: 3.h),
-                      Text(
-                        spot.occupierNickname.isEmpty
-                            ? '멤버 #${spot.occupierMemberId}'
-                            : spot.occupierNickname,
-                        style: TextStyle(
-                          fontSize: 18.sp,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.dText,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(width: 12.w),
-                // 오른쪽: 점령된 시간
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '점령 시각',
-                      style: TextStyle(
-                        fontSize: 11.5.sp,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.dFaint,
-                      ),
-                    ),
-                    SizedBox(height: 3.h),
-                    Text(
-                      occupiedAt == null
-                          ? '—'
-                          : DateFormat('M월 d일').format(occupiedAt),
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.dText,
-                      ),
-                    ),
-                    if (occupiedAt != null) ...[
-                      SizedBox(height: 1.h),
-                      Text(
-                        DateFormat('HH:mm').format(occupiedAt),
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.dMuted,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-
-            SizedBox(height: 18.h),
-            Divider(color: AppColors.dLine2, height: 1),
-            SizedBox(height: 16.h),
-
-            // 스팟 이름
+            // ── 스팟 이름 (작은 헤더) ──────────────────────────────────
             Row(
               children: [
                 Icon(Icons.location_on_rounded,
-                    color: AppColors.dAccentBright, size: 20.r),
-                SizedBox(width: 8.w),
+                    color: AppColors.dAccentBright, size: 18.r),
+                SizedBox(width: 6.w),
                 Expanded(
                   child: Text(
                     spot.name.isEmpty ? '이름 없는 스팟' : spot.name,
                     style: TextStyle(
-                      fontSize: 16.sp,
+                      fontSize: 13.5.sp,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.dText,
+                      color: AppColors.dMuted,
                     ),
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+
+            SizedBox(height: 14.h),
+
+            // ── 점령자 강조 카드 ───────────────────────────────────────
+            Container(
+              padding: EdgeInsets.all(14.r),
+              decoration: BoxDecoration(
+                color: AppColors.dCard2,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                border: Border.all(
+                  color: AppColors.dGold.withValues(alpha: 0.35),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 52.r,
+                    height: 52.r,
+                    decoration: const BoxDecoration(
+                      color: AppColors.dGoldSoft,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.emoji_events_rounded,
+                      color: AppColors.dGold,
+                      size: 28.r,
+                    ),
+                  ),
+                  SizedBox(width: 14.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '현재 점령자',
+                          style: TextStyle(
+                            fontSize: 11.5.sp,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.dFaint,
+                          ),
+                        ),
+                        SizedBox(height: 3.h),
+                        Text(
+                          nickname,
+                          style: TextStyle(
+                            fontSize: 20.sp,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.dText,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (level != null) ...[
+                          SizedBox(height: 2.h),
+                          Text(
+                            'Lv.$level',
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.dFaint,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
+                  // 점령자 체크인 — 골드 배지로 강조
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                    decoration: BoxDecoration(
+                      color: AppColors.dGold,
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                    ),
+                    child: Text(
+                      '체크인 $occupierCheckins회',
+                      style: TextStyle(
+                        fontSize: 12.5.sp,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF1A0E06),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            SizedBox(height: 14.h),
+
+            // ── 내 체크인 + 점령 시각 (작게, 구분) ─────────────────────
+            Row(
+              children: [
+                Icon(Icons.how_to_reg_rounded,
+                    color: AppColors.dMuted, size: 15.r),
+                SizedBox(width: 5.w),
+                Text(
+                  '내 체크인 $myCheckins회',
+                  style: TextStyle(
+                    fontSize: 12.5.sp,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.dMuted,
+                  ),
+                ),
+                const Spacer(),
+                Icon(Icons.schedule_rounded, color: AppColors.dFaint, size: 14.r),
+                SizedBox(width: 4.w),
+                Text(
+                  occupiedAt == null
+                      ? '점령 시각 —'
+                      : '${DateFormat('M월 d일').format(occupiedAt)} '
+                          '${DateFormat('HH:mm').format(occupiedAt)}',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.dFaint,
                   ),
                 ),
               ],
@@ -505,6 +577,379 @@ class _StatusCard extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── 스팟 모드 바디 ─────────────────────────────────────────────────────────────
+
+class _SpotModeBody extends ConsumerWidget {
+  const _SpotModeBody({
+    required this.topPadding,
+    required this.mode,
+    required this.onModeChanged,
+  });
+
+  final double topPadding;
+  final OccupationMode mode;
+  final ValueChanged<OccupationMode> onModeChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final spotsAsync = ref.watch(spotCooldownsProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── 헤더 + 토글 ────────────────────────────────────────────────────
+        Padding(
+          padding: EdgeInsets.fromLTRB(22.w, topPadding + 8.h, 22.w, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '스팟',
+                style: TextStyle(
+                  color: AppColors.dAccent,
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 2.0,
+                ),
+              ),
+              SizedBox(height: 6.h),
+              Text(
+                '내가 방문한 스팟',
+                style: TextStyle(
+                  color: AppColors.dText,
+                  fontSize: 28.sp,
+                  fontWeight: FontWeight.w800,
+                  height: 1.1,
+                ),
+              ),
+              SizedBox(height: 16.h),
+              Center(
+                child: _ModeToggle(mode: mode, onChanged: onModeChanged),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 20.h),
+
+        // ── 목록 ────────────────────────────────────────────────────────────
+        Expanded(
+          child: spotsAsync.when(
+            loading: () => const Center(
+              child: CircularProgressIndicator(color: AppColors.dAccent),
+            ),
+            error: (_, _) => Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.error_outline_rounded,
+                      size: 40.r, color: AppColors.dRouteEnd),
+                  SizedBox(height: 12.h),
+                  Text(
+                    '목록을 불러오지 못했어요.',
+                    style: TextStyle(color: AppColors.dMuted, fontSize: 14.sp),
+                  ),
+                  SizedBox(height: 12.h),
+                  TextButton(
+                    onPressed: () => ref.invalidate(spotCooldownsProvider),
+                    child: const Text('다시 시도'),
+                  ),
+                ],
+              ),
+            ),
+            data: (spots) => RefreshIndicator(
+              color: AppColors.dAccent,
+              backgroundColor: AppColors.dCard,
+              onRefresh: () async => ref.invalidate(spotCooldownsProvider),
+              child: spots.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.45,
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.location_off_rounded,
+                                  size: 52.r,
+                                  color: AppColors.dAccent.withValues(alpha: 0.3),
+                                ),
+                                SizedBox(height: 16.h),
+                                Text(
+                                  '아직 방문한 스팟이 없어요',
+                                  style: TextStyle(
+                                    color: AppColors.dText,
+                                    fontSize: 17.sp,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                SizedBox(height: 8.h),
+                                Text(
+                                  '러닝 중 스팟 근처를 지나면\n자동으로 체크인돼요!',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: AppColors.dMuted,
+                                    fontSize: 14.sp,
+                                    height: 1.45,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.fromLTRB(22.w, 0, 22.w, 110.h),
+                      itemCount: spots.length,
+                      separatorBuilder: (_, _) => SizedBox(height: 12.h),
+                      itemBuilder: (_, i) => _SpotCard(spot: spots[i]),
+                    ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── 스팟 카드 ─────────────────────────────────────────────────────────────────
+
+class _SpotCard extends StatelessWidget {
+  const _SpotCard({required this.spot});
+  final SpotCooldownModel spot;
+
+  @override
+  Widget build(BuildContext context) {
+    final isAvailable = spot.isAvailable;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(22.r),
+      onTap: () => context.push('${AppRoutes.spotDetail}/${spot.spotId}'),
+      child: Container(
+        padding: EdgeInsets.all(14.r),
+        decoration: BoxDecoration(
+          color: AppColors.dCard,
+          borderRadius: BorderRadius.circular(22.r),
+          border: Border.all(color: AppColors.dLine, width: 1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 40.r,
+                  height: 40.r,
+                  decoration: BoxDecoration(
+                    color: isAvailable
+                        ? AppColors.primary
+                        : AppColors.spotNeutral.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Icon(
+                    Icons.location_on_rounded,
+                    color: isAvailable ? Colors.white : AppColors.spotNeutral,
+                    size: 22.r,
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 2.h),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          spot.spotName,
+                          style: TextStyle(
+                            fontSize: 15.5.sp,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.dText,
+                            height: 1.25,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: 5.h),
+                        Text(
+                          '마지막 방문 · ${DateFormat('yyyy.MM.dd').format(spot.lastCheckinAt)}',
+                          style: TextStyle(
+                            fontSize: 12.5.sp,
+                            color: AppColors.dFaint,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                _CooldownRing(
+                  progress: spot.cooldownProgress,
+                  isAvailable: isAvailable,
+                  remainingSeconds: spot.liveRemainingSeconds,
+                ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                _RewardBadge(
+                  icon: Icons.bolt_rounded,
+                  label: '+${spot.expAmount} EXP',
+                  dim: spot.expAmount <= 0,
+                  isGold: false,
+                ),
+                SizedBox(width: 8.w),
+                _RewardBadge(
+                  icon: Icons.monetization_on_rounded,
+                  label: '${spot.rewardAmount} P',
+                  dim: false,
+                  isGold: true,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── 쿨타임 원형 인디케이터 ─────────────────────────────────────────────────────
+
+class _CooldownRing extends StatelessWidget {
+  const _CooldownRing({
+    required this.progress,
+    required this.isAvailable,
+    required this.remainingSeconds,
+  });
+
+  final double progress;
+  final bool isAvailable;
+  final int remainingSeconds;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 44.r,
+          height: 44.r,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 44.r,
+                height: 44.r,
+                child: CircularProgressIndicator(
+                  value: 1.0,
+                  strokeWidth: 3.r,
+                  color: Colors.white.withValues(alpha: 0.10),
+                ),
+              ),
+              SizedBox(
+                width: 44.r,
+                height: 44.r,
+                child: CircularProgressIndicator(
+                  value: isAvailable ? 1.0 : progress,
+                  strokeWidth: 3.r,
+                  strokeCap: StrokeCap.round,
+                  color: AppColors.dAccent,
+                  backgroundColor: Colors.transparent,
+                ),
+              ),
+              if (isAvailable)
+                Icon(Icons.check_rounded, color: AppColors.dAccent, size: 18.r),
+            ],
+          ),
+        ),
+        SizedBox(height: 6.h),
+        Text(
+          isAvailable ? '체크인 가능' : _formatRemaining(remainingSeconds),
+          style: TextStyle(
+            fontSize: 11.5.sp,
+            fontWeight: FontWeight.w800,
+            color: AppColors.dAccent,
+            letterSpacing: isAvailable ? 0 : 0.4,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatRemaining(int seconds) {
+    final h = seconds ~/ 3600;
+    final m = (seconds % 3600) ~/ 60;
+    final s = seconds % 60;
+    return '${h.toString().padLeft(2, '0')}:'
+        '${m.toString().padLeft(2, '0')}:'
+        '${s.toString().padLeft(2, '0')}';
+  }
+}
+
+// ── 보상 배지 ─────────────────────────────────────────────────────────────────
+
+class _RewardBadge extends StatelessWidget {
+  const _RewardBadge({
+    required this.icon,
+    required this.label,
+    required this.dim,
+    required this.isGold,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool dim;
+  final bool isGold;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg;
+    final Color fg;
+    if (dim) {
+      bg = Colors.white.withValues(alpha: 0.05);
+      fg = AppColors.dMuted;
+    } else if (isGold) {
+      bg = AppColors.dGoldSoft;
+      fg = AppColors.dGold;
+    } else {
+      bg = AppColors.dAccentSoft;
+      fg = AppColors.dAccentBright;
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: fg, size: 13.r),
+          SizedBox(width: 5.w),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12.5.sp,
+              fontWeight: FontWeight.w700,
+              color: fg,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -100,7 +100,7 @@ class ShopItemCard extends StatelessWidget {
                     ),
                     SizedBox(width: 4.w),
                     Text(
-                      'Owned',
+                      '보유 중',
                       style: AppTextStyles.labelSmall.copyWith(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w700,
@@ -119,9 +119,9 @@ class ShopItemCard extends StatelessWidget {
 
   Widget _buildBadge() {
     if (item.isCoreColor) {
-      return _Badge(label: 'COLOR', color: AppColors.shopBadgeColor);
+      return _Badge(label: '색상', color: AppColors.shopBadgeColor);
     }
-    return _Badge(label: 'SPECIAL', color: AppColors.error);
+    return _Badge(label: '스페셜', color: AppColors.error);
   }
 
   // ── Info Area ───────────────────────────────────────────────────────────
@@ -152,7 +152,7 @@ class ShopItemCard extends StatelessWidget {
   Widget _buildBuyButton() {
     if (isOwned) {
       return Text(
-        'Owned',
+        '보유 중',
         style: AppTextStyles.labelSmall.copyWith(
           color: AppColors.dMuted,
           fontSize: 10.sp,

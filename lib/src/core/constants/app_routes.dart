@@ -24,9 +24,8 @@ abstract final class AppRoutes {
 /// Bottom navigation tab index constants.
 abstract final class AppTabs {
   static const running = 0;
-  static const spot = 1;
-  static const occupation = 2;
-  static const social = 3;
-  static const myRoom = 4;
-  static const profile = 5;
+  static const occupation = 1;
+  static const social = 2;
+  static const myRoom = 3;
+  static const profile = 4;
 }

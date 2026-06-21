@@ -31,8 +31,8 @@ class GroupApi {
           'distance': distanceKm,
           'location': location,
           'address': address,
-          if (latitude != null) 'lat': latitude,
-          if (longitude != null) 'lon': longitude,
+          'lat': ?latitude,
+          'lon': ?longitude,
         },
       ),
       mapper: (json) => (json as num).toInt(),
@@ -64,7 +64,7 @@ class GroupApi {
       () => _dio.patch(
         '/api/v1/groups/$groupId',
         data: {
-          if (maxParticipants != null) 'maxParticipants': maxParticipants,
+          'maxParticipants': ?maxParticipants,
         },
       ),
       mapper: (_) => null,

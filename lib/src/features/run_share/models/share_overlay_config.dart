@@ -3,18 +3,20 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import 'stat_item_config.dart';
 
+enum TagStyle { dark, light }
+
 enum CardStyle {
-  /// 개별 드래그/리사이즈/색상 자유 배치
+  /// 자유1 — 개별 드래그/리사이즈/색상 자유 배치
   freestyle,
 
   /// 차지1 — 지도 스냅샷 배경 + 하단 고정 스탯 바
-  baton1,
+  chagi1,
+
+  /// 자유2 — 자유 배치 두 번째 스타일
+  free2,
 
   /// 차지2 — 상단 대형 거리 + 하단 페이스·시간
-  baton2,
-
-  /// 차지3 — 추후 추가 예정
-  baton3,
+  chagi2,
 }
 
 /// 공유 카드 오버레이 전체 설정.
@@ -25,7 +27,8 @@ class ShareOverlayConfig {
     required this.durationStat,
     required this.paceStat,
     this.selectedStatId,
-    this.cardStyle = CardStyle.baton1,
+    this.cardStyle = CardStyle.chagi1,
+    this.tagStyle = TagStyle.dark,
     this.showRoute = false,
     this.routeColor = AppColors.dAccent,
     this.routeStrokeWidth = 3.0,
@@ -44,6 +47,7 @@ class ShareOverlayConfig {
   final String? selectedStatId;
 
   final CardStyle cardStyle;
+  final TagStyle tagStyle;
 
   /// 자유 배치 모드에서 글로우 경로 오버레이 표시 여부.
   final bool showRoute;
@@ -87,6 +91,7 @@ class ShareOverlayConfig {
     StatItemConfig? paceStat,
     Object? selectedStatId = _sentinel,
     CardStyle? cardStyle,
+    TagStyle? tagStyle,
     bool? showRoute,
     Color? routeColor,
     double? routeStrokeWidth,
@@ -103,6 +108,7 @@ class ShareOverlayConfig {
           ? this.selectedStatId
           : selectedStatId as String?,
       cardStyle: cardStyle ?? this.cardStyle,
+      tagStyle: tagStyle ?? this.tagStyle,
       showRoute: showRoute ?? this.showRoute,
       routeColor: routeColor ?? this.routeColor,
       routeStrokeWidth: routeStrokeWidth ?? this.routeStrokeWidth,

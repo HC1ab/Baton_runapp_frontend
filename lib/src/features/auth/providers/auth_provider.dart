@@ -8,6 +8,7 @@ import '../../../core/myroom/my_room_service.dart';
 import '../../../core/storage/token_storage.dart';
 import '../../group_running/providers/run_location_provider.dart';
 import '../../group_running/services/group_run_api_service.dart';
+import '../../notifications/services/ios_push_notification_service.dart';
 import '../../profile/providers/history_providers.dart';
 import '../../profile/services/profile_service.dart';
 import '../../running/providers/running_provider.dart';
@@ -68,6 +69,7 @@ class AuthNotifier extends Notifier<AuthState> {
       // 토큰이 존재하면 인증된 상태로 처리
       // TODO: /me API 구현 후 토큰 유효성 검증 추가
       state = const AuthStateAuthenticated();
+      await ref.read(iosPushNotificationServiceProvider).initialize();
     } catch (e) {
       _logger.w('Auth initialization failed', error: e);
       await ref.read(tokenStorageProvider).clear();
@@ -105,6 +107,7 @@ class AuthNotifier extends Notifier<AuthState> {
       'nickname: ${result.nickname}',
     );
     state = const AuthStateAuthenticated();
+    await ref.read(iosPushNotificationServiceProvider).initialize();
   }
 
   /// 토큰 만료/무효 시 API 호출 없이 즉시 로그아웃.

@@ -65,7 +65,7 @@ class ShareCustomizeSheet extends ConsumerWidget {
           SizedBox(height: 12.h),
 
           // 자유 배치 모드: 글로우 경로 토글 + 색상 + 두께
-          if (config.cardStyle == CardStyle.freestyle || config.cardStyle == CardStyle.baton2) ...[
+          if (config.cardStyle == CardStyle.freestyle || config.cardStyle == CardStyle.free2) ...[
             _ToggleRow(
               label: '글로우 경로',
               value: config.showRoute,
@@ -123,6 +123,15 @@ class ShareCustomizeSheet extends ConsumerWidget {
             Divider(height: 1, color: AppColors.divider),
             SizedBox(height: 14.h),
           ],
+
+          // 태그 스타일
+          _TagStyleRow(
+            current: config.tagStyle,
+            onSelect: notifier.setTagStyle,
+          ),
+          SizedBox(height: 14.h),
+          Divider(height: 1, color: AppColors.divider),
+          SizedBox(height: 14.h),
 
           // 스탯 3개
           for (final stat in config.stats)
@@ -296,6 +305,107 @@ class _StatRow extends StatelessWidget {
           SizedBox(height: 4.h),
           Divider(height: 1, color: AppColors.divider),
         ],
+      ),
+    );
+  }
+}
+
+// ── _TagStyleRow ──────────────────────────────────────────────────────────────
+
+class _TagStyleRow extends StatelessWidget {
+  const _TagStyleRow({required this.current, required this.onSelect});
+  final TagStyle current;
+  final ValueChanged<TagStyle> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'CHAGI 태그',
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        SizedBox(height: 10.h),
+        Row(
+          children: [
+            _TagPreview(
+              tagStyle: TagStyle.dark,
+              isSelected: current == TagStyle.dark,
+              onTap: () => onSelect(TagStyle.dark),
+            ),
+            SizedBox(width: 12.w),
+            _TagPreview(
+              tagStyle: TagStyle.light,
+              isSelected: current == TagStyle.light,
+              onTap: () => onSelect(TagStyle.light),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _TagPreview extends StatelessWidget {
+  const _TagPreview({
+    required this.tagStyle,
+    required this.isSelected,
+    required this.onTap,
+  });
+  final TagStyle tagStyle;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = tagStyle == TagStyle.dark;
+    final bgColor = isDark ? Colors.black : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black;
+    final label = isDark ? '블랙' : '화이트';
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(8.r),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.divider,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'CHAGI',
+              style: TextStyle(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w700,
+                color: textColor,
+                letterSpacing: 1.5,
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11.sp,
+                fontWeight: FontWeight.w500,
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.6)
+                    : Colors.black.withValues(alpha: 0.5),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

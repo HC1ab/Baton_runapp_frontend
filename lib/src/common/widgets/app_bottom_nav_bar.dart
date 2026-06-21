@@ -25,16 +25,19 @@ class AppBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // SafeArea(top:false) → 하단 시스템 인셋(홈 인디케이터/제스처 바)과
-    // 좌·우 노치 인셋을 항상 확보 → 둥근 펄 모서리가 화면 가장자리에 안 잘림.
-    return SafeArea(
-      top: false,
-      minimum: EdgeInsets.only(bottom: 12.h),
-      child: Padding(
-        // floating: 좌·우 14 여백
-        padding: EdgeInsets.symmetric(horizontal: 14.w),
-        child: Container(
-          height: 70.h,
+    final systemBottom = MediaQuery.of(context).padding.bottom;
+    // 시스템 인셋의 절반만 적용해 바 위치를 낮춤 (최소 4.h 확보)
+    final bottomPad = systemBottom > 0
+        ? (systemBottom / 3).clamp(4.h, 20.h)
+        : 12.h;
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: bottomPad,
+        left: 14.w,
+        right: 14.w,
+      ),
+      child: Container(
+          height: 75.h,
           decoration: BoxDecoration(
             color: const Color(0xFF1E1E21), // 불투명 — 뒤 콘텐츠 비침/번짐 없음
             borderRadius: BorderRadius.circular(30.r),
@@ -54,7 +57,6 @@ class AppBottomNavBar extends StatelessWidget {
             }),
           ),
         ),
-      ),
     );
   }
 }
@@ -82,13 +84,13 @@ class _NavButton extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 23.r),
-          SizedBox(height: 5.h),
+          Icon(icon, color: color, size: 26.r),
+          SizedBox(height: 6.h),
           Text(
             label,
             style: TextStyle(
               color: color,
-              fontSize: 10.5.sp,
+              fontSize: 11.5.sp,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
             ),
           ),

@@ -1,36 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../core/follow/providers/follow_providers.dart';
-import '../../features/social/follow_requests_screen.dart';
+import '../../core/constants/app_routes.dart';
+import '../../features/notifications/providers/notification_providers.dart';
 
 class NotificationBellWidget extends ConsumerWidget {
   const NotificationBellWidget({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final requestsAsync = ref.watch(pendingFollowRequestsProvider);
-    final count = requestsAsync.when(
-      data: (list) => list.length,
+    final unreadCountAsync = ref.watch(notificationUnreadCountProvider);
+    final count = unreadCountAsync.when(
+      data: (count) => count,
       loading: () => 0,
       error: (_, _) => 0,
     );
 
     return GestureDetector(
       onTap: () {
-        Navigator.of(context)
-            .push(MaterialPageRoute<void>(
-              builder: (_) => const FollowRequestsScreen(),
-            ))
-            .then((_) => ref.invalidate(pendingFollowRequestsProvider));
+        context.push(AppRoutes.notifications).then((_) {
+          ref.invalidate(notificationUnreadCountProvider);
+          ref.invalidate(notificationsProvider);
+        });
       },
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Icon(Icons.notifications_rounded,
-              color: AppColors.dMuted, size: 22.r),
+          Icon(
+            Icons.notifications_rounded,
+            color: AppColors.dMuted,
+            size: 22.r,
+          ),
           if (count > 0)
             Positioned(
               top: -4,

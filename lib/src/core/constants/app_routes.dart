@@ -13,6 +13,7 @@ abstract final class AppRoutes {
   static const account = '/account';
   static const noticeList = '/notices';
   static const noticeDetail = '/notices/:noticeId';
+  static const notifications = '/notifications';
   static const friends = '/friends';
   static const runShare = '/run-share';
   static const spotDetail = '/spots';

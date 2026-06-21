@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/share_overlay_config.dart';
 import '../models/stat_item_config.dart';
-export '../models/share_overlay_config.dart' show CardStyle;
+export '../models/share_overlay_config.dart' show CardStyle, TagStyle;
 
 class RunShareNotifier extends Notifier<ShareOverlayConfig> {
   @override
@@ -62,7 +62,7 @@ class RunShareNotifier extends Notifier<ShareOverlayConfig> {
           paceStat: const StatItemConfig(
               id: 'pace', dx: 0.78, dy: 0.82, fontSize: 26, color: Colors.white),
         );
-      case CardStyle.baton2:
+      case CardStyle.free2:
         // 자유 2 초기 배치: 상단 대형 거리 + 하단 페이스·시간
         state = state.copyWith(
           cardStyle: style,
@@ -77,6 +77,12 @@ class RunShareNotifier extends Notifier<ShareOverlayConfig> {
       default:
         state = state.copyWith(cardStyle: style, selectedStatId: null);
     }
+  }
+
+  // ── 태그 스타일 ───────────────────────────────────────────────────────────
+
+  void setTagStyle(TagStyle style) {
+    state = state.copyWith(tagStyle: style);
   }
 
   // ── 표시 여부 ─────────────────────────────────────────────────────────────

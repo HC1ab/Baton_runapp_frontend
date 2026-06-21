@@ -191,12 +191,18 @@ class ProfileScreen extends ConsumerWidget {
   Widget _buildAppBar(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: Image.asset(
-            'assets/icons/app_icon_orange.png',
-            height: 36,
-            fit: BoxFit.contain,
+        GestureDetector(
+          onTap: () {
+            ref.read(currentTabProvider.notifier).switchTo(AppTabs.running);
+            context.go(AppRoutes.home);
+          },
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.asset(
+              'assets/icons/cha_ji_symbol.png',
+              height: 36,
+              fit: BoxFit.contain,
+            ),
           ),
         ),
         const Spacer(),

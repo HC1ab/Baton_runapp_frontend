@@ -37,7 +37,7 @@ class ShareCanvasWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(runShareProvider.notifier);
     final isFreestyle = config.cardStyle == CardStyle.freestyle ||
-        config.cardStyle == CardStyle.baton2;
+        config.cardStyle == CardStyle.free2;
 
     return RepaintBoundary(
       key: repaintKey,
@@ -67,11 +67,11 @@ class ShareCanvasWidget extends ConsumerWidget {
                   Positioned(
                     top: 24.r,
                     right: 0,
-                    child: _BatonBrandTag(tagStyle: config.tagStyle),
+                    child: _ChagiBrandTag(tagStyle: config.tagStyle),
                   ),
 
                   // ── 차지 1 ─────────────────────────────────────────────────
-                  if (config.cardStyle == CardStyle.baton1)
+                  if (config.cardStyle == CardStyle.chagi1)
                     Positioned(
                       left: 0,
                       right: 0,
@@ -79,9 +79,9 @@ class ShareCanvasWidget extends ConsumerWidget {
                       child: ShareNrcBarWidget(data: data, config: config),
                     )
 
-                  // ── 차지 2 (baton3) ─────────────────────────────────────────
-                  else if (config.cardStyle == CardStyle.baton3)
-                    _Baton2Layout(data: data)
+                  // ── 차지 2 ───────────────────────────────────────────────────
+                  else if (config.cardStyle == CardStyle.chagi2)
+                    _Chagi2Layout(data: data)
 
                   // ── 자유 1 / 자유 2 — 드래그 배치 ───────────────────────────
                   else ...[
@@ -133,8 +133,8 @@ class ShareCanvasWidget extends ConsumerWidget {
 
 // ── 차지 2 정적 레이아웃 ─────────────────────────────────────────────────────
 
-class _Baton2Layout extends StatelessWidget {
-  const _Baton2Layout({required this.data});
+class _Chagi2Layout extends StatelessWidget {
+  const _Chagi2Layout({required this.data});
   final RunShareData data;
 
   @override
@@ -236,10 +236,10 @@ class _StatCell extends StatelessWidget {
   }
 }
 
-// ── 우측 상단 브랜드 태그 (Garmin 스타일) ─────────────────────────────────────
+// ── 우측 상단 브랜드 태그 ─────────────────────────────────────────────────────
 
-class _BatonBrandTag extends StatelessWidget {
-  const _BatonBrandTag({required this.tagStyle});
+class _ChagiBrandTag extends StatelessWidget {
+  const _ChagiBrandTag({required this.tagStyle});
   final TagStyle tagStyle;
 
   @override
@@ -258,7 +258,7 @@ class _BatonBrandTag extends StatelessWidget {
       child: RotatedBox(
         quarterTurns: 1,
         child: Text(
-          'BATON',
+          'CHAGI',
           style: TextStyle(
             fontSize: 11.sp,
             fontWeight: FontWeight.w700,

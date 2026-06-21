@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
@@ -78,7 +77,7 @@ class HistoryScreen extends ConsumerWidget {
           ),
           const Spacer(),
           Text(
-            'Baton',
+            'CHAGI',
             style: TextStyle(
               fontSize: 21.sp,
               fontWeight: FontWeight.w800,
@@ -101,9 +100,9 @@ class HistoryScreen extends ConsumerWidget {
 
   Widget _buildPeriodSelector(WidgetRef ref, ActivityPeriod period) {
     const items = [
-      (ActivityPeriod.week, 'Week'),
-      (ActivityPeriod.month, 'Month'),
-      (ActivityPeriod.year, 'Year'),
+      (ActivityPeriod.week, '주간'),
+      (ActivityPeriod.month, '월간'),
+      (ActivityPeriod.year, '연간'),
     ];
 
     return Container(
@@ -294,7 +293,7 @@ class HistoryScreen extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Recent Activities',
+          '최근 활동',
           style: TextStyle(
             fontSize: 20.sp,
             fontWeight: FontWeight.w800,
@@ -362,7 +361,7 @@ class HistoryScreen extends ConsumerWidget {
                       ),
                       SizedBox(width: 8.w),
                       Text(
-                        DateFormat('MMM d').format(run.startTime),
+                        '${run.startTime.month}월 ${run.startTime.day}일',
                         style: TextStyle(
                           fontSize: 11.sp,
                           fontWeight: FontWeight.w600,
@@ -540,11 +539,12 @@ class HistoryScreen extends ConsumerWidget {
   // ── Helpers ─────────────────────────────────────────────────────────────
 
   String _runTitle(DateTime time) {
+    const days = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'];
+    final dayName = days[time.weekday - 1];
     final hour = time.hour;
-    final dayName = DateFormat('EEEE').format(time);
-    if (hour < 12) return '$dayName Morning Run';
-    if (hour < 17) return '$dayName Afternoon Run';
-    return '$dayName Evening Run';
+    if (hour < 12) return '$dayName 아침 러닝';
+    if (hour < 17) return '$dayName 오후 러닝';
+    return '$dayName 저녁 러닝';
   }
 
   String _formatDuration(int seconds) {
@@ -606,11 +606,11 @@ _ActivityData _aggregate(
           periodRuns.add(run);
         }
       }
-      labels = const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      labels = const ['월', '화', '수', '목', '금', '토', '일'];
       final sunday = monday.add(const Duration(days: 6));
       periodLabel = monday.month == sunday.month
-          ? '${DateFormat('MMM d').format(monday)} – ${sunday.day}'
-          : '${DateFormat('MMM d').format(monday)} – ${DateFormat('MMM d').format(sunday)}';
+          ? '${monday.month}월 ${monday.day}일 – ${sunday.day}일'
+          : '${monday.month}월 ${monday.day}일 – ${sunday.month}월 ${sunday.day}일';
 
     case ActivityPeriod.month:
       final daysInMonth = DateUtils.getDaysInMonth(anchor.year, anchor.month);
@@ -624,9 +624,9 @@ _ActivityData _aggregate(
           periodRuns.add(run);
         }
       }
-      labels = List.generate(weeks, (i) => 'W${i + 1}');
+      labels = List.generate(weeks, (i) => '${i + 1}주');
       showDividers = true;
-      periodLabel = DateFormat('MMMM yyyy').format(anchor);
+      periodLabel = '${anchor.year}년 ${anchor.month}월';
 
     case ActivityPeriod.year:
       bars = List.filled(12, 0.0);
@@ -637,8 +637,8 @@ _ActivityData _aggregate(
         }
       }
       labels = const [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        '1월', '2월', '3월', '4월', '5월', '6월',
+        '7월', '8월', '9월', '10월', '11월', '12월'
       ];
       periodLabel = '${anchor.year}';
   }

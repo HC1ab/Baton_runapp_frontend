@@ -107,7 +107,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.notifications,
-        builder: (_, __) => const NotificationListScreen(),
+        builder: (_, _) => const NotificationListScreen(),
       ),
       GoRoute(
         path: '/notices/:noticeId',

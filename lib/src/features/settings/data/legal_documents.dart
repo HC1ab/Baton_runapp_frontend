@@ -7,7 +7,7 @@ abstract final class LegalDocuments {
   static const String effectiveDate = '2026년 6월 11일';
 
   static const String privacyPolicy = '''
-Baton(이하 "회사")은 이용자의 개인정보를 중요시하며,
+차지(이하 "회사")는 이용자의 개인정보를 중요시하며,
 「개인정보 보호법」 등 관련 법령을 준수하기 위하여 다음과 같이
 개인정보처리방침을 수립·공개합니다.
 
@@ -153,7 +153,7 @@ Baton(이하 "회사")은 이용자의 개인정보를 중요시하며,
   static const String termsOfService = '''
 제1조 (목적)
 
-이 약관은 Baton(이하 "회사")이 제공하는
+이 약관은 차지(이하 "회사")가 제공하는
 러닝 및 소셜 러닝 플랫폼 서비스(이하 "서비스")의 이용과
 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항, 기타
 필요한 사항을 규정함을 목적으로 합니다.

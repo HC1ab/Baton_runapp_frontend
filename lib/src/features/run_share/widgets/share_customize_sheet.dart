@@ -65,7 +65,7 @@ class ShareCustomizeSheet extends ConsumerWidget {
           SizedBox(height: 12.h),
 
           // 자유 배치 모드: 글로우 경로 토글 + 색상 + 두께
-          if (config.cardStyle == CardStyle.freestyle || config.cardStyle == CardStyle.baton2) ...[
+          if (config.cardStyle == CardStyle.freestyle || config.cardStyle == CardStyle.free2) ...[
             _ToggleRow(
               label: '글로우 경로',
               value: config.showRoute,
@@ -323,7 +323,7 @@ class _TagStyleRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'BATON 태그',
+          'CHAGI 태그',
           style: TextStyle(
             fontSize: 14.sp,
             fontWeight: FontWeight.w700,
@@ -385,7 +385,7 @@ class _TagPreview extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'BATON',
+              'CHAGI',
               style: TextStyle(
                 fontSize: 12.sp,
                 fontWeight: FontWeight.w700,

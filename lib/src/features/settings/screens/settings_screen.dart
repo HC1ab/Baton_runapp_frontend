@@ -80,7 +80,7 @@ class SettingsScreen extends ConsumerWidget {
               iconColor: const Color(0xFF7B1FA2),
               label: '앱 버전',
               trailing: Text(
-                'v1.0.0',
+                'v1.0.3',
                 style: TextStyle(
                   fontSize: 14.sp,
                   fontWeight: FontWeight.w600,

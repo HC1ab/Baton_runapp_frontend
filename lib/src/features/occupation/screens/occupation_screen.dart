@@ -290,7 +290,7 @@ class _ModeToggle extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _segment('차지', OccupationMode.all),
+          _segment('CHAGI', OccupationMode.all),
           _segment('내 점령', OccupationMode.mine),
           _segment('스팟', OccupationMode.spot),
         ],
@@ -602,39 +602,13 @@ class _SpotModeBody extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── 헤더 + 토글 ────────────────────────────────────────────────────
+        // ── 토글 ────────────────────────────────────────────────────────────
         Padding(
-          padding: EdgeInsets.fromLTRB(22.w, topPadding + 8.h, 22.w, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '스팟',
-                style: TextStyle(
-                  color: AppColors.dAccent,
-                  fontSize: 13.sp,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 2.0,
-                ),
-              ),
-              SizedBox(height: 6.h),
-              Text(
-                '내가 방문한 스팟',
-                style: TextStyle(
-                  color: AppColors.dText,
-                  fontSize: 28.sp,
-                  fontWeight: FontWeight.w800,
-                  height: 1.1,
-                ),
-              ),
-              SizedBox(height: 16.h),
-              Center(
-                child: _ModeToggle(mode: mode, onChanged: onModeChanged),
-              ),
-            ],
+          padding: EdgeInsets.only(top: topPadding + 12.h, bottom: 20.h),
+          child: Center(
+            child: _ModeToggle(mode: mode, onChanged: onModeChanged),
           ),
         ),
-        SizedBox(height: 20.h),
 
         // ── 목록 ────────────────────────────────────────────────────────────
         Expanded(

@@ -62,7 +62,7 @@ class RunShareNotifier extends Notifier<ShareOverlayConfig> {
           paceStat: const StatItemConfig(
               id: 'pace', dx: 0.78, dy: 0.82, fontSize: 26, color: Colors.white),
         );
-      case CardStyle.baton2:
+      case CardStyle.free2:
         // 자유 2 초기 배치: 상단 대형 거리 + 하단 페이스·시간
         state = state.copyWith(
           cardStyle: style,

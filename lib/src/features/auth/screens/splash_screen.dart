@@ -17,7 +17,7 @@ class SplashScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset(
-              'assets/icons/app_icon_orange.png',
+              'assets/icons/cha_ji_symbol.png',
               width: 80.r,
               height: 80.r,
             ),

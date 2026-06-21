@@ -11,9 +11,10 @@ import '../../../core/character/character_style.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/myroom/my_room_service.dart';
-import '../../../core/shell/tab_providers.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../spot/screens/spot_screen.dart';
 import '../services/profile_service.dart';
+import 'my_room_screen.dart';
 
 /// ProfileScreen — 프로필 탭: API 기반 닉네임/타이틀/레벨/러닝 통계 표시 + 로그아웃 버튼.
 class ProfileScreen extends ConsumerWidget {
@@ -98,20 +99,38 @@ class ProfileScreen extends ConsumerWidget {
                       subtitle: '저장된 코스 확인',
                       filled: true,
                       fillColor: AppColors.dGold,
-                      onTap: () => ref
-                          .read(currentTabProvider.notifier)
-                          .switchTo(AppTabs.spot),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const SpotScreen()),
+                      ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              _BigActionCard(
-                icon: Icons.people_rounded,
-                title: '친구',
-                subtitle: '팔로워 · 팔로잉 관리',
-                filled: false,
-                onTap: () => context.push(AppRoutes.friends),
+              Row(
+                children: [
+                  Expanded(
+                    child: _BigActionCard(
+                      icon: Icons.people_rounded,
+                      title: '친구',
+                      subtitle: '팔로워 · 팔로잉',
+                      filled: false,
+                      onTap: () => context.push(AppRoutes.friends),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _BigActionCard(
+                      icon: Icons.home_rounded,
+                      title: '마이 룸',
+                      subtitle: '캐릭터 · 칭호 꾸미기',
+                      filled: false,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const MyRoomScreen()),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

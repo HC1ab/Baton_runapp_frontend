@@ -37,6 +37,13 @@ abstract final class ApiConstants {
   static const spotsOccupied = '/api/v1/spots/occupied'; // 전체 점령
   static const spotsOccupiedMe = '/api/v1/spots/occupied/me'; // 내 점령
 
+  // Endpoints — Ghost
+  static const ghostRankings = '/api/v1/ghost-rankings'; // 동네별 부문 TOP3
+  static String ghostRankingDetail(int rankingId) =>
+      '/api/v1/ghost-rankings/$rankingId'; // 고스트 기록 상세(경로 path 포함)
+  static const ghostRunStart = '/api/v1/ghost-runs/start';
+  static String ghostRunFinish(int runId) => '/api/v1/ghost-runs/$runId/finish';
+
   // Endpoints — MyRoom
   static const myRoom = '/api/v1/myroom';
   static const myCoreColor = '/api/v1/myroom/core-color';

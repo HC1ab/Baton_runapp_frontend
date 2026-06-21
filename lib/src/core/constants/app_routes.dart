@@ -24,7 +24,7 @@ abstract final class AppRoutes {
 abstract final class AppTabs {
   static const running = 0;
   static const occupation = 1;
-  static const social = 2;
-  static const myRoom = 3;
+  static const ghost = 2;
+  static const social = 3;
   static const profile = 4;
 }

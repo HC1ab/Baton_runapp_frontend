@@ -70,14 +70,30 @@ class _MyRoomScreenState extends ConsumerState<MyRoomScreen> {
   // ── Title ─────────────────────────────────────────────────────────────────
 
   Widget _buildTitle() {
-    return Text(
-      '마이 룸',
-      style: TextStyle(
-        color: AppColors.dText,
-        fontSize: 30.sp,
-        fontWeight: FontWeight.w800,
-        height: 1.1,
-      ),
+    return Row(
+      children: [
+        GestureDetector(
+          onTap: () => Navigator.of(context).maybePop(),
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: EdgeInsets.only(right: 10.w, top: 4.h, bottom: 4.h),
+            child: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: AppColors.dText,
+              size: 22.r,
+            ),
+          ),
+        ),
+        Text(
+          '마이 룸',
+          style: TextStyle(
+            color: AppColors.dText,
+            fontSize: 30.sp,
+            fontWeight: FontWeight.w800,
+            height: 1.1,
+          ),
+        ),
+      ],
     );
   }
 

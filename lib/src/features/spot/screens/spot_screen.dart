@@ -49,26 +49,45 @@ class _SpotScreenState extends ConsumerState<SpotScreen> {
           // ── 헤더 ────────────────────────────────────────────────────────
           Padding(
             padding: EdgeInsets.fromLTRB(22.w, topPadding + 8.h, 22.w, 0),
-            child: Column(
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'SPOT',
-                  style: TextStyle(
-                    color: AppColors.dAccent,
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 2.0,
+                GestureDetector(
+                  onTap: () => Navigator.of(context).maybePop(),
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: EdgeInsets.only(right: 10.w, top: 4.h, bottom: 4.h),
+                    child: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: AppColors.dText,
+                      size: 22.r,
+                    ),
                   ),
                 ),
-                SizedBox(height: 6.h),
-                Text(
-                  '주변 체크인 스팟',
-                  style: TextStyle(
-                    color: AppColors.dText,
-                    fontSize: 28.sp,
-                    fontWeight: FontWeight.w800,
-                    height: 1.1,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'SPOT',
+                        style: TextStyle(
+                          color: AppColors.dAccent,
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 2.0,
+                        ),
+                      ),
+                      SizedBox(height: 6.h),
+                      Text(
+                        '주변 체크인 스팟',
+                        style: TextStyle(
+                          color: AppColors.dText,
+                          fontSize: 28.sp,
+                          fontWeight: FontWeight.w800,
+                          height: 1.1,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

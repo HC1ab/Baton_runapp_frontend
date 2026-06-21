@@ -28,19 +28,25 @@ final spotListProvider =
   final service = ref.watch(spotServiceProvider);
   final api = ref.watch(spotApiProvider);
 
-  // 현재 위치 (권한 거부/타임아웃 시 기본 좌표로 폴백)
+  // cooldowns(방문 기록)는 위치가 필요 없으므로 위치 측정과 병렬로 즉시 시작.
+  final cooldownsFuture = api.getCooldowns().then<List<SpotCooldownModel>>(
+        (v) => v,
+        onError: (_) => const <SpotCooldownModel>[],
+      );
+
+  // 현재 위치 (권한 거부 → 예외 / 측정 실패 → 기본 좌표 폴백)
   final (lat, lng) = await _currentLatLng();
 
-  // 두 소스 모두 best-effort — 하나가 실패해도 나머지는 표시
-  List<SpotSummary> nearby = const [];
-  try {
-    nearby = await service.nearby(latitude: lat, longitude: lng);
-  } catch (_) {}
+  // nearby는 위치가 필요 → 위치 확보 후 시작, cooldowns와 함께 대기 (best-effort)
+  final nearbyFuture =
+      service.nearby(latitude: lat, longitude: lng).then<List<SpotSummary>>(
+            (v) => v,
+            onError: (_) => const <SpotSummary>[],
+          );
 
-  List<SpotCooldownModel> cooldowns = const [];
-  try {
-    cooldowns = await api.getCooldowns();
-  } catch (_) {}
+  final results = await Future.wait([nearbyFuture, cooldownsFuture]);
+  final nearby = results[0] as List<SpotSummary>;
+  final cooldowns = results[1] as List<SpotCooldownModel>;
 
   final byId = <int, SpotListItem>{};
   // ① 내가 체크인했던 스팟 (쿨타임 정보 포함)
@@ -89,11 +95,13 @@ Future<(double, double)> _currentLatLng() async {
   }
 
   try {
+    // 캐시된 위치 우선 (즉시) — 목록 화면엔 약간 오래된 좌표도 충분
     Position? pos = await Geolocator.getLastKnownPosition();
+    // 캐시가 없을 때만 실시간 측정 (타임아웃 짧게 → 느린 GPS에서 빨리 폴백)
     pos ??= await Geolocator.getCurrentPosition(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.low,
-        timeLimit: Duration(seconds: 5),
+        timeLimit: Duration(seconds: 3),
       ),
     );
     return (pos.latitude, pos.longitude);

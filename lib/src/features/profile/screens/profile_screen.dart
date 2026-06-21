@@ -15,6 +15,7 @@ import '../../../core/shell/tab_providers.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../occupation/providers/occupation_providers.dart';
 import '../services/profile_service.dart';
+import 'my_room_screen.dart';
 
 /// ProfileScreen — 프로필 탭: API 기반 닉네임/타이틀/레벨/러닝 통계 표시 + 로그아웃 버튼.
 class ProfileScreen extends ConsumerWidget {
@@ -111,13 +112,31 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              SizedBox(height: 12.h),
-              _BigActionCard(
-                icon: Icons.people_rounded,
-                title: '친구',
-                subtitle: '팔로워 · 팔로잉 관리',
-                filled: false,
-                onTap: () => context.push(AppRoutes.friends),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _BigActionCard(
+                      icon: Icons.people_rounded,
+                      title: '친구',
+                      subtitle: '팔로워 · 팔로잉',
+                      filled: false,
+                      onTap: () => context.push(AppRoutes.friends),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _BigActionCard(
+                      icon: Icons.home_rounded,
+                      title: '마이 룸',
+                      subtitle: '캐릭터 · 칭호 꾸미기',
+                      filled: false,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const MyRoomScreen()),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
